@@ -37,7 +37,7 @@ img{max-width:100%}
 .seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
 .pill{font-family:var(--f-mono);font-size:.72rem;padding:3px 8px;border:1px solid currentColor;border-radius:99px}
 .pill.ok{color:var(--ok)} .pill.off{color:var(--warn)}
-.main{display:grid;grid-template-columns:minmax(0,460px) minmax(0,1fr);gap:20px;padding-block:18px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));align-items:start}
+.main{display:grid;grid-template-columns:minmax(0,clamp(460px,40vw,700px)) minmax(0,1fr);gap:20px;padding-block:18px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));align-items:start}
 @media (max-width:1100px){.main{grid-template-columns:minmax(0,1fr)}}
 .ed{display:flex;flex-direction:column;gap:14px;min-width:0}
 fieldset{border:1px solid var(--line);background:var(--panel);margin:0;padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px;min-width:0;border-radius:6px}
