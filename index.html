@@ -15,7 +15,7 @@
 :root{
   --bg:#eef1f4; --panel:#ffffff; --fg:#1b2430; --muted:#5d6a78; --line:#d0d7df;
   --accent:#1a5fb4; --accent-soft:#e2ecf8; --input:#fff8e1; --warn:#9a5b00; --ok:#2f7a4a;
-  --doc-bg:#ffffff; --doc-fg:#111111; --doc-blue:#4472c4; --doc-blue2:#9dc3e6; --doc-band:#d9e1f2; --doc-in:#fff2cc; --doc-line:#bfbfbf; --doc-ink:#1f3fbf; --doc-navy:#1f3864;
+  --doc-bg:#ffffff; --doc-fg:#111111; --doc-blue:#4472c4; --doc-blue2:#9dc3e6; --doc-band:#d9e1f2; --doc-in:#eef0f3; --doc-line:#bfbfbf; --doc-ink:#1f3fbf; --doc-navy:#1f3864;
   --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
   --f-body:"Source Sans 3","Segoe UI",Arial,sans-serif;
   --f-mono:"JetBrains Mono",Consolas,monospace;
@@ -537,7 +537,7 @@ async function logoBytes(){ const r=await fetch(LOGO_SRC); return new Uint8Array
 async function crearDocx(){
   const d = await loadScript("docx.iife.js","docx");
   const {Document,Packer,Paragraph,TextRun,ImageRun,Table,TableRow,TableCell,Header,Footer,AlignmentType,WidthType,BorderStyle,ShadingType,PageNumber,PageBreak,TabStopType,VerticalAlign,LevelFormat,TableLayoutType} = d;
-  const M=modelo(), FONT="Arial", NAVY="1F3864", BLUE="4472C4", BLUE2="9DC3E6", BAND="D9E1F2", IN="FFF2CC", INK="1F3FBF", W=9920;
+  const M=modelo(), FONT="Arial", NAVY="1F3864", BLUE="4472C4", BLUE2="9DC3E6", BAND="D9E1F2", IN="EEF0F3", INK="1F3FBF", W=9920;
   const run=(t,o={})=>new TextRun({text:String(t??""),font:FONT,size:o.size||24,bold:o.bold,italics:o.italics,color:o.color,underline:o.underline,highlight:o.hl});
   const txt=(v,phT,o={})=>String(v??"").trim()?run(v,o):run(`[${phT}]`,{...o,hl:"yellow"});
   const P=(children,o={})=>new Paragraph({children:Array.isArray(children)?children:[children],alignment:o.align||AlignmentType.JUSTIFIED,spacing:{before:o.before??0,after:o.after??120},keepNext:o.keepNext,numbering:o.bullet?{reference:"vin",level:0}:undefined});
