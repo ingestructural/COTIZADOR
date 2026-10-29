@@ -73,12 +73,16 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 .paperwrap{overflow-x:auto;border:1px solid var(--line);background:var(--bg);padding:12px 0}
 .login{max-width:420px}
 .msg{font-size:.85rem;color:var(--warn);min-height:1em}
+.pdfbox{position:fixed;inset:0;z-index:30;background:rgba(10,15,20,.55);display:flex;flex-direction:column;padding:calc(12px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));gap:8px}
+.pdfbar{display:flex;gap:8px;align-items:center;background:var(--panel);color:var(--fg);padding:8px 12px;border-radius:6px}
+.pdfbar .sp{flex:1}
+.pdfbox iframe{flex:1;border:0;border-radius:6px;background:#fff;width:100%}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:.9rem;z-index:20}
 
 /* ---- hojas tamaño carta: mismo aspecto en ambos temas ---- */
 .page{background:var(--doc-bg);color:var(--doc-fg);font-family:Arial,Helvetica,sans-serif;font-size:12pt;line-height:1.3;width:8.5in;min-height:11in;margin:0 auto 14px;padding:.4cm 2.5cm 2.2cm 1.59cm;box-sizing:border-box;box-shadow:0 1px 6px rgba(0,0,0,.18);display:flex;flex-direction:column;position:relative}
 .page.cont{min-height:0}
-.page .hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1.5px solid var(--doc-navy);padding-bottom:6px;margin-bottom:18px;gap:10px}
+.page .hd{display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid var(--doc-navy);padding-bottom:6px;margin-bottom:18px;gap:10px}
 .page .hd img{width:3in;height:auto;display:block}
 .page .hd .r{text-align:right;font-size:9pt;font-weight:700;color:var(--doc-navy)}
 .page .hd .r span{font-weight:400;color:#595959}
@@ -100,7 +104,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 .page .cover-t1{font-size:22pt}
 .page .cover-t2{font-size:20pt}
 .page .cover td{font-size:14pt;padding:6px 8px}
-.page .firma{margin-top:28px;text-align:center;font-weight:700;line-height:1.35}
+.page .firma{margin-top:3.2cm;text-align:left;font-weight:700;line-height:1.35}
 .page .firma span{font-weight:400}
 .page .ph{color:#b04a00;font-style:italic}
 .page .ft{margin-top:auto;padding-top:16px}
@@ -113,7 +117,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 <div class="top">
   <div><h1>Cotizador ING Estructural</h1><div class="sub" id="tdesc"></div></div>
   <div class="seg" role="group" aria-label="Tipo de cotización">
-    <button type="button" data-t="rapida">Rápida</button>
+    <button type="button" data-t="rapida">Express</button>
     <button type="button" data-t="formal">Formal</button>
     <button type="button" data-t="flexible">Flexible</button>
   </div>
@@ -157,7 +161,8 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
       <label for="contacto">Contacto (REF)<input id="contacto"></label>
       <label for="fecha">Fecha<input id="fecha" type="date"></label>
       <label for="numero">N° de cotización (código POWER)<input id="numero"></label>
-      <label for="plazo">Plazo de ejecución (días)<input id="plazo" type="number" min="0" step="1"></label>
+      <div class="row" style="gap:6px;align-items:flex-end"><label for="plazo" style="flex:1">Plazo de ejecución<input id="plazo" type="number" min="0" step="1"></label>
+        <label for="plazoU" style="width:110px">Unidad<select id="plazoU"><option>días</option><option>semanas</option></select></label></div>
     </div>
     <div class="row" id="fechaIngRow" hidden><button type="button" class="btn x" id="usarIngreso" style="color:var(--accent)"></button></div>
   </fieldset>
@@ -214,9 +219,13 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 
 <div class="pv">
   <div class="pvbar"><span>Vista de la cotización · tamaño carta</span>
-    <span class="row"><button type="button" class="btn pri" id="expWord">Descargar Word</button><button type="button" class="btn" id="expPdf">Descargar PDF</button></span></div>
+    <span class="row"><button type="button" class="btn pri" id="expWord">Descargar Word</button><button type="button" class="btn" id="verPdf">Ver PDF</button><button type="button" class="btn" id="expPdf">Descargar PDF</button></span></div>
   <div class="paperwrap"><div id="doc"></div></div>
 </div>
+</div>
+<div class="pdfbox" id="pdfBox" hidden>
+  <div class="pdfbar"><b>Vista del PDF</b><span class="sp"></span><button type="button" class="btn pri" id="pdfDl">Descargar PDF</button><button type="button" class="btn" id="pdfClose">Cerrar</button></div>
+  <iframe id="pdfFrame" title="Vista del PDF"></iframe>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -249,9 +258,9 @@ const today = () => { const d = new Date(); return new Date(d.getTime() - d.getT
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 function nueva(tipo){return {
  id:uid(), estado:"Borrador", rev:"", guardado:"",
- tipo:tipo||"rapida", proyId:"", numero:"", mandante:"", proyecto:"", contacto:"", fecha:today(), fechaIngreso:"", plazo:"",
+ tipo:tipo||"rapida", proyId:"", numero:"", mandante:"", proyecto:"", contacto:"", fecha:today(), fechaIngreso:"", plazo:"", plazoU:"días",
  items:[{n:"",hi:"",hp:""}], tIng:1.22, tProy:0.75, cat:CAT0.map(c=>({...c})),
- validez:"", antecedentes:TPL.antecedentes, incluye:"", noIncluye:TPL.noIncluye.join("\n"), ex2:[],
+ validez:30, antecedentes:TPL.antecedentes, incluye:"", noIncluye:TPL.noIncluye.join("\n"), ex2:[],
  valorUF:"", iva:19, pagos:[], plazoTxt:"", otras:TPL.otras.join("\n"), ex5:[]
 };}
 function ejemplo(){const s=nueva("rapida");Object.assign(s,{proyId:"ej1",mandante:EJEMPLOS[0].mandante,proyecto:EJEMPLOS[0].proyecto,contacto:EJEMPLOS[0].contacto,plazo:3,
@@ -260,7 +269,7 @@ function ejemplo(){const s=nueva("rapida");Object.assign(s,{proyId:"ej1",mandant
 const LS = { get:k=>{try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}}, set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}} };
 const KEY="cot_ing_borrador_v2";
 let S = LS.get(KEY); if(!S||!S.items) S = ejemplo();
-S.id = S.id||uid(); S.estado = S.estado||"Borrador"; S.rev = S.rev??""; S.ex2 = S.ex2||[]; S.ex5 = S.ex5||[]; S.pagos = S.pagos||[];
+S.plazoU = S.plazoU||"días"; if(!S._v30){ if(S.validez===""||S.validez==null) S.validez=30; S._v30=true; } S.id = S.id||uid(); S.estado = S.estado||"Borrador"; S.rev = S.rev??""; S.ex2 = S.ex2||[]; S.ex5 = S.ex5||[]; S.pagos = S.pagos||[];
 const save=()=>LS.set(KEY,S);
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -271,7 +280,7 @@ const clp=x=>"$ "+Math.round(x).toLocaleString("es-CL");
 const fdate=d=>{if(!d)return"";const[a,m,dd]=String(d).slice(0,10).split("-");return `${dd}-${m}-${a}`};
 const lines=t=>String(t||"").split("\n").map(s=>s.trim()).filter(Boolean);
 function toast(t){const el=$("toast");el.textContent=t;el.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>el.hidden=true,3200);}
-const TDESC={rapida:"Rápida · formato propio con cuadro de ítems",formal:"Formal · portada y secciones con textos de plantilla",flexible:"Flexible · estructura de la formal con contenido manual"};
+const TDESC={rapida:"Express · formato propio con cuadro de ítems",formal:"Formal · portada y secciones con textos de plantilla",flexible:"Flexible · estructura de la formal con contenido manual"};
 
 /* ---------------- POWER (Supabase, solo lectura) ---------------- */
 const PW = (()=>{
@@ -344,7 +353,7 @@ function totales(){
 }
 
 /* ---------------- editor ---------------- */
-const FIELDS=["estado","rev","mandante","proyecto","contacto","fecha","numero","plazo","tIng","tProy","validez","antecedentes","incluye","noIncluye","valorUF","iva","plazoTxt","otras"];
+const FIELDS=["estado","rev","plazoU","mandante","proyecto","contacto","fecha","numero","plazo","tIng","tProy","validez","antecedentes","incluye","noIncluye","valorUF","iva","plazoTxt","otras"];
 function fillFields(){FIELDS.forEach(k=>{$(k).value=S[k]??""}); renderListaProy();}
 function renderListaProy(){
   const q=$("buscaProy").value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
@@ -412,7 +421,7 @@ function modelo(){
     pagos:S.pagos.filter(p=>num(p.pct)||String(p.h||"").trim()),
     ex2:S.ex2.filter(x=>String(x.t||"").trim()||lines(x.x).length).map((x,i)=>({n:"2."+(3+i),t:x.t,l:lines(x.x)})),
     ex5:S.ex5.filter(x=>String(x.t||"").trim()||lines(x.x).length).map((x,i)=>({n:"5."+(5+i),t:x.t,l:lines(x.x)})),
-    plazo52: String(S.plazoTxt||"").trim() || (S.plazo?`${S.plazo} días desde la orden de compra o el pago del anticipo.`:"")};
+    plazo52: String(S.plazoTxt||"").trim() || (S.plazo?`${S.plazo} ${S.plazoU||"días"} desde la orden de compra o el pago del anticipo.`:"")};
 }
 
 /* ---------------- vista previa ---------------- */
@@ -428,7 +437,7 @@ function tablaDatos(){
   <tr><td class="k">PROYECTO:</td><td class="v" colspan="2">${val(S.proyecto,"proyecto")}</td></tr>
   <tr><td class="k">FECHA:</td><td class="v" colspan="2">${S.fecha?fdate(S.fecha):ph("fecha")}</td></tr>
   <tr><td class="k">REF:</td><td class="v" colspan="2">${val(S.contacto,"contacto")}</td></tr>
-  <tr><td class="k">PLAZO EJECUCIÓN:</td><td class="v" style="text-align:center;width:22%">${val(S.plazo,"días")}</td><td>días</td></tr>
+  <tr><td class="k">PLAZO EJECUCIÓN:</td><td class="v" style="text-align:center;width:22%">${val(S.plazo,"plazo")}</td><td>${esc(S.plazoU||"días")}</td></tr>
   ${S.tipo==="rapida"&&S.numero?`<tr><td class="k">N° COTIZACIÓN:</td><td class="v" colspan="2">${esc(numRev())}</td></tr>`:""}
   </tbody></table>`;
 }
@@ -490,7 +499,7 @@ function htmlFormal(M){
   return cover+body;
 }
 function renderDoc(){ const M=modelo(); if($("guardMsg")&&S.guardado) $("guardMsg").textContent=`Guardada ${new Date(S.guardado).toLocaleString("es-CL")} · cambios sin guardar`; $("doc").innerHTML = S.tipo==="rapida"?htmlRapida(M):htmlFormal(M); }
-const cotLabel=c=>[c.numero||"(sin N°)", c.rev?"Rev. "+c.rev:"", c.mandante, c.proyecto, {rapida:"Rápida",formal:"Formal",flexible:"Flexible"}[c.tipo]||"", c.estado, fdate(c.fecha)].filter(Boolean).join(" · ");
+const cotLabel=c=>[c.numero||"(sin N°)", c.rev?"Rev. "+c.rev:"", c.mandante, c.proyecto, {rapida:"Express",formal:"Formal",flexible:"Flexible"}[c.tipo]||"", c.estado, fdate(c.fecha)].filter(Boolean).join(" · ");
 function renderGuardadas(){
   const box=$("boxGuardadas"); box.hidden=DEMO; if(DEMO) return;
   const norm=t=>String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
@@ -542,18 +551,18 @@ async function crearDocx(){
     borders:{top:none,left:none,right:none,bottom:none,insideHorizontal:none,insideVertical:none},
     rows:[new TableRow({children:[
       new TableCell({width:{size:4600,type:WidthType.DXA},borders:{top:none,left:none,right:none,bottom:{style:BorderStyle.SINGLE,size:8,color:NAVY}},children:[new Paragraph({spacing:{after:60},children:logo?[new ImageRun({type:"png",data:logo,transformation:{width:288,height:93}})]:[]})]}),
-      new TableCell({width:{size:5320,type:WidthType.DXA},verticalAlign:VerticalAlign.BOTTOM,borders:{top:none,left:none,right:none,bottom:{style:BorderStyle.SINGLE,size:8,color:NAVY}},children:[
+      new TableCell({width:{size:5320,type:WidthType.DXA},verticalAlign:VerticalAlign.CENTER,borders:{top:none,left:none,right:none,bottom:{style:BorderStyle.SINGLE,size:8,color:NAVY}},children:[
         new Paragraph({alignment:R,spacing:{after:0},children:[run(r1,{size:18,bold:true,color:NAVY})]}),
         new Paragraph({alignment:R,spacing:{after:60},children:[run(r2,{size:16,color:"595959"})]})]})]})]})]});
   const pieW=new Footer({children:[new Paragraph({border:{top:{style:BorderStyle.SINGLE,size:6,color:NAVY,space:4}},tabStops:[{type:TabStopType.RIGHT,position:W}],spacing:{after:0},
     children:[run("ING ESTRUCTURAL — Proyectos Civiles e Industriales",{size:16,bold:true,color:NAVY}),new TextRun({children:["\tPágina ",PageNumber.CURRENT," de ",PageNumber.TOTAL_PAGES],font:FONT,size:16,color:"595959"})]})]});
-  const firmaW=()=>[P([],{after:360}),...FIRMA.map((t,i)=>P(run(t,{bold:i<2}),{align:CE,after:0}))];
+  const firmaW=()=>[P([],{after:1800,keepNext:true}),...FIRMA.map((t,i)=>P(run(t,{bold:i<2}),{align:L,after:0,keepNext:i<2}))];
   const datos=()=>tabla([3400,1700,4820],[
     {cells:[C(run("MANDANTE")),C(txt(S.mandante,"mandante",{color:INK}),{fill:IN,span:2})]},
     {cells:[C(run("PROYECTO:")),C(txt(S.proyecto,"proyecto",{color:INK}),{fill:IN,span:2})]},
     {cells:[C(run("FECHA:")),C(txt(fdate(S.fecha),"fecha",{color:INK}),{fill:IN,span:2})]},
     {cells:[C(run("REF:")),C(txt(S.contacto,"contacto",{color:INK}),{fill:IN,span:2})]},
-    {cells:[C(run("PLAZO EJECUCIÓN:")),C(txt(S.plazo,"días",{color:INK}),{fill:IN,align:CE}),C(run("días"))]},
+    {cells:[C(run("PLAZO EJECUCIÓN:")),C(txt(S.plazo,"plazo",{color:INK}),{fill:IN,align:CE}),C(run(S.plazoU||"días"))]},
     ...(S.tipo==="rapida"&&S.numero?[{cells:[C(run("N° COTIZACIÓN:")),C(run(numRev(),{color:INK}),{fill:IN,span:2})]}]:[])]);
   const cuadroW=()=>{
     const head=t=>C(run(t,{bold:true,color:"FFFFFF"}),{fill:BLUE,align:CE});
@@ -622,13 +631,22 @@ const nombreArchivo=ext=>{const s=x=>String(x||"").normalize("NFD").replace(/[̀
 function descargar(blob,nombre){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=nombre;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);toast("Descargado: "+nombre);}
 async function exportarWord(){ if(DEMO) return toast("Descarga disponible en el sitio instalado");
   $("expWord").disabled=true; try{ descargar(await crearDocx(),nombreArchivo("docx")); }catch(e){ toast("No se pudo generar el Word: "+e.message); } finally{ $("expWord").disabled=false; } }
+async function pdfWorker(){
+  const h2p=await loadScript("html2pdf.bundle.min.js","html2pdf");
+  const el=$("doc").cloneNode(true); el.querySelectorAll(".page").forEach(p=>{p.style.boxShadow="none";p.style.margin="0";});
+  el.querySelectorAll(".page:not(:last-child)").forEach(p=>p.style.pageBreakAfter="always");
+  return [h2p().set({margin:0,filename:nombreArchivo("pdf"),image:{type:"jpeg",quality:0.97},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:"in",format:"letter",orientation:"portrait"},pagebreak:{mode:["css","legacy"],avoid:["tr","h2","h3"]}}).from(el)];   // en arreglo: el worker de html2pdf es "thenable" y un await lo consumiría
+}
 async function exportarPdf(){ if(DEMO) return toast("Descarga disponible en el sitio instalado");
   $("expPdf").disabled=true;
-  try{ const h2p=await loadScript("html2pdf.bundle.min.js","html2pdf");
-    const el=$("doc").cloneNode(true); el.querySelectorAll(".page").forEach(p=>{p.style.boxShadow="none";p.style.margin="0";});
-    el.querySelectorAll(".page:not(:last-child)").forEach(p=>p.style.pageBreakAfter="always");
-    await h2p().set({margin:0,filename:nombreArchivo("pdf"),image:{type:"jpeg",quality:0.97},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:"in",format:"letter",orientation:"portrait"},pagebreak:{mode:["css","legacy"],avoid:["tr","h2","h3"]}}).from(el).save();
-  }catch(e){ toast("No se pudo generar el PDF: "+e.message); } finally{ $("expPdf").disabled=false; } }
+  try{ const [w]=await pdfWorker(); await w.save(); }
+  catch(e){ toast("No se pudo generar el PDF: "+e.message); } finally{ $("expPdf").disabled=false; } }
+let pdfUrl=null;
+async function verPdf(){ if(DEMO) return toast("Vista del PDF disponible en el sitio instalado");
+  $("verPdf").disabled=true; toast("Generando PDF…");
+  try{ const [w]=await pdfWorker(); const blob=await w.outputPdf("blob"); if(pdfUrl) URL.revokeObjectURL(pdfUrl); pdfUrl=URL.createObjectURL(blob);
+    $("pdfFrame").src=pdfUrl; $("pdfBox").hidden=false; $("toast").hidden=true; }
+  catch(e){ toast("No se pudo generar el PDF: "+e.message); } finally{ $("verPdf").disabled=false; } }
 
 /* ---------------- eventos ---------------- */
 document.querySelector(".seg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.tipo=b.dataset.t;renderTipo();renderDoc();save();});
@@ -683,6 +701,10 @@ async function traerUF(){ if(DEMO){$("ufMsg").textContent="Disponible en el siti
 $("btnPower").addEventListener("click",()=>{ if(PW.logged) cargarPower(); else { $("loginBox").hidden=false; $("lgMail").focus(); } });
 $("expWord").addEventListener("click",exportarWord);
 $("expPdf").addEventListener("click",exportarPdf);
+$("verPdf").addEventListener("click",verPdf);
+$("pdfClose").addEventListener("click",()=>{ $("pdfBox").hidden=true; $("pdfFrame").src="about:blank"; });
+$("pdfDl").addEventListener("click",exportarPdf);
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&!$("pdfBox").hidden) $("pdfClose").click(); });
 all();
 if(PW.logged&&!DEMO) cargarPower();
 else if(!DEMO&&/^#abrir=/.test(location.hash)){ $("loginBox").hidden=false; toast("Inicie sesión para abrir la cotización"); }
