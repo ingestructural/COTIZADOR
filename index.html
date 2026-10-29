@@ -138,6 +138,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
     <button type="button" data-t="formal">Formal</button>
     <button type="button" data-t="flexible">Flexible</button>
   </div>
+  <button type="button" class="btn pri" id="nuevaTop">+ Nueva cotización</button>
   <span class="sp"></span>
   <span class="pill off" id="pwState">POWER: sin conectar</span>
   <button type="button" class="btn" id="btnPower">Conectar POWER</button>
@@ -568,7 +569,17 @@ async function guardarCot(){
   catch(e){ if(e.code==="auth"){ $("loginBox").hidden=false; } toast("No se pudo guardar: "+e.message); }
   finally{ renderGuardadas(); }
 }
-let borrarPend=null;
+let borrarPend=null, nuevaPend=null;
+// Nueva cotización: conserva tipo, tarifas y catálogo. Si el borrador no está guardado en POWER pide un segundo clic.
+function nuevaCot(b){
+  const conDatos=S.items.some(it=>String(it.n||"").trim()||num(it.hi)||num(it.hp))||String(S.mandante||"").trim();
+  const sinGuardar=conDatos&&(!S.guardado||$("guardMsg").textContent.includes("sin guardar"));
+  if(sinGuardar&&nuevaPend!==b){ nuevaPend=b; const t=b.textContent; b.textContent="Clic otra vez: se descarta el borrador sin guardar";
+    setTimeout(()=>{ if(nuevaPend===b){ nuevaPend=null; b.textContent=t; } },5000); return; }
+  nuevaPend=null; b.textContent=b.id==="nuevaTop"?"+ Nueva cotización":"Nueva cotización";
+  const keep={tIng:S.tIng,tProy:S.tProy,cat:S.cat}; S=Object.assign(nueva(S.tipo),keep); all(); save();
+  $("buscaProy").focus(); toast("Nueva cotización: elija el proyecto en POWER");
+}
 // Enlace desde POWER: cotizador-ing.netlify.app/#abrir=<id>
 function abrirDesdeEnlace(){
   const m=location.hash.match(/^#abrir=(.+)$/); if(!m) return;
@@ -734,7 +745,7 @@ $("ed").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)re
   else if(b.id==="usarIngreso"){S.fecha=S.fechaIngreso;fillFields();renderIngreso();}
   else if(b.id==="usarPlantilla"){if(!S.antecedentes.trim())S.antecedentes=TPL.antecedentes;if(!S.noIncluye.trim())S.noIncluye=TPL.noIncluye.join("\n");if(!S.otras.trim())S.otras=TPL.otras.join("\n");fillFields();}
   else if(b.id==="ufHoy"){traerUF();return;}
-  else if(b.id==="nueva"){const keep={tIng:S.tIng,tProy:S.tProy,cat:S.cat};S=Object.assign(nueva(S.tipo),keep);all();save();return;}
+  else if(b.id==="nueva"){nuevaCot(b);return;}
   else if(b.id==="guardar"){guardarCot();return;}
   else if(b.id==="duplicar"){S={...JSON.parse(JSON.stringify(S)),id:uid(),estado:"Borrador",guardado:""};all();save();toast("Copia creada; guárdela para registrarla");return;}
   else if(b.id==="abrirCot"){const c=(PW.data.cotizaciones||[]).find(c=>c.id===$("selCot").value); if(!c) return toast("Elija una cotización de la lista");
@@ -772,6 +783,7 @@ $("btnPower").addEventListener("click",()=>{ if(PW.logged) cargarPower(); else {
 $("expWord").addEventListener("click",exportarWord);
 $("expPdf").addEventListener("click",exportarPdf);
 $("verPdf").addEventListener("click",verPdf);
+$("nuevaTop").addEventListener("click",e=>nuevaCot(e.currentTarget));
 $("pdfClose").addEventListener("click",()=>{ $("pdfBox").hidden=true; $("pdfPages").innerHTML=""; });
 $("pdfDl").addEventListener("click",exportarPdf);
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&!$("pdfBox").hidden) $("pdfClose").click(); });
