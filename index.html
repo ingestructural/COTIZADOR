@@ -239,7 +239,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 
 <div class="pv">
   <div class="pvbar"><span>Vista de la cotización · tamaño carta</span>
-    <span class="row"><button type="button" class="btn pri" id="expWord">Descargar Word</button><button type="button" class="btn" id="verPdf">Ver PDF</button><button type="button" class="btn" id="expPdf">Guardar PDF</button></span></div>
+    <span class="row"><button type="button" class="btn pri" id="expWord">Guardar Word</button><button type="button" class="btn" id="verPdf">Ver PDF</button><button type="button" class="btn" id="expPdf">Guardar PDF</button></span></div>
   <div class="paperwrap"><div id="doc"></div></div>
 </div>
 </div>
@@ -711,8 +711,16 @@ async function crearDocx(){
 const nombreArchivo=ext=>{const s=x=>String(x||"").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,50);
   return `Cotizacion_${s(S.numero)||"sin_codigo"}_${s(S.proyecto)||"proyecto"}.${ext}`;};
 function descargar(blob,nombre){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=nombre;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);toast("Descargado: "+nombre);}
+// «Guardar como» (Chrome/Edge): se pide antes de generar, mientras dura el clic; null = navegador sin diálogo; false = cancelado
+async function pedirArchivo(ext,desc,mime){
+  if(!window.showSaveFilePicker) return null;
+  try{ return await showSaveFilePicker({suggestedName:nombreArchivo(ext),types:[{description:desc,accept:{[mime]:["."+ext]}}]}); }
+  catch(e){ return e.name==="AbortError"?false:null; }
+}
+async function escribirArchivo(fh,blob){ const ws=await fh.createWritable(); await ws.write(blob); await ws.close(); toast("Guardado: "+fh.name); }
 async function exportarWord(){ if(DEMO) return toast("Descarga disponible en el sitio instalado");
-  $("expWord").disabled=true; try{ descargar(await crearDocx(),nombreArchivo("docx")); }catch(e){ toast("No se pudo generar el Word: "+e.message); } finally{ $("expWord").disabled=false; } }
+  const fh=await pedirArchivo("docx","Documento Word","application/vnd.openxmlformats-officedocument.wordprocessingml.document"); if(fh===false) return;
+  $("expWord").disabled=true; try{ const blob=await crearDocx(); if(fh) await escribirArchivo(fh,blob); else descargar(blob,nombreArchivo("docx")); }catch(e){ toast("No se pudo generar el Word: "+e.message); } finally{ $("expWord").disabled=false; } }
 async function pdfWorker(){
   const h2p=await loadScript("html2pdf.bundle.min.js","html2pdf");
   const el=$("doc").cloneNode(true); el.querySelectorAll(".page").forEach(p=>{p.style.boxShadow="none";p.style.margin="0";});
@@ -720,16 +728,11 @@ async function pdfWorker(){
   el.querySelectorAll(".page:not(:last-child)").forEach(p=>p.style.pageBreakAfter="always");
   return [h2p().set({margin:0,filename:nombreArchivo("pdf"),image:{type:"jpeg",quality:0.97},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:"in",format:"letter",orientation:"portrait"},pagebreak:{mode:["css","legacy"],avoid:["tr","h2","h3"]}}).from(el)];   // en arreglo: el worker de html2pdf es "thenable" y un await lo consumiría
 }
-// Guardar PDF: abre «Guardar como» para elegir carpeta y nombre (Chrome/Edge); si el navegador no lo permite, descarga normal
 async function exportarPdf(){ if(DEMO) return toast("Descarga disponible en el sitio instalado");
-  let fh=null;
-  if(window.showSaveFilePicker){
-    try{ fh=await showSaveFilePicker({suggestedName:nombreArchivo("pdf"),types:[{description:"Documento PDF",accept:{"application/pdf":[".pdf"]}}]}); }
-    catch(e){ if(e.name==="AbortError") return; fh=null; }
-  }
+  const fh=await pedirArchivo("pdf","Documento PDF","application/pdf"); if(fh===false) return;
   $("expPdf").disabled=true; $("pdfDl").disabled=true; toast("Generando PDF…");
   try{ const [w]=await pdfWorker();
-    if(fh){ const blob=await w.outputPdf("blob"), ws=await fh.createWritable(); await ws.write(blob); await ws.close(); toast("PDF guardado: "+fh.name); }
+    if(fh) await escribirArchivo(fh,await w.outputPdf("blob"));
     else await w.save(); }
   catch(e){ toast("No se pudo generar el PDF: "+e.message); } finally{ $("expPdf").disabled=false; $("pdfDl").disabled=false; } }
 // Vista del PDF: se dibuja cada hoja con PDF.js (algunos Chrome no muestran PDF dentro de la página)
