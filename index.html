@@ -48,6 +48,8 @@ legend{font-family:var(--f-display);font-weight:600;font-size:1.1rem;padding:0 6
 label{display:flex;flex-direction:column;gap:3px;font-size:.78rem;color:var(--muted);font-weight:600;min-width:0}
 input,select,textarea{font:inherit;font-size:.92rem;color:var(--fg);background:var(--input);border:1px solid var(--line);border-radius:4px;padding:6px 8px;width:100%;box-sizing:border-box;min-width:0}
 textarea{min-height:64px;resize:vertical}
+select[size]{background:var(--panel);padding:2px}
+select[size] option{padding:4px 6px}
 input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .hint{font-size:.78rem;color:var(--muted)}
 .hint.w{color:var(--warn)}
@@ -134,8 +136,8 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
   <fieldset>
     <legend>Datos de la cotización <span class="src">POWER</span></legend>
     <label for="buscaProy">Proyecto en POWER (código, mandante o nombre)
-      <input id="buscaProy" list="dlProy" placeholder="Escriba para buscar…"></label>
-    <datalist id="dlProy"></datalist>
+      <input id="buscaProy" type="search" placeholder="Escriba para filtrar…"></label>
+    <select id="selProy" size="7" aria-label="Proyectos de POWER"></select>
     <div class="hint" id="proyHint"></div>
     <div class="grid2">
       <label class="full" for="mandante">Mandante<input id="mandante"></label>
@@ -297,8 +299,8 @@ function renderPwState(){
   else if(PW.logged){el.textContent="POWER: conectado";el.className="pill ok";$("btnPower").textContent="Actualizar";}
   else {el.textContent=DEMO?"POWER: vista previa con ejemplos":"POWER: sin conectar";el.className="pill off";$("btnPower").textContent="Conectar POWER";}
   $("btnPower").hidden=DEMO;
-  $("dlProy").innerHTML=proyectosLista().map(p=>`<option value="${esc(proyLabel(p))}">`).join("");
-  $("proyHint").textContent = PW.logged ? "Al elegir un proyecto se copian mandante, proyecto, contacto y código." : (DEMO ? "Vista previa: la lista trae dos ejemplos. En el sitio se cargan los proyectos de POWER." : "Conecte POWER para buscar sus proyectos. Mientras tanto la lista trae dos ejemplos.");
+  renderListaProy();
+  $("proyHint").textContent = PW.logged ? `${proyectosLista().length} proyectos. Al elegir uno se copian mandante, proyecto, contacto y código.` : (DEMO ? "Vista previa: la lista trae dos ejemplos. En el sitio se cargan los proyectos de POWER." : "Conecte POWER para buscar sus proyectos. Mientras tanto la lista trae dos ejemplos.");
 }
 async function cargarPower(){
   try{ await PW.load(); renderPwState(); toast("Proyectos de POWER cargados"); }
@@ -322,7 +324,13 @@ function totales(){
 
 /* ---------------- editor ---------------- */
 const FIELDS=["mandante","proyecto","contacto","fecha","numero","plazo","tIng","tProy","validez","antecedentes","incluye","noIncluye","valorUF","iva","plazoTxt","otras"];
-function fillFields(){FIELDS.forEach(k=>{$(k).value=S[k]??""}); const p=proyectosLista().find(p=>p.id===S.proyId); $("buscaProy").value=p?proyLabel(p):"";}
+function fillFields(){FIELDS.forEach(k=>{$(k).value=S[k]??""}); renderListaProy();}
+function renderListaProy(){
+  const q=$("buscaProy").value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const norm=t=>t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const L=proyectosLista().filter(p=>!q||norm(proyLabel(p)).includes(q)).slice(0,300);
+  $("selProy").innerHTML=L.length?L.map(p=>`<option value="${esc(p.id)}"${p.id===S.proyId?" selected":""}>${esc(proyLabel(p))}</option>`).join(""):`<option disabled>Sin resultados</option>`;
+}
 function renderTipo(){
   document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.t===S.tipo)));
   document.querySelectorAll("[data-only]").forEach(el=>el.hidden=!el.dataset.only.split(" ").includes(S.tipo));
@@ -578,7 +586,7 @@ async function exportarPdf(){ if(DEMO) return toast("Descarga disponible en el s
 document.querySelector(".seg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.tipo=b.dataset.t;renderTipo();renderDoc();save();});
 $("ed").addEventListener("input",e=>{
   const el=e.target, d=el.dataset;
-  if(el.id==="buscaProy"){ const p=proyectosLista().find(p=>proyLabel(p)===el.value); if(p) aplicarProyecto(p); return; }
+  if(el.id==="buscaProy"){ renderListaProy(); return; }
   if(el.id&&el.id.startsWith("lg")) return;
   if(d.i!==undefined){S.items[+d.i][d.k]=el.value;updTotals();}
   else if(d.c!==undefined){S.cat[+d.c][d.k]=el.value; if(d.k==="n") $("dlCat").innerHTML=S.cat.map(c=>`<option value="${esc(c.n)}">`).join(""); updTotals();}
@@ -605,6 +613,7 @@ $("ed").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)re
   else return;
   updTotals();renderDoc();save();
 });
+$("selProy").addEventListener("change",e=>{ const p=proyectosLista().find(p=>p.id===e.target.value); if(p) aplicarProyecto(p); });
 $("lgPass").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();login();}});
 async function login(){ $("lgMsg").textContent="Entrando…";
   try{ await PW.login($("lgMail").value.trim(),$("lgPass").value); $("lgPass").value=""; $("loginBox").hidden=true; $("lgMsg").textContent=""; await cargarPower(); }
