@@ -324,7 +324,7 @@ function renderPwState(){
   $("proyHint").textContent = PW.logged ? `${proyectosLista().length} proyectos. Al elegir uno se copian mandante, proyecto, contacto y código.` : (DEMO ? "Vista previa: la lista trae dos ejemplos. En el sitio se cargan los proyectos de POWER." : "Conecte POWER para buscar sus proyectos. Mientras tanto la lista trae dos ejemplos.");
 }
 async function cargarPower(){
-  try{ await PW.load(); renderPwState(); renderGuardadas(); toast("Datos de POWER cargados"); }
+  try{ await PW.load(); renderPwState(); renderGuardadas(); toast("Datos de POWER cargados"); abrirDesdeEnlace(); }
   catch(e){ if(e.code==="auth"){ $("loginBox").hidden=false; $("lgMsg").textContent=e.message==="Sin sesión"?"":e.message; renderPwState(); } else toast("No se pudo leer POWER: "+e.message); }
 }
 function aplicarProyecto(p){
@@ -508,6 +508,14 @@ async function guardarCot(){
   finally{ renderGuardadas(); }
 }
 let borrarPend=null;
+// Enlace desde POWER: cotizador-ing.netlify.app/#abrir=<id>
+function abrirDesdeEnlace(){
+  const m=location.hash.match(/^#abrir=(.+)$/); if(!m) return;
+  const id=decodeURIComponent(m[1]), c=(PW.data.cotizaciones||[]).find(c=>c.id===id);
+  history.replaceState(null,"",location.pathname);
+  if(!c) return toast("No se encontró esa cotización en POWER");
+  S=Object.assign(nueva(c.tipo),JSON.parse(JSON.stringify(c))); all(); save(); toast("Cotización abierta desde POWER");
+}
 function all(){renderGuardadas();fillFields();renderTipo();renderItems();renderCat();renderPagos();renderExtras();updTotals();renderIngreso();renderPwState();renderDoc();}
 
 /* ---------------- Word (.docx) con docx.iife.js ---------------- */
@@ -677,6 +685,7 @@ $("expWord").addEventListener("click",exportarWord);
 $("expPdf").addEventListener("click",exportarPdf);
 all();
 if(PW.logged&&!DEMO) cargarPower();
+else if(!DEMO&&/^#abrir=/.test(location.hash)){ $("loginBox").hidden=false; toast("Inicie sesión para abrir la cotización"); }
 </script>
 </body>
 </html>
