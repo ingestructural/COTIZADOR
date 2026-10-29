@@ -1,0 +1,11 @@
+# Cotizador ING Estructural — sitio estático, sin compilación. Netlify publica la raíz del repositorio.
+[build]
+  publish = "."
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "no-cache"
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
