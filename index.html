@@ -239,12 +239,12 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 
 <div class="pv">
   <div class="pvbar"><span>Vista de la cotización · tamaño carta</span>
-    <span class="row"><button type="button" class="btn pri" id="expWord">Descargar Word</button><button type="button" class="btn" id="verPdf">Ver PDF</button><button type="button" class="btn" id="expPdf">Descargar PDF</button></span></div>
+    <span class="row"><button type="button" class="btn pri" id="expWord">Descargar Word</button><button type="button" class="btn" id="verPdf">Ver PDF</button><button type="button" class="btn" id="expPdf">Guardar PDF</button></span></div>
   <div class="paperwrap"><div id="doc"></div></div>
 </div>
 </div>
 <div class="pdfbox" id="pdfBox" hidden>
-  <div class="pdfbar"><b>Vista del PDF</b><span class="sp"></span><button type="button" class="btn pri" id="pdfDl">Descargar PDF</button><button type="button" class="btn" id="pdfClose">Cerrar</button></div>
+  <div class="pdfbar"><b>Vista del PDF</b><span class="sp"></span><button type="button" class="btn pri" id="pdfDl">Guardar PDF</button><button type="button" class="btn" id="pdfClose">Cerrar</button></div>
   <div class="pdfpages" id="pdfPages" aria-label="Hojas del PDF"></div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -720,10 +720,18 @@ async function pdfWorker(){
   el.querySelectorAll(".page:not(:last-child)").forEach(p=>p.style.pageBreakAfter="always");
   return [h2p().set({margin:0,filename:nombreArchivo("pdf"),image:{type:"jpeg",quality:0.97},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:"in",format:"letter",orientation:"portrait"},pagebreak:{mode:["css","legacy"],avoid:["tr","h2","h3"]}}).from(el)];   // en arreglo: el worker de html2pdf es "thenable" y un await lo consumiría
 }
+// Guardar PDF: abre «Guardar como» para elegir carpeta y nombre (Chrome/Edge); si el navegador no lo permite, descarga normal
 async function exportarPdf(){ if(DEMO) return toast("Descarga disponible en el sitio instalado");
-  $("expPdf").disabled=true;
-  try{ const [w]=await pdfWorker(); await w.save(); }
-  catch(e){ toast("No se pudo generar el PDF: "+e.message); } finally{ $("expPdf").disabled=false; } }
+  let fh=null;
+  if(window.showSaveFilePicker){
+    try{ fh=await showSaveFilePicker({suggestedName:nombreArchivo("pdf"),types:[{description:"Documento PDF",accept:{"application/pdf":[".pdf"]}}]}); }
+    catch(e){ if(e.name==="AbortError") return; fh=null; }
+  }
+  $("expPdf").disabled=true; $("pdfDl").disabled=true; toast("Generando PDF…");
+  try{ const [w]=await pdfWorker();
+    if(fh){ const blob=await w.outputPdf("blob"), ws=await fh.createWritable(); await ws.write(blob); await ws.close(); toast("PDF guardado: "+fh.name); }
+    else await w.save(); }
+  catch(e){ toast("No se pudo generar el PDF: "+e.message); } finally{ $("expPdf").disabled=false; $("pdfDl").disabled=false; } }
 // Vista del PDF: se dibuja cada hoja con PDF.js (algunos Chrome no muestran PDF dentro de la página)
 async function verPdf(){ if(DEMO) return toast("Vista del PDF disponible en el sitio instalado");
   $("verPdf").disabled=true; toast("Generando PDF…");
