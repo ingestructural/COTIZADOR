@@ -688,6 +688,16 @@ $("ed").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)re
   else return;
   updTotals();renderDoc();save();
 });
+// Cuadro de ítems: al entrar a una celda de horas se selecciona su contenido; Enter pasa a la celda de la derecha
+$("tItems").addEventListener("focusin",e=>{ const el=e.target; if(el.dataset&&(el.dataset.k==="hi"||el.dataset.k==="hp")) { try{el.select();}catch(_){} } });
+$("tItems").addEventListener("pointerdown",e=>{ const el=e.target; if(el.dataset&&(el.dataset.k==="hi"||el.dataset.k==="hp")&&document.activeElement!==el){ e.preventDefault(); el.focus(); el.select(); } });
+$("tItems").addEventListener("keydown",e=>{
+  const el=e.target, d=el.dataset; if(e.key!=="Enter"||d.i===undefined) return;
+  e.preventDefault(); const i=+d.i, orden=["n","hi","hp"], k=orden.indexOf(d.k);
+  if(k<2){ const nx=$(`it-${orden[k+1]}-${i}`); nx.focus(); nx.select(); return; }
+  if(i===S.items.length-1){ S.items.push({n:"",hi:"",hp:""}); renderItems(); save(); }
+  $(`it-n-${i+1}`).focus();
+});
 $("selProy").addEventListener("change",e=>{ const p=proyectosLista().find(p=>p.id===e.target.value); if(p) aplicarProyecto(p); });
 $("lgPass").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();login();}});
 async function login(){ $("lgMsg").textContent="Entrando…";
@@ -706,6 +716,7 @@ $("pdfClose").addEventListener("click",()=>{ $("pdfBox").hidden=true; $("pdfFram
 $("pdfDl").addEventListener("click",exportarPdf);
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&!$("pdfBox").hidden) $("pdfClose").click(); });
 all();
+if(!DEMO&&"serviceWorker" in navigator&&location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
 if(PW.logged&&!DEMO) cargarPower();
 else if(!DEMO&&/^#abrir=/.test(location.hash)){ $("loginBox").hidden=false; toast("Inicie sesión para abrir la cotización"); }
 </script>
