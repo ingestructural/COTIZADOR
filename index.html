@@ -83,9 +83,9 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 /* ---- hojas tamaño carta: mismo aspecto en ambos temas ---- */
 .page{background:var(--doc-bg);color:var(--doc-fg);font-family:Arial,Helvetica,sans-serif;font-size:12pt;line-height:1.3;width:8.5in;min-height:11in;margin:0 auto 14px;padding:.4cm 2.5cm 2.2cm 1.59cm;box-sizing:border-box;box-shadow:0 1px 6px rgba(0,0,0,.18);display:flex;flex-direction:column;position:relative}
 .page.cont{min-height:0}
-.page .hd{display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid var(--doc-navy);padding-bottom:6px;margin-bottom:18px;gap:10px}
+.page .hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1.5px solid var(--doc-navy);padding-bottom:6px;margin-bottom:18px;gap:10px}
 .page .hd img{width:3in;height:auto;display:block}
-.page .hd .r{text-align:right;font-size:9pt;font-weight:700;color:var(--doc-navy)}
+.page .hd .r{text-align:right;font-size:9pt;font-weight:700;color:var(--doc-navy);line-height:1.2;margin-bottom:-2px}
 .page .hd .r span{font-weight:400;color:#595959}
 .page table{border-collapse:collapse;width:100%}
 .page td,.page th{border:1px solid var(--doc-line);padding:3px 6px;vertical-align:top}
@@ -192,7 +192,8 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
   <fieldset data-only="formal flexible">
     <legend>Contenido del documento</legend>
     <div class="hint" id="contHint"></div>
-    <label for="validez">Validez de la oferta (días corridos)<input id="validez" type="number" min="0" step="1"></label>
+    <div class="row" style="gap:6px;align-items:flex-end"><label for="validez" style="flex:1">Validez de la oferta<input id="validez" type="number" min="0" step="1"></label>
+      <label for="validezU" style="width:110px">Unidad<select id="validezU"><option>días</option><option>semanas</option></select></label></div>
     <label for="antecedentes">1. Antecedentes del proyecto<textarea id="antecedentes"></textarea></label>
     <label for="incluye">2.1 Incluye (una línea por punto)<textarea id="incluye"></textarea></label>
     <label for="noIncluye">2.2 No incluye (una línea por punto)<textarea id="noIncluye"></textarea></label>
@@ -261,7 +262,7 @@ function nueva(tipo){return {
  id:uid(), estado:"Borrador", rev:"", guardado:"",
  tipo:tipo||"rapida", proyId:"", numero:"", mandante:"", proyecto:"", contacto:"", fecha:today(), fechaIngreso:"", plazo:"", plazoU:"días",
  items:[{n:"",hi:"",hp:""}], tIng:1.22, tProy:0.75, cat:CAT0.map(c=>({...c})),
- validez:30, antecedentes:TPL.antecedentes, incluye:"", noIncluye:TPL.noIncluye.join("\n"), ex2:[],
+ validez:30, validezU:"días", antecedentes:TPL.antecedentes, incluye:"", noIncluye:TPL.noIncluye.join("\n"), ex2:[],
  valorUF:"", iva:19, pagos:[], plazoTxt:"", otras:TPL.otras.join("\n"), ex5:[]
 };}
 function ejemplo(){const s=nueva("rapida");Object.assign(s,{proyId:"ej1",mandante:EJEMPLOS[0].mandante,proyecto:EJEMPLOS[0].proyecto,contacto:EJEMPLOS[0].contacto,plazo:3,
@@ -270,7 +271,7 @@ function ejemplo(){const s=nueva("rapida");Object.assign(s,{proyId:"ej1",mandant
 const LS = { get:k=>{try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}}, set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}} };
 const KEY="cot_ing_borrador_v2";
 let S = LS.get(KEY); if(!S||!S.items) S = ejemplo();
-S.plazoU = S.plazoU||"días"; if(!S._v30){ if(S.validez===""||S.validez==null) S.validez=30; S._v30=true; } S.id = S.id||uid(); S.estado = S.estado||"Borrador"; S.rev = S.rev??""; S.ex2 = S.ex2||[]; S.ex5 = S.ex5||[]; S.pagos = S.pagos||[];
+S.plazoU = S.plazoU||"días"; S.validezU = S.validezU||"días"; if(!S._v30){ if(S.validez===""||S.validez==null) S.validez=30; S._v30=true; } S.id = S.id||uid(); S.estado = S.estado||"Borrador"; S.rev = S.rev??""; S.ex2 = S.ex2||[]; S.ex5 = S.ex5||[]; S.pagos = S.pagos||[];
 const save=()=>LS.set(KEY,S);
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -354,7 +355,7 @@ function totales(){
 }
 
 /* ---------------- editor ---------------- */
-const FIELDS=["estado","rev","plazoU","mandante","proyecto","contacto","fecha","numero","plazo","tIng","tProy","validez","antecedentes","incluye","noIncluye","valorUF","iva","plazoTxt","otras"];
+const FIELDS=["estado","rev","plazoU","validezU","mandante","proyecto","contacto","fecha","numero","plazo","tIng","tProy","validez","antecedentes","incluye","noIncluye","valorUF","iva","plazoTxt","otras"];
 function fillFields(){FIELDS.forEach(k=>{$(k).value=S[k]??""}); renderListaProy();}
 function renderListaProy(){
   const q=$("buscaProy").value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
@@ -429,6 +430,7 @@ function modelo(){
 const ph=t=>`<span class="ph">[${esc(t)}]</span>`;
 const val=(v,t)=>String(v??"").trim()?esc(v):ph(t);
 const hdr=(r1,r2)=>`<div class="hd"><img src="${LOGO_SRC}" alt="ING Estructural"><div class="r">${r1}<br><span>${r2}</span></div></div>`;
+const vigencia=()=>`${S.validez} ${S.validezU||"días"}`;
 const numRev=()=>[S.numero,S.rev?"Rev. "+S.rev:""].filter(Boolean).join(" · ");
 const pie=()=>`<div class="ft"><div><span>ING ESTRUCTURAL — Proyectos Civiles e Industriales</span><span>${esc(numRev())}</span></div></div>`;
 const firma=()=>`<div class="firma">${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div>`;
@@ -469,7 +471,7 @@ function htmlFormal(M){
     <tr><td class="k"><b>Cliente / Mandante</b></td><td>${val(S.mandante,"mandante")}</td></tr>
     <tr><td class="k"><b>Contacto cliente</b></td><td>${val(S.contacto,"contacto")}</td></tr>
     <tr><td class="k"><b>Fecha de emisión</b></td><td>${S.fecha?fdate(S.fecha):ph("dd-mm-aaaa")}</td></tr>
-    <tr><td class="k"><b>Validez de la oferta</b></td><td>${S.validez?esc(S.validez)+" días corridos desde la fecha de emisión":ph("días de validez")}</td></tr>
+    <tr><td class="k"><b>Validez de la oferta</b></td><td>${S.validez?esc(vigencia()):ph("validez")}</td></tr>
     <tr><td class="k"><b>Preparado por</b></td><td>J. Germán Aguilera Hafner, Ingeniero Civil</td></tr>
     <tr><td class="k"><b>Contacto oficina</b></td><td>ingestructural@ingestructural.cl</td></tr>
    </tbody></table>
@@ -493,7 +495,7 @@ function htmlFormal(M){
   <h2>5. CONDICIONES GENERALES</h2>
   <h3>5.1 Forma de pago</h3>${M.pagos.length?`<table class="mini"><tbody>${M.pagos.map(p=>`<tr><td style="width:16%">${f1(num(p.pct))} %</td><td>${val(p.h,"hito")}</td><td class="tot">${f2(M.t.neto*num(p.pct)/100)} UF + IVA</td></tr>`).join("")}</tbody></table>`:`<ul><li>${ph("hitos de pago")}</li></ul>`}
   <h3>5.2 Plazo de entrega</h3><ul><li>${M.plazo52?esc(M.plazo52):ph("plazo de entrega")}</li></ul>
-  <h3>5.3 Vigencia de la oferta</h3><ul><li>Esta cotización tiene una validez de ${S.validez?esc(S.validez):ph("N")} días corridos desde su fecha de emisión.</li></ul>
+  <h3>5.3 Vigencia de la oferta</h3><ul><li>Esta cotización tiene una validez de ${S.validez?esc(vigencia()):ph("validez")}.</li></ul>
   <h3>5.4 Otras condiciones</h3>${lst(lines(S.otras),"otras condiciones")}
   ${M.ex5.map(x=>`<h3>${x.n} ${val(x.t,"título")}</h3>${lst(x.l,"contenido")}`).join("")}
   ${firma()}${pie()}</div>`;
@@ -552,7 +554,7 @@ async function crearDocx(){
     borders:{top:none,left:none,right:none,bottom:none,insideHorizontal:none,insideVertical:none},
     rows:[new TableRow({children:[
       new TableCell({width:{size:4600,type:WidthType.DXA},borders:{top:none,left:none,right:none,bottom:{style:BorderStyle.SINGLE,size:8,color:NAVY}},children:[new Paragraph({spacing:{after:60},children:logo?[new ImageRun({type:"png",data:logo,transformation:{width:288,height:93}})]:[]})]}),
-      new TableCell({width:{size:5320,type:WidthType.DXA},verticalAlign:VerticalAlign.CENTER,borders:{top:none,left:none,right:none,bottom:{style:BorderStyle.SINGLE,size:8,color:NAVY}},children:[
+      new TableCell({width:{size:5320,type:WidthType.DXA},verticalAlign:VerticalAlign.BOTTOM,borders:{top:none,left:none,right:none,bottom:{style:BorderStyle.SINGLE,size:8,color:NAVY}},children:[
         new Paragraph({alignment:R,spacing:{after:0},children:[run(r1,{size:18,bold:true,color:NAVY})]}),
         new Paragraph({alignment:R,spacing:{after:60},children:[run(r2,{size:16,color:"595959"})]})]})]})]})]});
   const pieW=new Footer({children:[new Paragraph({border:{top:{style:BorderStyle.SINGLE,size:6,color:NAVY,space:4}},tabStops:[{type:TabStopType.RIGHT,position:W}],spacing:{after:0},
@@ -595,7 +597,7 @@ async function crearDocx(){
     K.push(tabla([3400,6520],[
       kv("N° de Cotización",txt(numRev(),"código de proyecto en POWER",s28)), kv("Cliente / Mandante",txt(S.mandante,"mandante",s28)),
       kv("Contacto cliente",txt(S.contacto,"contacto",s28)), kv("Fecha de emisión",txt(fdate(S.fecha),"dd-mm-aaaa",s28)),
-      kv("Validez de la oferta",S.validez?run(S.validez+" días corridos desde la fecha de emisión",s28):txt("","días de validez",s28)),
+      kv("Validez de la oferta",S.validez?run(vigencia(),s28):txt("","validez",s28)),
       kv("Preparado por",run("J. Germán Aguilera Hafner, Ingeniero Civil",s28)), kv("Contacto oficina",run("ingestructural@ingestructural.cl",s28))]));
     K.push(...firmaW());
     K.push(new Paragraph({children:[new PageBreak()]}));
@@ -616,7 +618,7 @@ async function crearDocx(){
     if(M.pagos.length) K.push(tabla([1500,5900,2520],M.pagos.map(p=>({cells:[C(run(f1(num(p.pct))+" %")),C(txt(p.h,"hito")),C(run(f2(M.t.neto*num(p.pct)/100)+" UF + IVA"),{align:R})]}))));
     else K.push(...bullets([],"hitos de pago"));
     K.push(H3("5.2 Plazo de entrega"),...bullets(M.plazo52?[M.plazo52]:[],"plazo de entrega"));
-    K.push(H3("5.3 Vigencia de la oferta"),P([run("Esta cotización tiene una validez de "),S.validez?run(S.validez):txt("","N"),run(" días corridos desde su fecha de emisión.")],{bullet:true}));
+    K.push(H3("5.3 Vigencia de la oferta"),P([run("Esta cotización tiene una validez de "),S.validez?run(vigencia()):txt("","validez"),run(".")],{bullet:true}));
     K.push(H3("5.4 Otras condiciones"),...bullets(lines(S.otras),"otras condiciones"));
     M.ex5.forEach(x=>K.push(H3(x.n+" "+(x.t||"")),...bullets(x.l,"contenido")));
     K.push(...firmaW());
