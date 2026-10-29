@@ -76,7 +76,8 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 .pdfbox{position:fixed;inset:0;z-index:30;background:rgba(10,15,20,.55);display:flex;flex-direction:column;padding:calc(12px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));gap:8px}
 .pdfbar{display:flex;gap:8px;align-items:center;background:var(--panel);color:var(--fg);padding:8px 12px;border-radius:6px}
 .pdfbar .sp{flex:1}
-.pdfbox iframe{flex:1;border:0;border-radius:6px;background:#fff;width:100%}
+.pdfpages{flex:1;overflow:auto;display:flex;flex-direction:column;align-items:center;gap:12px;padding:8px 0}
+.pdfpages canvas{background:#fff;box-shadow:0 1px 8px rgba(0,0,0,.35);max-width:100%;height:auto}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:.9rem;z-index:20}
 
 /* ---- hojas tamaño carta: mismo aspecto en ambos temas ---- */
@@ -225,7 +226,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 </div>
 <div class="pdfbox" id="pdfBox" hidden>
   <div class="pdfbar"><b>Vista del PDF</b><span class="sp"></span><button type="button" class="btn pri" id="pdfDl">Descargar PDF</button><button type="button" class="btn" id="pdfClose">Cerrar</button></div>
-  <iframe id="pdfFrame" title="Vista del PDF"></iframe>
+  <div class="pdfpages" id="pdfPages" aria-label="Hojas del PDF"></div>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -253,7 +254,7 @@ const TPL = {
  noIncluye:["Estudio de mecánica de suelos, ensayos de laboratorio ni sondajes (se cotizan por terceros).","Tramitación de permisos municipales, DOM ni otros organismos.","Levantamiento topográfico."],
  otras:["Los honorarios no incluyen gastos notariales, permisos, derechos municipales ni ensayos de laboratorio, salvo indicación expresa.","Cualquier modificación al alcance definido en la sección 2 será cotizada como trabajo adicional.","Movilización, alojamiento y viáticos para visitas a terreno fuera del radio urbano de la oficina se cotizan por separado, salvo que se indique lo contrario."]
 };
-const FIRMA = ["ING Estructural","J. Germán Aguilera Hafner","Ingeniero Civil"];
+const FIRMA = ["J. Germán Aguilera Hafner","Ingeniero Civil","ING Estructural"];   // la primera línea va en negrita
 const today = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10); };
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 function nueva(tipo){return {
@@ -430,7 +431,7 @@ const val=(v,t)=>String(v??"").trim()?esc(v):ph(t);
 const hdr=(r1,r2)=>`<div class="hd"><img src="${LOGO_SRC}" alt="ING Estructural"><div class="r">${r1}<br><span>${r2}</span></div></div>`;
 const numRev=()=>[S.numero,S.rev?"Rev. "+S.rev:""].filter(Boolean).join(" · ");
 const pie=()=>`<div class="ft"><div><span>ING ESTRUCTURAL — Proyectos Civiles e Industriales</span><span>${esc(numRev())}</span></div></div>`;
-const firma=()=>`<div class="firma">${FIRMA[0]}<br>${FIRMA[1]}<br><span>${FIRMA[2]}</span></div>`;
+const firma=()=>`<div class="firma">${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div>`;
 function tablaDatos(){
   return `<table><tbody>
   <tr><td class="k">MANDANTE</td><td class="v" colspan="2">${val(S.mandante,"mandante")}</td></tr>
@@ -556,7 +557,7 @@ async function crearDocx(){
         new Paragraph({alignment:R,spacing:{after:60},children:[run(r2,{size:16,color:"595959"})]})]})]})]})]});
   const pieW=new Footer({children:[new Paragraph({border:{top:{style:BorderStyle.SINGLE,size:6,color:NAVY,space:4}},tabStops:[{type:TabStopType.RIGHT,position:W}],spacing:{after:0},
     children:[run("ING ESTRUCTURAL — Proyectos Civiles e Industriales",{size:16,bold:true,color:NAVY}),new TextRun({children:["\tPágina ",PageNumber.CURRENT," de ",PageNumber.TOTAL_PAGES],font:FONT,size:16,color:"595959"})]})]});
-  const firmaW=()=>[P([],{after:1800,keepNext:true}),...FIRMA.map((t,i)=>P(run(t,{bold:i<2}),{align:L,after:0,keepNext:i<2}))];
+  const firmaW=()=>[P([],{after:1800,keepNext:true}),...FIRMA.map((t,i)=>P(run(t,{bold:i===0}),{align:L,after:0,keepNext:i<2}))];
   const datos=()=>tabla([3400,1700,4820],[
     {cells:[C(run("MANDANTE")),C(txt(S.mandante,"mandante",{color:INK}),{fill:IN,span:2})]},
     {cells:[C(run("PROYECTO:")),C(txt(S.proyecto,"proyecto",{color:INK}),{fill:IN,span:2})]},
@@ -641,11 +642,17 @@ async function exportarPdf(){ if(DEMO) return toast("Descarga disponible en el s
   $("expPdf").disabled=true;
   try{ const [w]=await pdfWorker(); await w.save(); }
   catch(e){ toast("No se pudo generar el PDF: "+e.message); } finally{ $("expPdf").disabled=false; } }
-let pdfUrl=null;
+// Vista del PDF: se dibuja cada hoja con PDF.js (algunos Chrome no muestran PDF dentro de la página)
 async function verPdf(){ if(DEMO) return toast("Vista del PDF disponible en el sitio instalado");
   $("verPdf").disabled=true; toast("Generando PDF…");
-  try{ const [w]=await pdfWorker(); const blob=await w.outputPdf("blob"); if(pdfUrl) URL.revokeObjectURL(pdfUrl); pdfUrl=URL.createObjectURL(blob);
-    $("pdfFrame").src=pdfUrl; $("pdfBox").hidden=false; $("toast").hidden=true; }
+  try{ const [w]=await pdfWorker(); const buf=await w.outputPdf("arraybuffer");
+    const lib=await loadScript("pdfjs.min.js","pdfjsLib"); lib.GlobalWorkerOptions.workerSrc="pdfjs.worker.min.js";
+    const pdf=await lib.getDocument({data:new Uint8Array(buf)}).promise, box=$("pdfPages"); box.innerHTML="";
+    $("pdfBox").hidden=false;
+    for(let n=1;n<=pdf.numPages;n++){ const pg=await pdf.getPage(n), vp=pg.getViewport({scale:1.6}), c=document.createElement("canvas");
+      c.width=vp.width; c.height=vp.height; c.style.width=Math.round(vp.width/1.6*1.25)+"px"; box.appendChild(c);
+      await pg.render({canvasContext:c.getContext("2d"),viewport:vp}).promise; }
+    $("toast").hidden=true; }
   catch(e){ toast("No se pudo generar el PDF: "+e.message); } finally{ $("verPdf").disabled=false; } }
 
 /* ---------------- eventos ---------------- */
@@ -712,7 +719,7 @@ $("btnPower").addEventListener("click",()=>{ if(PW.logged) cargarPower(); else {
 $("expWord").addEventListener("click",exportarWord);
 $("expPdf").addEventListener("click",exportarPdf);
 $("verPdf").addEventListener("click",verPdf);
-$("pdfClose").addEventListener("click",()=>{ $("pdfBox").hidden=true; $("pdfFrame").src="about:blank"; });
+$("pdfClose").addEventListener("click",()=>{ $("pdfBox").hidden=true; $("pdfPages").innerHTML=""; });
 $("pdfDl").addEventListener("click",exportarPdf);
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&!$("pdfBox").hidden) $("pdfClose").click(); });
 all();

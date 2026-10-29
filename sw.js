@@ -1,6 +1,6 @@
 /* Service worker — Cotizador ING. Página: primero la red (así llegan las versiones nuevas) y, sin conexión, la copia guardada.
    Datos (Supabase, UF): siempre por la red, nunca en caché. */
-const CACHE = 'cotizador-20261029-2105';
+const CACHE = 'cotizador-20261029-2110';
 const CORE = ['./', './index.html', './manifest.webmanifest', './logo-ing.png', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE))); self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
