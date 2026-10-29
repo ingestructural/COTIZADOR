@@ -66,6 +66,17 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 .cat{max-height:260px;overflow:auto;border:1px solid var(--line)}
 .cat .it td input{background:var(--panel)}
+/* panel de edición: letra ~30 % más grande */
+.ed{font-size:19px}
+.ed legend{font-size:1.45rem}
+.ed label{font-size:1rem}
+.ed input,.ed select,.ed textarea{font-size:1.15rem}
+.ed .hint{font-size:.95rem}
+.ed .it{font-size:1.1rem}
+.ed .it th{font-size:.85rem}
+.ed .it td.t{font-size:1rem}
+.ed .btn{font-size:1.05rem}
+.ed details summary{font-size:1.1rem}
 .extra{border:1px dashed var(--line);border-radius:4px;padding:8px;display:flex;flex-direction:column;gap:6px}
 .extra .row label{flex:1}
 .pv{min-width:0;display:flex;flex-direction:column;gap:8px}
@@ -82,7 +93,12 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 
 /* ---- hojas tamaño carta: mismo aspecto en ambos temas ---- */
 .page{background:var(--doc-bg);color:var(--doc-fg);font-family:Arial,Helvetica,sans-serif;font-size:12pt;line-height:1.3;width:8.5in;min-height:11in;margin:0 auto 14px;padding:.4cm 2.5cm 2.2cm 1.59cm;box-sizing:border-box;box-shadow:0 1px 6px rgba(0,0,0,.18);display:flex;flex-direction:column;position:relative}
-.page.cont{min-height:0}
+.page{height:11in;min-height:0;overflow:hidden}
+.page .pc{flex:1;min-height:0;overflow:hidden}
+.page .blk{display:flow-root}
+.page table.tc{table-layout:fixed}
+.page ul.cont{margin-top:-6pt}
+.page .blk:first-child h2{margin-top:0}
 .page .hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1.5px solid var(--doc-navy);padding-bottom:6px;margin-bottom:18px;gap:10px}
 .page .hd img{width:3in;height:auto;display:block}
 .page .hd .r{text-align:right;font-size:9pt;font-weight:700;color:var(--doc-navy);line-height:1.2;margin-bottom:-2px}
@@ -142,7 +158,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
     <legend>Cotizaciones guardadas <span class="src">POWER</span></legend>
     <div class="grid2">
       <label for="estado">Estado<select id="estado"><option>Borrador</option><option>Emitida</option><option>Aceptada</option><option>Rechazada</option></select></label>
-      <label for="rev">Revisión<input id="rev" placeholder="Ej.: A, B, 0"></label>
+      <label for="rev">Revisión<select id="rev"><option value="">—</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option></select></label>
     </div>
     <div class="row"><button type="button" class="btn pri" id="guardar">Guardar en POWER</button><button type="button" class="btn" id="duplicar">Duplicar como nueva</button><span class="hint" id="guardMsg"></span></div>
     <label for="buscaCot">Abrir una cotización guardada<input id="buscaCot" type="search" placeholder="Filtrar por N°, mandante, proyecto o estado…"></label>
@@ -444,27 +460,32 @@ function tablaDatos(){
   ${S.tipo==="rapida"&&S.numero?`<tr><td class="k">N° COTIZACIÓN:</td><td class="v" colspan="2">${esc(numRev())}</td></tr>`:""}
   </tbody></table>`;
 }
-function cuadro(M){
+// ---- bloques del documento: cada uno se mide y se reparte en hojas carta con encabezado y pie ----
+// Un bloque es {html} (no se corta) o {tabla:{pre,cols,head,rows,keepLast}} (se corta entre filas, repite el encabezado
+// y mantiene juntas las últimas keepLast filas: así el total nunca queda solo al comienzo de una hoja).
+const COLS_CUADRO=`<colgroup><col style="width:50%"><col style="width:15%"><col style="width:15%"><col style="width:20%"></colgroup>`;
+function cuadroBloques(M){
   const pad=Math.max(0,5-M.rows.length);
-  return `<div class="band">COTIZACIÓN</div>
-  <table><thead><tr><th style="width:50%">ITEM</th><th>hh/ing.</th><th>hh/proy.</th><th>TOTAL (UF)</th></tr></thead><tbody>
-  ${M.rows.map(it=>`<tr><td class="v">${esc(it.n)}</td><td class="num v">${num(it.hi)||""}</td><td class="num v">${num(it.hp)||""}</td><td class="tot">${f1(itemUF(it))}</td></tr>`).join("")}
-  ${Array.from({length:pad},()=>`<tr><td class="v">&nbsp;</td><td class="v"></td><td class="v"></td><td class="tot">0,0</td></tr>`).join("")}
-  <tr class="sum"><td>TOTAL NETO (SIN IVA)</td><td></td><td></td><td class="tot">${f1(M.t.neto)}</td></tr></tbody></table>
-  <table style="margin-top:14px"><thead><tr><th style="width:50%">ENTREGABLES</th><th>PLANOS A1</th><th>MDC/INFORME</th><th>EETT</th></tr></thead><tbody>
+  const rows=[...M.rows.map(it=>`<tr><td class="v">${esc(it.n)}</td><td class="num v">${num(it.hi)||""}</td><td class="num v">${num(it.hp)||""}</td><td class="tot">${f1(itemUF(it))}</td></tr>`),
+    ...Array.from({length:pad},()=>`<tr><td class="v">&nbsp;</td><td class="v"></td><td class="v"></td><td class="tot">0,0</td></tr>`),
+    `<tr class="sum"><td>TOTAL NETO (SIN IVA)</td><td></td><td></td><td class="tot">${f1(M.t.neto)}</td></tr>`];
+  return [
+    {tabla:{pre:`<div class="band">COTIZACIÓN</div>`, cols:COLS_CUADRO, head:`<tr><th>ITEM</th><th>hh/ing.</th><th>hh/proy.</th><th>TOTAL (UF)</th></tr>`, rows, keepLast:2}},
+    {html:`<table class="tc" style="margin-top:14px">${COLS_CUADRO}<thead><tr><th>ENTREGABLES</th><th>PLANOS A1</th><th>MDC/INFORME</th><th>EETT</th></tr></thead><tbody>
   <tr><td>Documentos</td><td class="num">—</td><td class="num"><b>${M.t.ent.m}</b></td><td class="num"><b>${M.t.ent.e}</b></td></tr>
   <tr><td>Planos</td><td class="num"><b>${M.t.ent.p}</b></td><td class="num">—</td><td class="num">—</td></tr></tbody></table>
-  <div class="leg">PLANO A1: DIGITAL FORMATO A1 · MDC/INF.: MEMORIA DE CÁLCULO/INFORME · EETT: ESPECIFICACIONES TÉCNICAS</div>`;
+  <div class="leg">PLANO A1: DIGITAL FORMATO A1 · MDC/INF.: MEMORIA DE CÁLCULO/INFORME · EETT: ESPECIFICACIONES TÉCNICAS</div>`}];
 }
 const lst=(l,phT)=>l.length?`<ul>${l.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:`<ul><li>${ph(phT)}</li></ul>`;
-function htmlRapida(M){
-  return `<div class="page">${hdr("J. GERMÁN AGUILERA HAFNER","Ingeniero Civil · Ingeniería Estructural")}
-  ${tablaDatos()}${cuadro(M)}${firma()}${pie()}</div>`;
-}
-function htmlFormal(M){
-  const H=hdr("COTIZACIÓN DE SERVICIOS DE INGENIERÍA",val(S.proyecto,"proyecto"));
-  const cover=`<div class="page">${H}
-   <div style="height:1.2cm"></div>
+// título + su primer contenido van juntos; el resto de una lista larga puede pasar a la hoja siguiente
+function seccion(tit,items,phT,tag="h3"){ const L=items.length?items:[null];
+  const li=x=>x==null?`<li>${ph(phT)}</li>`:`<li>${esc(x)}</li>`;
+  return [{html:`<${tag}>${tit}</${tag}><ul>${li(L[0])}</ul>`}, ...L.slice(1).map(x=>({html:`<ul class="cont">${li(x)}</ul>`}))]; }
+const HDR_RAPIDA=()=>hdr("J. GERMÁN AGUILERA HAFNER","Ingeniero Civil · Ingeniería Estructural");
+const HDR_FORMAL=()=>hdr("COTIZACIÓN DE SERVICIOS DE INGENIERÍA",val(S.proyecto,"proyecto"));
+function bloquesRapida(M){ return [{html:tablaDatos()}, ...cuadroBloques(M), {html:firma()}]; }
+function portadaFormal(){
+  return `<div style="height:1.2cm"></div>
    <p class="ttl cover-t1">COTIZACIÓN</p><p class="ttl cover-t2">SERVICIOS DE INGENIERÍA</p><p class="ttl cover-t2" style="margin-bottom:1cm">${val(S.proyecto,"proyecto")}</p>
    <table class="cover"><tbody>
     <tr><td class="k"><b>N° de Cotización</b></td><td>${val(S.numero,"código de proyecto en POWER")}${S.rev?" · Rev. "+esc(S.rev):""}</td></tr>
@@ -474,34 +495,62 @@ function htmlFormal(M){
     <tr><td class="k"><b>Validez de la oferta</b></td><td>${S.validez?esc(vigencia()):ph("validez")}</td></tr>
     <tr><td class="k"><b>Preparado por</b></td><td>J. Germán Aguilera Hafner, Ingeniero Civil</td></tr>
     <tr><td class="k"><b>Contacto oficina</b></td><td>ingestructural@ingestructural.cl</td></tr>
-   </tbody></table>
-   ${firma()}${pie()}</div>`;
-  const ant=lines(S.antecedentes);
-  const body=`<div class="page cont">${H}
-  <h2>1. ANTECEDENTES DEL PROYECTO</h2>${ant.length?ant.map(x=>`<p>${esc(x)}</p>`).join(""):`<p>${ph("descripción del proyecto")}</p>`}
-  <h2>2. ALCANCE DE LOS SERVICIOS</h2><p>${esc(TPL.alcance)}</p>
-  <h3>2.1 Incluye</h3>${lst(lines(S.incluye),"actividades incluidas")}
-  <h3>2.2 No incluye</h3>${lst(lines(S.noIncluye),"exclusiones")}
-  ${M.ex2.map(x=>`<h3>${x.n} ${val(x.t,"título")}</h3>${lst(x.l,"contenido")}`).join("")}
-  <h2>3. DETALLE DE HORAS HOMBRE E ÍTEMS DE ENTREGABLES</h2><p>${esc(TPL.sec3)}</p>
-  ${tablaDatos()}${cuadro(M)}
-  <h2>4. RESUMEN ECONÓMICO</h2>
+   </tbody></table>${firma()}`;
+}
+function bloquesFormal(M){
+  const ant=lines(S.antecedentes), B=[];
+  B.push({html:`<h2>1. ANTECEDENTES DEL PROYECTO</h2><p>${ant.length?esc(ant[0]):ph("descripción del proyecto")}</p>`}, ...ant.slice(1).map(x=>({html:`<p>${esc(x)}</p>`})));
+  B.push({html:`<h2>2. ALCANCE DE LOS SERVICIOS</h2><p>${esc(TPL.alcance)}</p>`});
+  B.push(...seccion("2.1 Incluye",lines(S.incluye),"actividades incluidas"), ...seccion("2.2 No incluye",lines(S.noIncluye),"exclusiones"));
+  M.ex2.forEach(x=>B.push(...seccion(`${x.n} ${val(x.t,"título")}`,x.l,"contenido")));
+  B.push({html:`<h2>3. DETALLE DE HORAS HOMBRE E ÍTEMS DE ENTREGABLES</h2><p>${esc(TPL.sec3)}</p>`}, {html:tablaDatos()}, ...cuadroBloques(M));
+  B.push({html:`<h2>4. RESUMEN ECONÓMICO</h2>
   <table><thead><tr><th style="text-align:left">Concepto</th><th>Monto (UF)</th><th>Monto (CLP)</th></tr></thead><tbody>
    <tr><td>Subtotal Neto (sección 3)</td><td class="tot">${f2(M.t.neto)}</td><td class="tot">${M.vuf?clp(M.t.neto*M.vuf):ph("valor UF")}</td></tr>
    <tr><td>IVA (${f1(M.ivaP)}%)</td><td class="tot">${f2(M.iva)}</td><td class="tot">${M.vuf?clp(M.iva*M.vuf):ph("valor UF")}</td></tr>
    <tr><td><b>TOTAL COTIZACIÓN</b></td><td class="tot"><b>${f2(M.tot)}</b></td><td class="tot"><b>${M.vuf?clp(M.tot*M.vuf):ph("valor UF")}</b></td></tr>
-  </tbody></table>
-  ${M.vuf?`<p style="font-size:10pt;margin-top:4px">Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.</p>`:""}
-  <h2>5. CONDICIONES GENERALES</h2>
-  <h3>5.1 Forma de pago</h3>${M.pagos.length?`<table class="mini"><tbody>${M.pagos.map(p=>`<tr><td style="width:16%">${f1(num(p.pct))} %</td><td>${val(p.h,"hito")}</td><td class="tot">${f2(M.t.neto*num(p.pct)/100)} UF + IVA</td></tr>`).join("")}</tbody></table>`:`<ul><li>${ph("hitos de pago")}</li></ul>`}
-  <h3>5.2 Plazo de entrega</h3><ul><li>${M.plazo52?esc(M.plazo52):ph("plazo de entrega")}</li></ul>
-  <h3>5.3 Vigencia de la oferta</h3><ul><li>Esta cotización tiene una validez de ${S.validez?esc(vigencia()):ph("validez")}.</li></ul>
-  <h3>5.4 Otras condiciones</h3>${lst(lines(S.otras),"otras condiciones")}
-  ${M.ex5.map(x=>`<h3>${x.n} ${val(x.t,"título")}</h3>${lst(x.l,"contenido")}`).join("")}
-  ${firma()}${pie()}</div>`;
-  return cover+body;
+  </tbody></table>${M.vuf?`<p style="font-size:10pt;margin-top:4px">Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.</p>`:""}`});
+  const pagos=M.pagos.length?`<table class="mini"><tbody>${M.pagos.map(p=>`<tr><td style="width:16%">${f1(num(p.pct))} %</td><td>${val(p.h,"hito")}</td><td class="tot">${f2(M.t.neto*num(p.pct)/100)} UF + IVA</td></tr>`).join("")}</tbody></table>`:`<ul><li>${ph("hitos de pago")}</li></ul>`;
+  B.push({html:`<h2>5. CONDICIONES GENERALES</h2><h3>5.1 Forma de pago</h3>${pagos}`});
+  B.push(...seccion("5.2 Plazo de entrega",M.plazo52?[M.plazo52]:[],"plazo de entrega"));
+  B.push({html:`<h3>5.3 Vigencia de la oferta</h3><ul><li>Esta cotización tiene una validez de ${S.validez?esc(vigencia()):ph("validez")}.</li></ul>`});
+  B.push(...seccion("5.4 Otras condiciones",lines(S.otras),"otras condiciones"));
+  M.ex5.forEach(x=>B.push(...seccion(`${x.n} ${val(x.t,"título")}`,x.l,"contenido")));
+  B.push({html:firma()});
+  return B;
 }
-function renderDoc(){ const M=modelo(); if($("guardMsg")&&S.guardado) $("guardMsg").textContent=`Guardada ${new Date(S.guardado).toLocaleString("es-CL")} · cambios sin guardar`; $("doc").innerHTML = S.tipo==="rapida"?htmlRapida(M):htmlFormal(M); }
+const hoja=(H,inner)=>`<div class="page">${H}<div class="pc">${inner}</div>${pie()}</div>`;
+// Reparte los bloques en hojas midiendo su alto real con la misma tipografía y ancho de la hoja
+function paginar(H,bloques){
+  const m=document.createElement("div"); m.style.cssText="position:absolute;left:-10000px;top:0;visibility:hidden";
+  m.innerHTML=hoja(H,""); document.body.appendChild(m);
+  const pc=m.querySelector(".pc"), disp=pc.clientHeight;
+  // se mide como segundo bloque (sin el ajuste del primer bloque de la hoja), así el cálculo queda del lado seguro
+  const alto=h=>{ pc.innerHTML=`<div class="blk"></div><div class="blk">${h}</div>`; return pc.lastChild.getBoundingClientRect().height; };
+  const tabla=(t,rows,conPre)=>`${conPre?t.pre:""}<table class="tc">${t.cols}<thead>${t.head}</thead><tbody>${rows.join("")}</tbody></table>`;
+  const hojas=[]; let cur=[], usado=0;
+  const nueva=()=>{ if(cur.length) hojas.push(cur); cur=[]; usado=0; };
+  const poner=(h,a)=>{ cur.push(h); usado+=a; };
+  for(const b of bloques){
+    if(b.html!=null){ const a=alto(b.html); if(usado+a>disp&&cur.length) nueva(); poner(b.html,a); continue; }
+    const t=b.tabla, n=t.rows.length, k=Math.min(t.keepLast||1,n);
+    const unidades=[...t.rows.slice(0,n-k).map(r=>[r]), t.rows.slice(n-k)].filter(u=>u.length);
+    const aPre=alto(t.pre), aHead=alto(tabla(t,[],false)), aU=unidades.map(u=>alto(tabla(t,u,false))-aHead);
+    let filas=[], primero=true, aTrozo=0;
+    const cerrar=()=>{ if(filas.length){ const h=tabla(t,filas,primero); cur.push(h); usado+=aTrozo; primero=false; } filas=[]; aTrozo=0; };
+    for(let i=0;i<unidades.length;i++){
+      const base=filas.length?0:(aHead+(primero?aPre:0));
+      if(usado+aTrozo+base+aU[i]>disp && (filas.length||cur.length)){ cerrar(); nueva(); }
+      if(!filas.length) aTrozo=aHead+(primero?aPre:0);
+      filas.push(...unidades[i]); aTrozo+=aU[i];
+    }
+    cerrar();
+  }
+  nueva(); m.remove();
+  return hojas.map(bs=>hoja(H,bs.map(h=>`<div class="blk">${h}</div>`).join(""))).join("");
+}
+function renderDoc(){ const M=modelo(); if($("guardMsg")&&S.guardado) $("guardMsg").textContent=`Guardada ${new Date(S.guardado).toLocaleString("es-CL")} · cambios sin guardar`;
+  $("doc").innerHTML = S.tipo==="rapida" ? paginar(HDR_RAPIDA(),bloquesRapida(M)) : hoja(HDR_FORMAL(),portadaFormal())+paginar(HDR_FORMAL(),bloquesFormal(M)); }
 const cotLabel=c=>[c.numero||"(sin N°)", c.rev?"Rev. "+c.rev:"", c.mandante, c.proyecto, {rapida:"Express",formal:"Formal",flexible:"Flexible"}[c.tipo]||"", c.estado, fdate(c.fecha)].filter(Boolean).join(" · ");
 function renderGuardadas(){
   const box=$("boxGuardadas"); box.hidden=DEMO; if(DEMO) return;
@@ -544,10 +593,11 @@ async function crearDocx(){
   const bd={style:BorderStyle.SINGLE,size:4,color:"BFBFBF"}, borders={top:bd,bottom:bd,left:bd,right:bd}, none={style:BorderStyle.NONE,size:0,color:"FFFFFF"};
   const cell=(children,w,o={})=>new TableCell({width:{size:w,type:WidthType.DXA},borders,columnSpan:o.span,verticalAlign:VerticalAlign.CENTER,
     shading:o.fill?{fill:o.fill,type:ShadingType.CLEAR,color:"auto"}:undefined,margins:{top:40,bottom:40,left:80,right:80},
-    children:[new Paragraph({alignment:o.align||AlignmentType.LEFT,spacing:{after:0},children:Array.isArray(children)?children:[children]})]});
+    children:[new Paragraph({alignment:o.align||AlignmentType.LEFT,spacing:{after:0},keepNext:o.keep,children:Array.isArray(children)?children:[children]})]});
   const tabla=(widths,rows)=>{const sc=W/widths.reduce((a,b)=>a+b,0);const ws=widths.map(w=>Math.round(w*sc));ws[ws.length-1]+=W-ws.reduce((a,b)=>a+b,0);
-    return new Table({width:{size:W,type:WidthType.DXA},columnWidths:ws,layout:TableLayoutType.FIXED,rows:rows.map(r=>new TableRow({cantSplit:true,tableHeader:!!r.head,children:r.cells.map((c,i)=>{
-      const w=c.span?ws.slice(i,i+c.span).reduce((a,b)=>a+b,0):ws[i]; return cell(c.r,w,c);})}))});};
+    return new Table({width:{size:W,type:WidthType.DXA},columnWidths:ws,layout:TableLayoutType.FIXED,rows:rows.map((r,ri)=>new TableRow({cantSplit:true,tableHeader:!!r.head,children:r.cells.map((c,i)=>{
+      // keepNext en todas las filas menos la última: ninguna fila se corta y el total nunca queda solo en una hoja
+      const w=c.span?ws.slice(i,i+c.span).reduce((a,b)=>a+b,0):ws[i]; return cell(c.r,w,{...c,keep:ri<rows.length-1});})}))});};
   const C=(r,o={})=>({r,...o}), L=AlignmentType.LEFT, CE=AlignmentType.CENTER, R=AlignmentType.RIGHT;
   const logo=await logoBytes().catch(()=>null);
   const enc=(r1,r2)=>new Header({children:[new Table({width:{size:W,type:WidthType.DXA},columnWidths:[4600,5320],layout:TableLayoutType.FIXED,
@@ -637,6 +687,7 @@ async function exportarWord(){ if(DEMO) return toast("Descarga disponible en el 
 async function pdfWorker(){
   const h2p=await loadScript("html2pdf.bundle.min.js","html2pdf");
   const el=$("doc").cloneNode(true); el.querySelectorAll(".page").forEach(p=>{p.style.boxShadow="none";p.style.margin="0";});
+  el.querySelectorAll(".page").forEach(p=>p.style.height="10.97in");   // un poco menos que la hoja: evita hojas en blanco por redondeo
   el.querySelectorAll(".page:not(:last-child)").forEach(p=>p.style.pageBreakAfter="always");
   return [h2p().set({margin:0,filename:nombreArchivo("pdf"),image:{type:"jpeg",quality:0.97},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:"in",format:"letter",orientation:"portrait"},pagebreak:{mode:["css","legacy"],avoid:["tr","h2","h3"]}}).from(el)];   // en arreglo: el worker de html2pdf es "thenable" y un await lo consumiría
 }
