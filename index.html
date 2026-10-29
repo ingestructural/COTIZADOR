@@ -133,6 +133,18 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
     <div class="hint">Use la misma cuenta de POWER. El cotizador solo lee clientes y proyectos; no modifica POWER.</div>
   </fieldset>
 
+  <fieldset id="boxGuardadas">
+    <legend>Cotizaciones guardadas <span class="src">POWER</span></legend>
+    <div class="grid2">
+      <label for="estado">Estado<select id="estado"><option>Borrador</option><option>Emitida</option><option>Aceptada</option><option>Rechazada</option></select></label>
+      <label for="rev">Revisión<input id="rev" placeholder="Ej.: A, B, 0"></label>
+    </div>
+    <div class="row"><button type="button" class="btn pri" id="guardar">Guardar en POWER</button><button type="button" class="btn" id="duplicar">Duplicar como nueva</button><span class="hint" id="guardMsg"></span></div>
+    <label for="buscaCot">Abrir una cotización guardada<input id="buscaCot" type="search" placeholder="Filtrar por N°, mandante, proyecto o estado…"></label>
+    <select id="selCot" size="5" aria-label="Cotizaciones guardadas"></select>
+    <div class="row"><button type="button" class="btn" id="abrirCot">Abrir</button><button type="button" class="btn x" id="borrarCot" style="color:var(--warn)">Eliminar</button></div>
+  </fieldset>
+
   <fieldset>
     <legend>Datos de la cotización <span class="src">POWER</span></legend>
     <label for="buscaProy">Proyecto en POWER (código, mandante o nombre)
@@ -234,7 +246,9 @@ const TPL = {
 };
 const FIRMA = ["ING Estructural","J. Germán Aguilera Hafner","Ingeniero Civil"];
 const today = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10); };
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 function nueva(tipo){return {
+ id:uid(), estado:"Borrador", rev:"", guardado:"",
  tipo:tipo||"rapida", proyId:"", numero:"", mandante:"", proyecto:"", contacto:"", fecha:today(), fechaIngreso:"", plazo:"",
  items:[{n:"",hi:"",hp:""}], tIng:1.22, tProy:0.75, cat:CAT0.map(c=>({...c})),
  validez:"", antecedentes:TPL.antecedentes, incluye:"", noIncluye:TPL.noIncluye.join("\n"), ex2:[],
@@ -246,7 +260,7 @@ function ejemplo(){const s=nueva("rapida");Object.assign(s,{proyId:"ej1",mandant
 const LS = { get:k=>{try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}}, set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}} };
 const KEY="cot_ing_borrador_v2";
 let S = LS.get(KEY); if(!S||!S.items) S = ejemplo();
-S.ex2 = S.ex2||[]; S.ex5 = S.ex5||[]; S.pagos = S.pagos||[];
+S.id = S.id||uid(); S.estado = S.estado||"Borrador"; S.rev = S.rev??""; S.ex2 = S.ex2||[]; S.ex5 = S.ex5||[]; S.pagos = S.pagos||[];
 const save=()=>LS.set(KEY,S);
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -268,7 +282,7 @@ const PW = (()=>{
     const r = await fetch(`${CFG.url}/auth/v1/token?grant_type=${grant}`,{method:"POST",headers:hdr(false),body:JSON.stringify(body)});
     const j = await r.json().catch(()=>({}));
     if(!r.ok) throw new Error(j.error_description||j.msg||j.message||("Error "+r.status));
-    sess = {access_token:j.access_token, refresh_token:j.refresh_token, expires_at:j.expires_at||(Date.now()/1000+(j.expires_in||3600)), email:j.user&&j.user.email};
+    sess = {access_token:j.access_token, refresh_token:j.refresh_token, expires_at:j.expires_at||(Date.now()/1000+(j.expires_in||3600)), email:j.user&&j.user.email, uid:j.user&&j.user.id};
     LS.set(K_S,sess); return sess;
   }
   async function ensure(){ if(!sess) throw Object.assign(new Error("Sin sesión"),{code:"auth"});
@@ -276,16 +290,23 @@ const PW = (()=>{
   async function load(){
     await ensure(); const rows=[]; const step=1000;
     for(let from=0;;from+=step){
-      const r = await fetch(`${CFG.url}/rest/v1/docs?select=col,id,data&col=in.(clientes,proyectos)&order=col.asc,id.asc&offset=${from}&limit=${step}`,{headers:hdr(true)});
+      const r = await fetch(`${CFG.url}/rest/v1/docs?select=col,id,data&col=in.(clientes,proyectos,cotizaciones)&order=col.asc,id.asc&offset=${from}&limit=${step}`,{headers:hdr(true)});
       if(r.status===401){sess=null;LS.set(K_S,null);throw Object.assign(new Error("La sesión expiró"),{code:"auth"});}
       if(!r.ok) throw new Error("Error "+r.status);
       const b = await r.json(); rows.push(...b); if(b.length<step) break;
     }
-    cache = {clientes:rows.filter(r=>r.col==="clientes").map(r=>({id:r.id,...r.data})), proyectos:rows.filter(r=>r.col==="proyectos").map(r=>({id:r.id,...r.data})), at:Date.now()};
+    cache = {clientes:rows.filter(r=>r.col==="clientes").map(r=>({id:r.id,...r.data})), proyectos:rows.filter(r=>r.col==="proyectos").map(r=>({id:r.id,...r.data})), cotizaciones:rows.filter(r=>r.col==="cotizaciones").map(r=>({...r.data,id:r.id})), at:Date.now()};
     LS.set(K_C,cache); return cache;
   }
   return { get logged(){return !!sess}, get email(){return sess&&sess.email}, get data(){return cache},
-    login:(email,password)=>auth("password",{email,password}), load, logout(){sess=null;LS.set(K_S,null);} };
+    login:(email,password)=>auth("password",{email,password}), load, logout(){sess=null;LS.set(K_S,null);},
+    async put(col,id,data){ await ensure(); if(!sess.uid) throw Object.assign(new Error("Vuelva a iniciar sesión"),{code:"auth"});
+      const r=await fetch(`${CFG.url}/rest/v1/docs?on_conflict=owner,col,id`,{method:"POST",headers:{...hdr(true),Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify([{owner:sess.uid,col,id,data,updated_at:new Date().toISOString()}])});
+      if(r.status===401) throw Object.assign(new Error("La sesión expiró"),{code:"auth"}); if(!r.ok) throw new Error((await r.text().catch(()=>""))||("Error "+r.status));
+      const L=(cache[col]=cache[col]||[]); const i=L.findIndex(x=>x.id===id); const row={...data,id}; if(i>=0) L[i]=row; else L.push(row); LS.set(K_C,cache); },
+    async del(col,id){ await ensure();
+      const r=await fetch(`${CFG.url}/rest/v1/docs?col=eq.${encodeURIComponent(col)}&id=eq.${encodeURIComponent(id)}`,{method:"DELETE",headers:hdr(true)});
+      if(!r.ok) throw new Error("Error "+r.status); cache[col]=(cache[col]||[]).filter(x=>x.id!==id); LS.set(K_C,cache); } };
 })();
 function proyectosLista(){
   const P = PW.data.proyectos||[];
@@ -303,7 +324,7 @@ function renderPwState(){
   $("proyHint").textContent = PW.logged ? `${proyectosLista().length} proyectos. Al elegir uno se copian mandante, proyecto, contacto y código.` : (DEMO ? "Vista previa: la lista trae dos ejemplos. En el sitio se cargan los proyectos de POWER." : "Conecte POWER para buscar sus proyectos. Mientras tanto la lista trae dos ejemplos.");
 }
 async function cargarPower(){
-  try{ await PW.load(); renderPwState(); toast("Proyectos de POWER cargados"); }
+  try{ await PW.load(); renderPwState(); renderGuardadas(); toast("Datos de POWER cargados"); }
   catch(e){ if(e.code==="auth"){ $("loginBox").hidden=false; $("lgMsg").textContent=e.message==="Sin sesión"?"":e.message; renderPwState(); } else toast("No se pudo leer POWER: "+e.message); }
 }
 function aplicarProyecto(p){
@@ -323,7 +344,7 @@ function totales(){
 }
 
 /* ---------------- editor ---------------- */
-const FIELDS=["mandante","proyecto","contacto","fecha","numero","plazo","tIng","tProy","validez","antecedentes","incluye","noIncluye","valorUF","iva","plazoTxt","otras"];
+const FIELDS=["estado","rev","mandante","proyecto","contacto","fecha","numero","plazo","tIng","tProy","validez","antecedentes","incluye","noIncluye","valorUF","iva","plazoTxt","otras"];
 function fillFields(){FIELDS.forEach(k=>{$(k).value=S[k]??""}); renderListaProy();}
 function renderListaProy(){
   const q=$("buscaProy").value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
@@ -398,7 +419,8 @@ function modelo(){
 const ph=t=>`<span class="ph">[${esc(t)}]</span>`;
 const val=(v,t)=>String(v??"").trim()?esc(v):ph(t);
 const hdr=(r1,r2)=>`<div class="hd"><img src="${LOGO_SRC}" alt="ING Estructural"><div class="r">${r1}<br><span>${r2}</span></div></div>`;
-const pie=()=>`<div class="ft"><div><span>ING ESTRUCTURAL — Proyectos Civiles e Industriales</span><span>${esc(S.numero||"")}</span></div></div>`;
+const numRev=()=>[S.numero,S.rev?"Rev. "+S.rev:""].filter(Boolean).join(" · ");
+const pie=()=>`<div class="ft"><div><span>ING ESTRUCTURAL — Proyectos Civiles e Industriales</span><span>${esc(numRev())}</span></div></div>`;
 const firma=()=>`<div class="firma">${FIRMA[0]}<br>${FIRMA[1]}<br><span>${FIRMA[2]}</span></div>`;
 function tablaDatos(){
   return `<table><tbody>
@@ -407,7 +429,7 @@ function tablaDatos(){
   <tr><td class="k">FECHA:</td><td class="v" colspan="2">${S.fecha?fdate(S.fecha):ph("fecha")}</td></tr>
   <tr><td class="k">REF:</td><td class="v" colspan="2">${val(S.contacto,"contacto")}</td></tr>
   <tr><td class="k">PLAZO EJECUCIÓN:</td><td class="v" style="text-align:center;width:22%">${val(S.plazo,"días")}</td><td>días</td></tr>
-  ${S.tipo==="rapida"&&S.numero?`<tr><td class="k">N° COTIZACIÓN:</td><td class="v" colspan="2">${esc(S.numero)}</td></tr>`:""}
+  ${S.tipo==="rapida"&&S.numero?`<tr><td class="k">N° COTIZACIÓN:</td><td class="v" colspan="2">${esc(numRev())}</td></tr>`:""}
   </tbody></table>`;
 }
 function cuadro(M){
@@ -433,7 +455,7 @@ function htmlFormal(M){
    <div style="height:1.2cm"></div>
    <p class="ttl cover-t1">COTIZACIÓN</p><p class="ttl cover-t2">SERVICIOS DE INGENIERÍA</p><p class="ttl cover-t2" style="margin-bottom:1cm">${val(S.proyecto,"proyecto")}</p>
    <table class="cover"><tbody>
-    <tr><td class="k"><b>N° de Cotización</b></td><td>${val(S.numero,"código de proyecto en POWER")}</td></tr>
+    <tr><td class="k"><b>N° de Cotización</b></td><td>${val(S.numero,"código de proyecto en POWER")}${S.rev?" · Rev. "+esc(S.rev):""}</td></tr>
     <tr><td class="k"><b>Cliente / Mandante</b></td><td>${val(S.mandante,"mandante")}</td></tr>
     <tr><td class="k"><b>Contacto cliente</b></td><td>${val(S.contacto,"contacto")}</td></tr>
     <tr><td class="k"><b>Fecha de emisión</b></td><td>${S.fecha?fdate(S.fecha):ph("dd-mm-aaaa")}</td></tr>
@@ -467,8 +489,26 @@ function htmlFormal(M){
   ${firma()}${pie()}</div>`;
   return cover+body;
 }
-function renderDoc(){ const M=modelo(); $("doc").innerHTML = S.tipo==="rapida"?htmlRapida(M):htmlFormal(M); }
-function all(){fillFields();renderTipo();renderItems();renderCat();renderPagos();renderExtras();updTotals();renderIngreso();renderPwState();renderDoc();}
+function renderDoc(){ const M=modelo(); if($("guardMsg")&&S.guardado) $("guardMsg").textContent=`Guardada ${new Date(S.guardado).toLocaleString("es-CL")} · cambios sin guardar`; $("doc").innerHTML = S.tipo==="rapida"?htmlRapida(M):htmlFormal(M); }
+const cotLabel=c=>[c.numero||"(sin N°)", c.rev?"Rev. "+c.rev:"", c.mandante, c.proyecto, {rapida:"Rápida",formal:"Formal",flexible:"Flexible"}[c.tipo]||"", c.estado, fdate(c.fecha)].filter(Boolean).join(" · ");
+function renderGuardadas(){
+  const box=$("boxGuardadas"); box.hidden=DEMO; if(DEMO) return;
+  const norm=t=>String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const q=norm($("buscaCot").value.trim()), L=(PW.data.cotizaciones||[]).slice().sort((a,b)=>String(b.guardado||"").localeCompare(String(a.guardado||"")));
+  const F=L.filter(c=>!q||norm(cotLabel(c)).includes(q));
+  $("selCot").innerHTML=F.length?F.map(c=>`<option value="${esc(c.id)}"${c.id===S.id?" selected":""}>${esc(cotLabel(c))}</option>`).join(""):`<option disabled>${PW.logged?(L.length?"Sin resultados":"Aún no hay cotizaciones guardadas"):"Conecte POWER para ver sus cotizaciones"}</option>`;
+  $("guardar").disabled=$("duplicar").disabled=false;
+  $("guardMsg").textContent=S.guardado?`Guardada ${new Date(S.guardado).toLocaleString("es-CL")}`:"Sin guardar en POWER";
+}
+async function guardarCot(){
+  if(!PW.logged){ $("loginBox").hidden=false; $("lgMail").focus(); return toast("Conecte POWER para guardar"); }
+  $("guardar").disabled=true; $("guardMsg").textContent="Guardando…";
+  try{ const data={...S, guardado:new Date().toISOString()}; delete data.id; await PW.put("cotizaciones",S.id,data); S.guardado=data.guardado; save(); toast("Cotización guardada en POWER"); }
+  catch(e){ if(e.code==="auth"){ $("loginBox").hidden=false; } toast("No se pudo guardar: "+e.message); }
+  finally{ renderGuardadas(); }
+}
+let borrarPend=null;
+function all(){renderGuardadas();fillFields();renderTipo();renderItems();renderCat();renderPagos();renderExtras();updTotals();renderIngreso();renderPwState();renderDoc();}
 
 /* ---------------- Word (.docx) con docx.iife.js ---------------- */
 function loadScript(src, glob){ if(window[glob]) return Promise.resolve(window[glob]);
@@ -506,7 +546,7 @@ async function crearDocx(){
     {cells:[C(run("FECHA:")),C(txt(fdate(S.fecha),"fecha",{color:INK}),{fill:IN,span:2})]},
     {cells:[C(run("REF:")),C(txt(S.contacto,"contacto",{color:INK}),{fill:IN,span:2})]},
     {cells:[C(run("PLAZO EJECUCIÓN:")),C(txt(S.plazo,"días",{color:INK}),{fill:IN,align:CE}),C(run("días"))]},
-    ...(S.tipo==="rapida"&&S.numero?[{cells:[C(run("N° COTIZACIÓN:")),C(run(S.numero,{color:INK}),{fill:IN,span:2})]}]:[])]);
+    ...(S.tipo==="rapida"&&S.numero?[{cells:[C(run("N° COTIZACIÓN:")),C(run(numRev(),{color:INK}),{fill:IN,span:2})]}]:[])]);
   const cuadroW=()=>{
     const head=t=>C(run(t,{bold:true,color:"FFFFFF"}),{fill:BLUE,align:CE});
     return [P(run("COTIZACIÓN",{bold:true,color:NAVY}),{before:200,after:60,keepNext:true}),
@@ -535,7 +575,7 @@ async function crearDocx(){
     K.push(P(txt(S.proyecto,"proyecto",{size:40,bold:true,color:NAVY,underline:{}}),{align:CE,after:560}));
     const kv=(k,v)=>({cells:[C(run(k,{size:28,bold:true})),C(v)]}), s28={size:28};
     K.push(tabla([3400,6520],[
-      kv("N° de Cotización",txt(S.numero,"código de proyecto en POWER",s28)), kv("Cliente / Mandante",txt(S.mandante,"mandante",s28)),
+      kv("N° de Cotización",txt(numRev(),"código de proyecto en POWER",s28)), kv("Cliente / Mandante",txt(S.mandante,"mandante",s28)),
       kv("Contacto cliente",txt(S.contacto,"contacto",s28)), kv("Fecha de emisión",txt(fdate(S.fecha),"dd-mm-aaaa",s28)),
       kv("Validez de la oferta",S.validez?run(S.validez+" días corridos desde la fecha de emisión",s28):txt("","días de validez",s28)),
       kv("Preparado por",run("J. Germán Aguilera Hafner, Ingeniero Civil",s28)), kv("Contacto oficina",run("ingestructural@ingestructural.cl",s28))]));
@@ -587,6 +627,7 @@ document.querySelector(".seg").addEventListener("click",e=>{const b=e.target.clo
 $("ed").addEventListener("input",e=>{
   const el=e.target, d=el.dataset;
   if(el.id==="buscaProy"){ renderListaProy(); return; }
+  if(el.id==="buscaCot"||el.id==="selCot"){ if(el.id==="buscaCot") renderGuardadas(); return; }
   if(el.id&&el.id.startsWith("lg")) return;
   if(d.i!==undefined){S.items[+d.i][d.k]=el.value;updTotals();}
   else if(d.c!==undefined){S.cat[+d.c][d.k]=el.value; if(d.k==="n") $("dlCat").innerHTML=S.cat.map(c=>`<option value="${esc(c.n)}">`).join(""); updTotals();}
@@ -608,6 +649,14 @@ $("ed").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)re
   else if(b.id==="usarPlantilla"){if(!S.antecedentes.trim())S.antecedentes=TPL.antecedentes;if(!S.noIncluye.trim())S.noIncluye=TPL.noIncluye.join("\n");if(!S.otras.trim())S.otras=TPL.otras.join("\n");fillFields();}
   else if(b.id==="ufHoy"){traerUF();return;}
   else if(b.id==="nueva"){const keep={tIng:S.tIng,tProy:S.tProy,cat:S.cat};S=Object.assign(nueva(S.tipo),keep);all();save();return;}
+  else if(b.id==="guardar"){guardarCot();return;}
+  else if(b.id==="duplicar"){S={...JSON.parse(JSON.stringify(S)),id:uid(),estado:"Borrador",guardado:""};all();save();toast("Copia creada; guárdela para registrarla");return;}
+  else if(b.id==="abrirCot"){const c=(PW.data.cotizaciones||[]).find(c=>c.id===$("selCot").value); if(!c) return toast("Elija una cotización de la lista");
+    S=Object.assign(nueva(c.tipo),JSON.parse(JSON.stringify(c))); all(); save(); toast("Cotización abierta"); return;}
+  else if(b.id==="borrarCot"){const id=$("selCot").value, c=(PW.data.cotizaciones||[]).find(c=>c.id===id); if(!c) return toast("Elija una cotización de la lista");
+    if(borrarPend!==id){borrarPend=id;b.textContent="Confirmar eliminación";setTimeout(()=>{borrarPend=null;b.textContent="Eliminar";},5000);return;}
+    borrarPend=null;b.textContent="Eliminar";
+    PW.del("cotizaciones",id).then(()=>{ if(S.id===id){S.guardado="";save();} renderGuardadas(); toast("Cotización eliminada"); }).catch(e=>toast("No se pudo eliminar: "+e.message)); return;}
   else if(b.id==="lgGo"){login();return;}
   else if(b.id==="lgCancel"){$("loginBox").hidden=true;return;}
   else return;
