@@ -56,6 +56,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .it{width:100%;border-collapse:collapse;font-size:.88rem}
 .it th{font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;padding:3px 4px}
 .it td{padding:2px 3px}
+#tItems tr.sel td{background:#DCE8F5}
 .it td.n input{text-align:right;font-variant-numeric:tabular-nums}
 .it td.t{text-align:right;font-family:var(--f-mono);font-size:.8rem;white-space:nowrap;padding-right:6px}
 .btn{font:inherit;font-size:.85rem;font-weight:600;padding:6px 12px;border:1px solid var(--accent);color:var(--accent);background:transparent;border-radius:4px;cursor:pointer;align-self:flex-start}
@@ -192,7 +193,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
       <tbody></tbody>
     </table>
     <datalist id="dlCat"></datalist>
-    <div class="row"><button type="button" class="btn" id="addItem">Agregar ítem</button><span class="hint" id="sumHH"></span></div>
+    <div class="row"><button type="button" class="btn" id="addItem">Agregar ítem</button><button type="button" class="btn" id="editItem">Editar ítem</button><button type="button" class="btn" id="delItem" style="color:var(--warn)">Eliminar ítem</button><span class="hint" id="sumHH"></span></div>
     <div class="grid2">
       <label for="tIng">UF/hora ingeniero<input id="tIng" type="number" step="0.01" min="0"></label>
       <label for="tProy">UF/hora proyectista<input id="tProy" type="number" step="0.01" min="0"></label>
@@ -404,9 +405,12 @@ function renderTipo(){
   $("tdesc").textContent=TDESC[S.tipo];
   $("contHint").textContent=S.tipo==="formal"?"Textos precargados desde su formato Word. Complete o ajuste cada sección.":"Ingrese el contenido a mano. El botón al final rellena con los textos de plantilla si los necesita.";
 }
+let selIt=-1;   // fila marcada del cuadro de ítems (la última en que se hizo clic o se escribió)
+function marcarItem(i){ selIt=i; [...$("tItems").tBodies[0].rows].forEach((r,j)=>r.classList.toggle("sel",j===i)); }
 function renderItems(){
   $("dlCat").innerHTML=S.cat.map(c=>`<option value="${esc(c.n)}">`).join("");
-  $("tItems").tBodies[0].innerHTML=S.items.map((it,i)=>`<tr>
+  if(selIt>=S.items.length) selIt=S.items.length-1;
+  $("tItems").tBodies[0].innerHTML=S.items.map((it,i)=>`<tr${i===selIt?' class="sel"':''}>
     <td><input list="dlCat" id="it-n-${i}" data-i="${i}" data-k="n" value="${esc(it.n)}" aria-label="Ítem ${i+1}"></td>
     <td class="n" style="width:64px"><input id="it-hi-${i}" data-i="${i}" data-k="hi" inputmode="decimal" value="${esc(it.hi)}" aria-label="HH ingeniero ítem ${i+1}"></td>
     <td class="n" style="width:64px"><input id="it-hp-${i}" data-i="${i}" data-k="hp" inputmode="decimal" value="${esc(it.hp)}" aria-label="HH proyectista ítem ${i+1}"></td>
@@ -764,6 +768,10 @@ $("ed").addEventListener("input",e=>{
 });
 $("ed").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const d=b.dataset;
   if(d.del!==undefined){S.items.splice(+d.del,1);renderItems();}
+  else if(b.id==="delItem"||b.id==="editItem"){ if(!S.items.length) return toast("No hay ítems en el cuadro");
+    if(selIt<0) return toast("Haga clic primero en la fila del ítem");
+    if(b.id==="editItem"){ const el=$("it-n-"+selIt); el.focus(); el.select(); return; }
+    const n=String(S.items[selIt].n||"").trim(); S.items.splice(selIt,1); selIt=Math.min(selIt,S.items.length-1); renderItems(); toast(n?`Ítem «${n}» eliminado del cuadro`:"Ítem eliminado"); }
   else if(d.cdel!==undefined){S.cat.splice(+d.cdel,1);renderCat();renderItems();guardarCatalogo();}
   else if(d.pdel!==undefined){S.pagos.splice(+d.pdel,1);renderPagos();}
   else if(d.xdel!==undefined){S["ex"+d.xdel].splice(+d.j,1);renderExtras();}
@@ -789,7 +797,7 @@ $("ed").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)re
   updTotals();renderDoc();save();
 });
 // Cuadro de ítems: al entrar a una celda de horas se selecciona su contenido; Enter pasa a la celda de la derecha
-$("tItems").addEventListener("focusin",e=>{ const el=e.target; if(el.dataset&&(el.dataset.k==="hi"||el.dataset.k==="hp")) { try{el.select();}catch(_){} } });
+$("tItems").addEventListener("focusin",e=>{ const el=e.target; if(el.dataset&&el.dataset.i!==undefined) marcarItem(+el.dataset.i); if(el.dataset&&(el.dataset.k==="hi"||el.dataset.k==="hp")) { try{el.select();}catch(_){} } });
 $("tItems").addEventListener("pointerdown",e=>{ const el=e.target; if(el.dataset&&(el.dataset.k==="hi"||el.dataset.k==="hp")&&document.activeElement!==el){ e.preventDefault(); el.focus(); el.select(); } });
 $("tItems").addEventListener("change",e=>{ const d=e.target.dataset; if(d&&d.k==="n"&&d.i!==undefined) agregarAlCatalogo(e.target.value); });
 $("tItems").addEventListener("keydown",e=>{
