@@ -200,7 +200,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
     <div class="hint">Tarifas de uso interno, no se imprimen.</div>
     <details>
       <summary>Catálogo de ítems y entregables</summary>
-      <p class="hint">Cada ítem del catálogo suma documentos a la tabla de entregables. Puede editar o agregar ítems.</p>
+      <p class="hint">Cada ítem del catálogo suma documentos a la tabla de entregables. Los ítems nuevos que escriba en el cuadro se agregan aquí solos. El catálogo y las tarifas se guardan en POWER y quedan para todas las cotizaciones.</p>
       <div class="cat"><table class="it" id="tCat"><thead><tr><th>Ítem</th><th>Planos A1</th><th>MDC/Inf.</th><th>EETT</th><th></th></tr></thead><tbody></tbody></table></div>
       <button type="button" class="btn" id="addCat" style="margin-top:8px">Agregar al catálogo</button>
     </details>
@@ -288,7 +288,7 @@ function ejemplo(){const s=nueva("rapida");Object.assign(s,{proyId:"ej1",mandant
 const LS = { get:k=>{try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}}, set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}} };
 const KEY="cot_ing_borrador_v2";
 let S = LS.get(KEY); if(!S||!S.items) S = ejemplo();
-S.plazoU = S.plazoU||"días"; S.validezU = S.validezU||"días"; if(!S._v30){ if(S.validez===""||S.validez==null) S.validez=30; S._v30=true; } S.id = S.id||uid(); S.estado = S.estado||"Borrador"; S.rev = S.rev??""; S.ex2 = S.ex2||[]; S.ex5 = S.ex5||[]; S.pagos = S.pagos||[];
+if(catalogoLocal()) aplicarCatalogo(catalogoLocal()); S.plazoU = S.plazoU||"días"; S.validezU = S.validezU||"días"; if(!S._v30){ if(S.validez===""||S.validez==null) S.validez=30; S._v30=true; } S.id = S.id||uid(); S.estado = S.estado||"Borrador"; S.rev = S.rev??""; S.ex2 = S.ex2||[]; S.ex5 = S.ex5||[]; S.pagos = S.pagos||[];
 const save=()=>LS.set(KEY,S);
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -318,12 +318,12 @@ const PW = (()=>{
   async function load(){
     await ensure(); const rows=[]; const step=1000;
     for(let from=0;;from+=step){
-      const r = await fetch(`${CFG.url}/rest/v1/docs?select=col,id,data&col=in.(clientes,proyectos,cotizaciones)&order=col.asc,id.asc&offset=${from}&limit=${step}`,{headers:hdr(true)});
+      const r = await fetch(`${CFG.url}/rest/v1/docs?select=col,id,data&col=in.(clientes,proyectos,cotizaciones,cotizador_config)&order=col.asc,id.asc&offset=${from}&limit=${step}`,{headers:hdr(true)});
       if(r.status===401){sess=null;LS.set(K_S,null);throw Object.assign(new Error("La sesión expiró"),{code:"auth"});}
       if(!r.ok) throw new Error("Error "+r.status);
       const b = await r.json(); rows.push(...b); if(b.length<step) break;
     }
-    cache = {clientes:rows.filter(r=>r.col==="clientes").map(r=>({id:r.id,...r.data})), proyectos:rows.filter(r=>r.col==="proyectos").map(r=>({id:r.id,...r.data})), cotizaciones:rows.filter(r=>r.col==="cotizaciones").map(r=>({...r.data,id:r.id})), at:Date.now()};
+    cache = {clientes:rows.filter(r=>r.col==="clientes").map(r=>({id:r.id,...r.data})), proyectos:rows.filter(r=>r.col==="proyectos").map(r=>({id:r.id,...r.data})), config:Object.fromEntries(rows.filter(r=>r.col==="cotizador_config").map(r=>[r.id,r.data])), cotizaciones:rows.filter(r=>r.col==="cotizaciones").map(r=>({...r.data,id:r.id})), at:Date.now()};
     LS.set(K_C,cache); return cache;
   }
   return { get logged(){return !!sess}, get email(){return sess&&sess.email}, get data(){return cache},
@@ -351,8 +351,25 @@ function renderPwState(){
   renderListaProy();
   $("proyHint").textContent = PW.logged ? `${proyectosLista().length} proyectos. Al elegir uno se copian mandante, proyecto, contacto y código.` : (DEMO ? "Vista previa: la lista trae dos ejemplos. En el sitio se cargan los proyectos de POWER." : "Conecte POWER para buscar sus proyectos. Mientras tanto la lista trae dos ejemplos.");
 }
+/* ---- catálogo de ítems y tarifas compartidos: navegador + POWER (colección cotizador_config, documento "catalogo") ---- */
+var K_CAT="cot_ing_catalogo";
+function catalogoLocal(){ const c=LS.get("cot_ing_catalogo"); return c&&Array.isArray(c.cat)?c:null; }
+let catTimer=null;
+function guardarCatalogo(){
+  const c={cat:S.cat.filter(x=>String(x.n||"").trim()), tIng:S.tIng, tProy:S.tProy, modificado:new Date().toISOString()};
+  LS.set(K_CAT,c); clearTimeout(catTimer);
+  if(PW.logged&&!DEMO) catTimer=setTimeout(()=>PW.put("cotizador_config","catalogo",c).catch(()=>toast("El catálogo no se pudo guardar en POWER; quedó en este computador")),1200);
+}
+function aplicarCatalogo(c){ if(!c) return; S.cat=JSON.parse(JSON.stringify(c.cat)); if(c.tIng!=null) S.tIng=c.tIng; if(c.tProy!=null) S.tProy=c.tProy; }
+// ítem escrito en el cuadro que no está en el catálogo → se agrega al catálogo
+function agregarAlCatalogo(nombre){
+  const n=String(nombre||"").trim(); if(!n||S.cat.some(c=>String(c.n).trim().toLowerCase()===n.toLowerCase())) return;
+  S.cat.push({n,p:0,m:0,e:0}); renderCat(); $("dlCat").innerHTML=S.cat.map(c=>`<option value="${esc(c.n)}">`).join(""); guardarCatalogo(); save();
+  toast(`«${n}» quedó en el catálogo para próximas cotizaciones`);
+}
 async function cargarPower(){
-  try{ await PW.load(); renderPwState(); renderGuardadas(); toast("Datos de POWER cargados"); abrirDesdeEnlace(); }
+  try{ await PW.load(); { const rc=(PW.data.config||{}).catalogo; if(rc){ aplicarCatalogo(rc); LS.set(K_CAT,rc); } else guardarCatalogo(); fillFields(); renderItems(); renderCat(); updTotals(); renderDoc(); }
+    renderPwState(); renderGuardadas(); toast("Datos de POWER cargados"); abrirDesdeEnlace(); }
   catch(e){ if(e.code==="auth"){ $("loginBox").hidden=false; $("lgMsg").textContent=e.message==="Sin sesión"?"":e.message; renderPwState(); } else toast("No se pudo leer POWER: "+e.message); }
 }
 function aplicarProyecto(p){
@@ -586,7 +603,7 @@ function abrirDesdeEnlace(){
   const id=decodeURIComponent(m[1]), c=(PW.data.cotizaciones||[]).find(c=>c.id===id);
   history.replaceState(null,"",location.pathname);
   if(!c) return toast("No se encontró esa cotización en POWER");
-  S=Object.assign(nueva(c.tipo),JSON.parse(JSON.stringify(c))); all(); save(); toast("Cotización abierta desde POWER");
+  const cat=S.cat; S=Object.assign(nueva(c.tipo),JSON.parse(JSON.stringify(c))); S.cat=cat; (c.items||[]).forEach(it=>agregarAlCatalogo(it.n)); all(); save(); toast("Cotización abierta desde POWER");
 }
 function all(){renderGuardadas();fillFields();renderTipo();renderItems();renderCat();renderPagos();renderExtras();updTotals();renderIngreso();renderPwState();renderDoc();}
 
@@ -727,15 +744,15 @@ $("ed").addEventListener("input",e=>{
   if(el.id==="buscaCot"||el.id==="selCot"){ if(el.id==="buscaCot") renderGuardadas(); return; }
   if(el.id&&el.id.startsWith("lg")) return;
   if(d.i!==undefined){S.items[+d.i][d.k]=el.value;updTotals();}
-  else if(d.c!==undefined){S.cat[+d.c][d.k]=el.value; if(d.k==="n") $("dlCat").innerHTML=S.cat.map(c=>`<option value="${esc(c.n)}">`).join(""); updTotals();}
+  else if(d.c!==undefined){S.cat[+d.c][d.k]=el.value; if(d.k==="n") $("dlCat").innerHTML=S.cat.map(c=>`<option value="${esc(c.n)}">`).join(""); updTotals(); guardarCatalogo();}
   else if(d.p!==undefined){S.pagos[+d.p][d.k]=el.value;updTotals();updPagoSum();}
   else if(d.x!==undefined){S["ex"+d.x][+d.j][d.k]=el.value;}
-  else if(FIELDS.includes(el.id)){S[el.id]=el.value; if(["tIng","tProy"].includes(el.id))updTotals(); if(el.id==="fecha")renderIngreso();}
+  else if(FIELDS.includes(el.id)){S[el.id]=el.value; if(["tIng","tProy"].includes(el.id)){updTotals();guardarCatalogo();} if(el.id==="fecha")renderIngreso();}
   renderDoc();save();
 });
 $("ed").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const d=b.dataset;
   if(d.del!==undefined){S.items.splice(+d.del,1);renderItems();}
-  else if(d.cdel!==undefined){S.cat.splice(+d.cdel,1);renderCat();renderItems();}
+  else if(d.cdel!==undefined){S.cat.splice(+d.cdel,1);renderCat();renderItems();guardarCatalogo();}
   else if(d.pdel!==undefined){S.pagos.splice(+d.pdel,1);renderPagos();}
   else if(d.xdel!==undefined){S["ex"+d.xdel].splice(+d.j,1);renderExtras();}
   else if(d.addx!==undefined){S["ex"+d.addx].push({t:"",x:""});renderExtras();const L=S["ex"+d.addx];$(`x${d.addx}-t-${L.length-1}`).focus();}
@@ -749,7 +766,7 @@ $("ed").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)re
   else if(b.id==="guardar"){guardarCot();return;}
   else if(b.id==="duplicar"){S={...JSON.parse(JSON.stringify(S)),id:uid(),estado:"Borrador",guardado:""};all();save();toast("Copia creada; guárdela para registrarla");return;}
   else if(b.id==="abrirCot"){const c=(PW.data.cotizaciones||[]).find(c=>c.id===$("selCot").value); if(!c) return toast("Elija una cotización de la lista");
-    S=Object.assign(nueva(c.tipo),JSON.parse(JSON.stringify(c))); all(); save(); toast("Cotización abierta"); return;}
+    const cat=S.cat; S=Object.assign(nueva(c.tipo),JSON.parse(JSON.stringify(c))); S.cat=cat; (c.items||[]).forEach(it=>agregarAlCatalogo(it.n)); all(); save(); toast("Cotización abierta"); return;}
   else if(b.id==="borrarCot"){const id=$("selCot").value, c=(PW.data.cotizaciones||[]).find(c=>c.id===id); if(!c) return toast("Elija una cotización de la lista");
     if(borrarPend!==id){borrarPend=id;b.textContent="Confirmar eliminación";setTimeout(()=>{borrarPend=null;b.textContent="Eliminar";},5000);return;}
     borrarPend=null;b.textContent="Eliminar";
@@ -762,6 +779,7 @@ $("ed").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)re
 // Cuadro de ítems: al entrar a una celda de horas se selecciona su contenido; Enter pasa a la celda de la derecha
 $("tItems").addEventListener("focusin",e=>{ const el=e.target; if(el.dataset&&(el.dataset.k==="hi"||el.dataset.k==="hp")) { try{el.select();}catch(_){} } });
 $("tItems").addEventListener("pointerdown",e=>{ const el=e.target; if(el.dataset&&(el.dataset.k==="hi"||el.dataset.k==="hp")&&document.activeElement!==el){ e.preventDefault(); el.focus(); el.select(); } });
+$("tItems").addEventListener("change",e=>{ const d=e.target.dataset; if(d&&d.k==="n"&&d.i!==undefined) agregarAlCatalogo(e.target.value); });
 $("tItems").addEventListener("keydown",e=>{
   const el=e.target, d=el.dataset; if(e.key!=="Enter"||d.i===undefined) return;
   e.preventDefault(); const i=+d.i, orden=["n","hi","hp"], k=orden.indexOf(d.k);
