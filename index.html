@@ -534,7 +534,7 @@ function bloquesFormal(M){
   B.push({html:`<h2>2. ALCANCE DE LOS SERVICIOS</h2><p>${esc(TPL.alcance)}</p>`});
   B.push(...seccion("2.1 Incluye",lines(S.incluye),"actividades incluidas"), ...seccion("2.2 No incluye",lines(S.noIncluye),"exclusiones"));
   M.ex2.forEach(x=>B.push(...seccion(`${x.n} ${val(x.t,"título")}`,x.l,"contenido")));
-  B.push({html:`<h2>3. DETALLE DE HORAS HOMBRE E ÍTEMS DE ENTREGABLES</h2><p>${esc(M.sec3)}</p>`}, ...cuadroBloques(M));
+  B.push({html:`<h2>3. DETALLE DE HORAS HOMBRE E ÍTEMS DE ENTREGABLES</h2><p>${esc(M.sec3)}</p>`, keep:true}, ...cuadroBloques(M));
   B.push({html:`<h2>4. RESUMEN ECONÓMICO</h2>
   <table><thead><tr><th style="text-align:left">Concepto</th><th>Monto (UF)</th><th>Monto (CLP)</th></tr></thead><tbody>
    <tr><td>${M.bol?"Honorarios (sección 3)":"Subtotal Neto (sección 3)"}</td><td class="tot">${f2(M.t.neto)}</td><td class="tot">${M.vuf?clp(M.t.neto*M.vuf):ph("valor UF")}</td></tr>
@@ -560,15 +560,21 @@ function paginar(H,bloques){
   const alto=h=>{ pc.innerHTML=`<div class="blk"></div><div class="blk">${h}</div>`; return pc.lastChild.getBoundingClientRect().height; };
   const tabla=(t,rows,conPre)=>`${conPre?t.pre:""}<table class="tc">${t.cols}<thead>${t.head}</thead><tbody>${rows.join("")}</tbody></table>`;
   const hojas=[]; let cur=[], usado=0;
-  const nueva=()=>{ if(cur.length) hojas.push(cur); cur=[]; usado=0; };
-  const poner=(h,a)=>{ cur.push(h); usado+=a; };
+  const nueva=()=>{ if(cur.length) hojas.push(cur.map(x=>x.h)); cur=[]; usado=0; };
+  const poner=(h,a,keep)=>{ cur.push({h,a,keep}); usado+=a; };
+  // pasa a hoja nueva; los títulos marcados «keep» al final de la hoja se van junto con lo que sigue
+  const saltar=()=>{ const mov=[]; while(cur.length>1&&cur[cur.length-1].keep){ const x=cur.pop(); usado-=x.a; mov.unshift(x); } nueva(); mov.forEach(x=>poner(x.h,x.a,x.keep)); };
   for(const b of bloques){
-    if(b.html!=null){ const a=alto(b.html); if(usado+a>disp&&cur.length) nueva(); poner(b.html,a); continue; }
+    // toda tabla va completa en una hoja: si no cabe en lo que queda, pasa entera a la hoja siguiente
+    const h=b.html!=null?b.html:tabla(b.tabla,b.tabla.rows,true), a=alto(h);
+    if(usado+a>disp&&cur.length) saltar();
+    if(b.html!=null||usado+a<=disp){ poner(h,a,b.keep); continue; }
+    // solo una tabla más alta que una hoja completa se reparte por filas (sin cortar filas y con el total junto a la última)
     const t=b.tabla, n=t.rows.length, k=Math.min(t.keepLast||1,n);
     const unidades=[...t.rows.slice(0,n-k).map(r=>[r]), t.rows.slice(n-k)].filter(u=>u.length);
     const aPre=alto(t.pre), aHead=alto(tabla(t,[],false)), aU=unidades.map(u=>alto(tabla(t,u,false))-aHead);
     let filas=[], primero=true, aTrozo=0;
-    const cerrar=()=>{ if(filas.length){ const h=tabla(t,filas,primero); cur.push(h); usado+=aTrozo; primero=false; } filas=[]; aTrozo=0; };
+    const cerrar=()=>{ if(filas.length){ poner(tabla(t,filas,primero),aTrozo); primero=false; } filas=[]; aTrozo=0; };
     for(let i=0;i<unidades.length;i++){
       const base=filas.length?0:(aHead+(primero?aPre:0));
       if(usado+aTrozo+base+aU[i]>disp && (filas.length||cur.length)){ cerrar(); nueva(); }
@@ -698,7 +704,7 @@ async function crearDocx(){
     K.push(H3("2.1 Incluye"),...bullets(lines(S.incluye),"actividades incluidas"));
     K.push(H3("2.2 No incluye"),...bullets(lines(S.noIncluye),"exclusiones"));
     M.ex2.forEach(x=>K.push(H3(x.n+" "+(x.t||"")),...bullets(x.l,"contenido")));
-    K.push(H2("3. DETALLE DE HORAS HOMBRE E ÍTEMS DE ENTREGABLES"),P(run(M.sec3)),...cuadroW());
+    K.push(H2("3. DETALLE DE HORAS HOMBRE E ÍTEMS DE ENTREGABLES"),P(run(M.sec3),{keepNext:true}),...cuadroW());
     K.push(H2("4. RESUMEN ECONÓMICO"));
     const cl=v=>M.vuf?run(clp(v*M.vuf)):txt("","valor UF");
     K.push(tabla([5200,2200,2520],[{head:true,cells:["Concepto","Monto (UF)","Monto (CLP)"].map(t=>C(run(t,{bold:true,color:"FFFFFF"}),{fill:BLUE,align:CE}))},
