@@ -164,7 +164,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
       <label for="estado">Estado<select id="estado"><option>Borrador</option><option>Emitida</option><option>Aceptada</option><option>Rechazada</option></select></label>
       <label for="rev">Revisión<select id="rev"><option value="">—</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option></select></label>
     </div>
-    <div class="row"><button type="button" class="btn pri" id="guardar">Guardar en POWER</button><button type="button" class="btn" id="duplicar">Duplicar como nueva</button><button type="button" class="btn" id="refrescar" title="Vuelve a leer POWER y actualiza mandante, proyecto, contacto, código, documento y UF del proyecto elegido">Actualizar desde POWER</button><span class="hint" id="guardMsg"></span></div>
+    <div class="row"><button type="button" class="btn pri" id="guardar">Guardar en POWER</button><button type="button" class="btn" id="duplicar">Duplicar como nueva</button><button type="button" class="btn" id="refrescar" title="Vuelve a leer POWER y recarga mandante, proyecto, contacto, código, documento y UF del proyecto elegido">Recargar POWER</button><span class="hint" id="guardMsg"></span></div>
     <label for="buscaCot">Abrir una cotización guardada<input id="buscaCot" type="search" placeholder="Filtrar por N°, mandante, proyecto o estado…"></label>
     <select id="selCot" size="5" aria-label="Cotizaciones guardadas"></select>
     <div class="row"><button type="button" class="btn" id="abrirCot">Abrir</button><button type="button" class="btn x" id="borrarCot" style="color:var(--warn)">Eliminar</button></div>
@@ -377,9 +377,10 @@ async function refrescarPower(){
   if(DEMO) return toast("Disponible en el sitio instalado");
   if(!PW.logged){ $("loginBox").hidden=false; $("lgMail").focus(); return toast("Inicie sesión en POWER"); }
   $("refrescar").disabled=true;
-  try{ await cargarPower(); const p=(PW.data.proyectos||[]).find(x=>x.id===S.proyId);
-    if(p){ aplicarProyecto(p); renderItems(); updTotals(); toast(`Actualizado desde POWER: ${p.codigo||p.proyecto||"proyecto"}`); }
-    else toast(S.proyId?"El proyecto de esta cotización ya no está en POWER":"Datos de POWER actualizados (la cotización no tiene proyecto elegido)"); }
+  // el proyecto se busca por su id y, si no aparece (cotización antigua o código reasignado), por el N° de cotización = código del proyecto
+  try{ await cargarPower(); const L=PW.data.proyectos||[], p=L.find(x=>x.id===S.proyId)||(S.numero&&L.find(x=>x.codigo===S.numero));
+    if(p){ aplicarProyecto(p); renderItems(); updTotals(); toast(`POWER recargado: ${p.codigo||""} · ${p.proyecto||""}`); }
+    else toast(S.proyId||S.numero?"No se encontró en POWER el proyecto de esta cotización; elíjalo en la lista de proyectos":"Datos de POWER recargados (la cotización no tiene proyecto elegido)"); }
   finally{ $("refrescar").disabled=false; } }
 async function cargarPower(){
   try{ await PW.load(); { const rc=(PW.data.config||{}).catalogo; if(rc){ aplicarCatalogo(rc); LS.set(K_CAT,rc); } else guardarCatalogo(); fillFields(); renderItems(); renderCat(); updTotals(); renderDoc(); }
