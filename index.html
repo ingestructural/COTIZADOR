@@ -57,6 +57,8 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .it th{font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;padding:3px 4px}
 .it td{padding:2px 3px}
 #tItems tr.sel td{background:#DCE8F5}
+#tItems tfoot td{font-weight:700;border-top:2px solid var(--accent);padding-top:6px}
+#tItems tfoot td.n{text-align:right;padding-right:12px;font-variant-numeric:tabular-nums}
 .it td.n input{text-align:right;font-variant-numeric:tabular-nums}
 .it td.t{text-align:right;font-family:var(--f-mono);font-size:.8rem;white-space:nowrap;padding-right:6px}
 .btn{font:inherit;font-size:.85rem;font-weight:600;padding:6px 12px;border:1px solid var(--accent);color:var(--accent);background:transparent;border-radius:4px;cursor:pointer;align-self:flex-start}
@@ -191,9 +193,10 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
     <table class="it" id="tItems">
       <thead><tr><th>Ítem</th><th>hh/ing.</th><th>hh/proy.</th><th style="text-align:right">UF</th><th></th></tr></thead>
       <tbody></tbody>
+      <tfoot><tr class="sumrow"><td id="sumLbl">Total neto</td><td class="n" id="sumHi"></td><td class="n" id="sumHp"></td><td class="t" id="sumUF"></td><td></td></tr></tfoot>
     </table>
     <datalist id="dlCat"></datalist>
-    <div class="row"><button type="button" class="btn" id="addItem">Agregar ítem</button><button type="button" class="btn" id="editItem">Editar ítem</button><button type="button" class="btn" id="delItem" style="color:var(--warn)">Eliminar ítem</button><span class="hint" id="sumHH"></span></div>
+    <div class="row"><button type="button" class="btn" id="addItem">Agregar ítem</button><button type="button" class="btn" id="editItem">Editar ítem</button><button type="button" class="btn" id="delItem" style="color:var(--warn)">Eliminar ítem</button></div>
     <div class="grid2">
       <label for="tIng">UF/hora ingeniero<input id="tIng" type="number" step="0.01" min="0"></label>
       <label for="tProy">UF/hora proyectista<input id="tProy" type="number" step="0.01" min="0"></label>
@@ -450,7 +453,7 @@ function updPagoSum(){
 function updTotals(){
   S.items.forEach((it,i)=>{const el=$("it-t-"+i);if(el)el.textContent=f2(itemUF(it))});
   const t=totales();
-  $("sumHH").textContent=`${f1(t.hi)} hh ing. · ${f1(t.hp)} hh proy. · ${f2(t.neto)} UF ${S.documento==="B"?"bruto":"neto"}`;
+  $("sumLbl").textContent=S.documento==="B"?"Total bruto (UF)":"Total neto (UF)"; $("sumHi").textContent=f1(t.hi); $("sumHp").textContent=f1(t.hp); $("sumUF").textContent=f2(t.neto);
   S.pagos.forEach((p,i)=>{const el=$("pg-t-"+i);if(el)el.textContent=f2(t.neto*num(p.pct)/100)});
 }
 
