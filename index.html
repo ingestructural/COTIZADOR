@@ -197,6 +197,10 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
     </table>
     <datalist id="dlCat"></datalist>
     <div class="row"><button type="button" class="btn" id="addItem">Agregar ítem</button><button type="button" class="btn" id="editItem">Editar ítem</button><button type="button" class="btn" id="delItem" style="color:var(--warn)">Eliminar ítem</button></div>
+    <div class="hint" style="font-weight:600;margin:10px 0 4px">Entregables (cantidad)</div>
+    <table class="it" id="tEnt"><thead><tr><th>Planos A1</th><th>MDC<br>Informe</th><th>EETT</th></tr></thead>
+      <tbody><tr><td class="n"><input id="ent_p" inputmode="numeric" aria-label="Planos A1"></td><td class="n"><input id="ent_m" inputmode="numeric" aria-label="MDC / informe"></td><td class="n"><input id="ent_e" inputmode="numeric" aria-label="EETT"></td></tr></tbody></table>
+    <p class="hint">En blanco se calcula con el catálogo de los ítems (valor en gris).</p>
     <div class="grid2">
       <label for="tIng">UF/hora ingeniero<input id="tIng" type="number" step="0.01" min="0"></label>
       <label for="tProy">UF/hora proyectista<input id="tProy" type="number" step="0.01" min="0"></label>
@@ -401,11 +405,13 @@ function itemUF(it){return String(it.n||"").trim()?num(it.hi)*num(S.tIng)+num(it
 function totales(){
   const neto=S.items.reduce((s,it)=>s+itemUF(it),0), ent={p:0,m:0,e:0};
   S.items.forEach(it=>{const n=String(it.n||"").trim().toLowerCase(); const c=n&&S.cat.find(c=>String(c.n).trim().toLowerCase()===n); if(c){ent.p+=num(c.p);ent.m+=num(c.m);ent.e+=num(c.e)}});
-  return {neto,ent,hi:S.items.reduce((s,i)=>s+num(i.hi),0),hp:S.items.reduce((s,i)=>s+num(i.hp),0)};
+  // cuadro de entregables del panel: lo que se escribe manda; en blanco se usa lo que suma el catálogo de los ítems
+  const auto={...ent}; ["p","m","e"].forEach(k=>{ const v=S["ent_"+k]; if(v!==""&&v!=null) ent[k]=num(v); });
+  return {neto,ent,auto,hi:S.items.reduce((s,i)=>s+num(i.hi),0),hp:S.items.reduce((s,i)=>s+num(i.hp),0)};
 }
 
 /* ---------------- editor ---------------- */
-const FIELDS=["estado","rev","plazoU","validezU","mandante","proyecto","contacto","fecha","numero","plazo","tIng","tProy","validez","antecedentes","incluye","noIncluye","valorUF","iva","documento","conCLP","plazoTxt","otras"];
+const FIELDS=["estado","rev","plazoU","validezU","mandante","proyecto","contacto","fecha","numero","plazo","tIng","tProy","validez","antecedentes","incluye","noIncluye","valorUF","iva","documento","conCLP","ent_p","ent_m","ent_e","plazoTxt","otras"];
 function fillFields(){FIELDS.forEach(k=>{$(k).value=S[k]??""}); renderListaProy();}
 function renderListaProy(){
   const q=$("buscaProy").value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
@@ -464,6 +470,7 @@ function updPagoSum(){
 function updTotals(){
   S.items.forEach((it,i)=>{const el=$("it-t-"+i);if(el)el.textContent=f2(itemUF(it))});
   const t=totales();
+  ["p","m","e"].forEach(k=>{ const el=$("ent_"+k); if(el) el.placeholder=String(t.auto[k]); });
   $("sumLbl").textContent=S.documento==="B"?"Total bruto (UF)":"Total neto (UF)"; $("sumHi").textContent=f1(t.hi); $("sumHp").textContent=f1(t.hp); $("sumUF").textContent=f2(t.neto);
   S.pagos.forEach((p,i)=>{const el=$("pg-t-"+i);if(el)el.textContent=f2(t.neto*num(p.pct)/100)});
 }
@@ -508,7 +515,7 @@ function cuadroBloques(M){
     `<tr class="sum"><td>${M.bol?"TOTAL HONORARIOS (BRUTO)":"TOTAL NETO"}</td><td></td><td></td><td class="tot">${f2(M.t.neto)}</td></tr>`];
   return [
     {tabla:{pre:`<div class="band">COTIZACIÓN</div>`, cols:COLS_CUADRO, head:`<tr><th>ITEM</th><th>hh/ing.</th><th>hh/proy.</th><th>TOTAL (UF)</th></tr>`, rows, keepLast:2}},
-    {html:`<table class="tc" style="margin-top:14px">${COLS_CUADRO}<thead><tr><th>ENTREGABLES</th><th>PLANOS A1</th><th>MDC/INFORME</th><th>EETT</th></tr></thead><tbody>
+    {html:`<table class="tc" style="margin-top:14px">${COLS_CUADRO}<thead><tr><th>ENTREGABLES</th><th>PLANOS A1</th><th>MDC<br>INFORME</th><th>EETT</th></tr></thead><tbody>
   <tr><td>Documentos</td><td class="num">—</td><td class="num"><b>${M.t.ent.m}</b></td><td class="num"><b>${M.t.ent.e}</b></td></tr>
   <tr><td>Planos</td><td class="num"><b>${M.t.ent.p}</b></td><td class="num">—</td><td class="num">—</td></tr></tbody></table>
   <div class="leg">PLANO A1: DIGITAL FORMATO A1 · MDC/INF.: MEMORIA DE CÁLCULO/INFORME · EETT: ESPECIFICACIONES TÉCNICAS</div>`}];
@@ -645,7 +652,7 @@ async function crearDocx(){
   const d = await loadScript("docx.iife.js","docx");
   const {Document,Packer,Paragraph,TextRun,ImageRun,Table,TableRow,TableCell,Header,Footer,AlignmentType,WidthType,BorderStyle,ShadingType,PageNumber,PageBreak,TabStopType,VerticalAlign,LevelFormat,TableLayoutType} = d;
   const M=modelo(), FONT="Arial", NAVY="1F3864", BLUE="4472C4", BLUE2="9DC3E6", BAND="D9E1F2", IN="EEF0F3", INK="1F3FBF", W=9920;
-  const run=(t,o={})=>new TextRun({text:String(t??""),font:FONT,size:o.size||24,bold:o.bold,italics:o.italics,color:o.color,underline:o.underline,highlight:o.hl});
+  const run=(t,o={})=>new TextRun({text:String(t??""),font:FONT,size:o.size||24,bold:o.bold,italics:o.italics,color:o.color,underline:o.underline,highlight:o.hl,break:o.break});
   const txt=(v,phT,o={})=>String(v??"").trim()?run(v,o):run(`[${phT}]`,{...o,hl:"yellow"});
   const P=(children,o={})=>new Paragraph({children:Array.isArray(children)?children:[children],alignment:o.align||AlignmentType.JUSTIFIED,spacing:{before:o.before??0,after:o.after??120},keepNext:o.keepNext,numbering:o.bullet?{reference:"vin",level:0}:undefined});
   const bd={style:BorderStyle.SINGLE,size:4,color:"BFBFBF"}, borders={top:bd,bottom:bd,left:bd,right:bd}, none={style:BorderStyle.NONE,size:0,color:"FFFFFF"};
@@ -682,7 +689,7 @@ async function crearDocx(){
         ...M.rows.map(it=>({cells:[C(run(it.n,{color:INK}),{fill:IN}),C(run(num(it.hi)||"",{color:INK}),{fill:IN,align:CE}),C(run(num(it.hp)||"",{color:INK}),{fill:IN,align:CE}),C(run(f2(itemUF(it))),{align:R})]})),
         {cells:[C(run(M.bol?"TOTAL HONORARIOS (BRUTO)":"TOTAL NETO",{bold:true}),{fill:BLUE2}),C(run(""),{fill:BLUE2}),C(run(""),{fill:BLUE2}),C(run(f2(M.t.neto),{bold:true}),{fill:BLUE2,align:R})]}]),
       P([],{after:120}),
-      tabla([4960,1500,1800,1660],[{head:true,cells:["ENTREGABLES","PLANOS A1","MDC/INFORME","EETT"].map(head)},
+      tabla([4960,1500,1800,1660],[{head:true,cells:[head("ENTREGABLES"),head("PLANOS A1"),C([run("MDC",{bold:true,color:"FFFFFF"}),run("INFORME",{bold:true,color:"FFFFFF",break:1})],{fill:BLUE,align:CE}),head("EETT")]},
         {cells:[C(run("Documentos")),C(run("—"),{align:CE}),C(run(M.t.ent.m,{bold:true}),{align:CE}),C(run(M.t.ent.e,{bold:true}),{align:CE})]},
         {cells:[C(run("Planos")),C(run(M.t.ent.p,{bold:true}),{align:CE}),C(run("—"),{align:CE}),C(run("—"),{align:CE})]}]),
       P(run("PLANO A1: DIGITAL FORMATO A1 · MDC/INF.: MEMORIA DE CÁLCULO/INFORME · EETT: ESPECIFICACIONES TÉCNICAS",{size:16}),{align:CE,before:60})];
