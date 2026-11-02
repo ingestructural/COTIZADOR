@@ -557,8 +557,7 @@ function bloquesFormal(M){
   B.push({html:`<h3>5.3 Vigencia de la oferta</h3><ul><li>Esta cotización tiene una validez de ${S.validez?esc(vigencia()):ph("validez")}.</li></ul>`});
   B.push(...seccion("5.4 Otras condiciones",lines(S.otras),"otras condiciones"));
   M.ex5.forEach(x=>B.push(...seccion(`${x.n} ${val(x.t,"título")}`,x.l,"contenido")));
-  B.push({html:firma()});
-  return B;
+  return B;   // sin firma al final: la cotización formal se firma en la portada
 }
 const hoja=(H,inner)=>`<div class="page">${H}<div class="pc">${inner}</div>${pie()}</div>`;
 // Reparte los bloques en hojas midiendo su alto real con la misma tipografía y ancho de la hoja
@@ -729,7 +728,6 @@ async function crearDocx(){
     K.push(H3("5.3 Vigencia de la oferta"),P([run("Esta cotización tiene una validez de "),S.validez?run(vigencia()):txt("","validez"),run(".")],{bullet:true}));
     K.push(H3("5.4 Otras condiciones"),...bullets(lines(S.otras),"otras condiciones"));
     M.ex5.forEach(x=>K.push(H3(x.n+" "+(x.t||"")),...bullets(x.l,"contenido")));
-    K.push(...firmaW());
   }
   const doc=new Document({creator:"ING Estructural",title:"Cotización "+(S.numero||"")+" "+(S.proyecto||""),
     styles:{default:{document:{run:{font:FONT,size:24}}}},
