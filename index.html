@@ -218,17 +218,17 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
     <div id="ex2"></div>
     <button type="button" class="btn" data-addx="2" id="addX2">Agregar punto al 2</button>
     <div class="grid2">
-      <label for="valorUF">Valor UF para el resumen en CLP<input id="valorUF" type="number" step="0.01" min="0"></label>
+      <label for="valorUF">Valor UF (se toma de POWER)<input id="valorUF" type="number" step="0.01" min="0"></label>
       <label for="iva">IVA (%)<input id="iva" type="number" step="0.1" min="0"></label>
       <label for="documento">Documento de cobro<select id="documento"><option value="F">Factura ING Estructural (+ IVA)</option><option value="B">Boleta de honorarios G. Aguilera (sin IVA)</option></select></label>
     </div>
-    <div class="row"><button type="button" class="btn x" id="ufHoy" style="color:var(--accent)">Traer UF del día (mindicador.cl)</button><span class="hint" id="ufMsg"></span></div>
+    <div class="row"><button type="button" class="btn x" id="ufHoy" style="color:var(--accent)">Actualizar UF</button><span class="hint" id="ufMsg"></span></div>
     <div>
       <div class="hint" style="font-weight:600;margin-bottom:4px">5.1 Forma de pago (hitos)</div>
       <table class="it" id="tPagos"><thead><tr><th style="width:70px">%</th><th>Hito</th><th style="text-align:right">UF</th><th></th></tr></thead><tbody></tbody></table>
       <div class="row" style="margin-top:6px"><button type="button" class="btn" id="addPago">Agregar hito</button><span class="hint" id="pctSum"></span></div>
     </div>
-    <label for="plazoTxt">5.2 Plazo de entrega<textarea id="plazoTxt"></textarea></label>
+    <label for="plazoTxt">5.2 Plazo de entrega: condiciones adicionales (opcional, una por línea)<textarea id="plazoTxt" placeholder="El plazo de ejecución se toma de «Datos de la cotización»"></textarea></label>
     <label for="otras">5.4 Otras condiciones (una línea por punto)<textarea id="otras"></textarea></label>
     <div id="ex5"></div>
     <button type="button" class="btn" data-addx="5" id="addX5">Agregar punto al 5</button>
@@ -320,12 +320,12 @@ const PW = (()=>{
   async function load(){
     await ensure(); const rows=[]; const step=1000;
     for(let from=0;;from+=step){
-      const r = await fetch(`${CFG.url}/rest/v1/docs?select=col,id,data&col=in.(clientes,proyectos,cotizaciones,cotizador_config)&order=col.asc,id.asc&offset=${from}&limit=${step}`,{headers:hdr(true)});
+      const r = await fetch(`${CFG.url}/rest/v1/docs?select=col,id,data&col=in.(clientes,proyectos,cotizaciones,cotizador_config,config)&order=col.asc,id.asc&offset=${from}&limit=${step}`,{headers:hdr(true)});
       if(r.status===401){sess=null;LS.set(K_S,null);throw Object.assign(new Error("La sesión expiró"),{code:"auth"});}
       if(!r.ok) throw new Error("Error "+r.status);
       const b = await r.json(); rows.push(...b); if(b.length<step) break;
     }
-    cache = {clientes:rows.filter(r=>r.col==="clientes").map(r=>({id:r.id,...r.data})), proyectos:rows.filter(r=>r.col==="proyectos").map(r=>({id:r.id,...r.data})), config:Object.fromEntries(rows.filter(r=>r.col==="cotizador_config").map(r=>[r.id,r.data])), cotizaciones:rows.filter(r=>r.col==="cotizaciones").map(r=>({...r.data,id:r.id})), at:Date.now()};
+    cache = {clientes:rows.filter(r=>r.col==="clientes").map(r=>({id:r.id,...r.data})), proyectos:rows.filter(r=>r.col==="proyectos").map(r=>({id:r.id,...r.data})), config:Object.fromEntries(rows.filter(r=>r.col==="cotizador_config").map(r=>[r.id,r.data])), params:(rows.find(r=>r.col==="config"&&r.id==="params")||{}).data||{}, cotizaciones:rows.filter(r=>r.col==="cotizaciones").map(r=>({...r.data,id:r.id})), at:Date.now()};
     LS.set(K_C,cache); return cache;
   }
   return { get logged(){return !!sess}, get email(){return sess&&sess.email}, get data(){return cache},
@@ -371,14 +371,14 @@ function agregarAlCatalogo(nombre){
 }
 async function cargarPower(){
   try{ await PW.load(); { const rc=(PW.data.config||{}).catalogo; if(rc){ aplicarCatalogo(rc); LS.set(K_CAT,rc); } else guardarCatalogo(); fillFields(); renderItems(); renderCat(); updTotals(); renderDoc(); }
-    renderPwState(); renderGuardadas(); toast("Datos de POWER cargados"); abrirDesdeEnlace(); }
+    renderPwState(); renderGuardadas(); toast("Datos de POWER cargados"); abrirDesdeEnlace(); if(!num(S.valorUF)) traerUF(); }
   catch(e){ if(e.code==="auth"){ $("loginBox").hidden=false; $("lgMsg").textContent=e.message==="Sin sesión"?"":e.message; renderPwState(); } else toast("No se pudo leer POWER: "+e.message); }
 }
 function aplicarProyecto(p){
   const cli=(PW.data.clientes||[]).find(c=>c.nombre===p.mandante);
   Object.assign(S,{proyId:p.id, numero:p.codigo||"", mandante:p.mandante||(cli&&cli.nombre)||"", proyecto:p.proyecto||"", contacto:p.contacto||"", fechaIngreso:p.creado||"", documento:p.documento==="B"?"B":"F"});
   if(p.descripcion && (!S.antecedentes.trim()||S.antecedentes===TPL.antecedentes)) S.antecedentes = TPL.antecedentes+"\n"+p.descripcion;
-  fillFields(); renderIngreso(); renderDoc(); save();
+  fillFields(); renderIngreso(); renderDoc(); save(); traerUF();
 }
 function renderIngreso(){ const r=$("fechaIngRow"); r.hidden=!S.fechaIngreso||S.fechaIngreso===S.fecha; $("usarIngreso").textContent=`Usar fecha de ingreso en POWER (${fdate(S.fechaIngreso)})`; }
 
@@ -414,7 +414,7 @@ function renderItems(){
     <td><input list="dlCat" id="it-n-${i}" data-i="${i}" data-k="n" value="${esc(it.n)}" aria-label="Ítem ${i+1}"></td>
     <td class="n" style="width:64px"><input id="it-hi-${i}" data-i="${i}" data-k="hi" inputmode="decimal" value="${esc(it.hi)}" aria-label="HH ingeniero ítem ${i+1}"></td>
     <td class="n" style="width:64px"><input id="it-hp-${i}" data-i="${i}" data-k="hp" inputmode="decimal" value="${esc(it.hp)}" aria-label="HH proyectista ítem ${i+1}"></td>
-    <td class="t" id="it-t-${i}">${f1(itemUF(it))}</td>
+    <td class="t" id="it-t-${i}">${f2(itemUF(it))}</td>
     <td><button type="button" class="btn x" data-del="${i}" aria-label="Quitar ítem">✕</button></td></tr>`).join("");
 }
 function renderCat(){
@@ -428,7 +428,7 @@ function renderPagos(){
   $("tPagos").tBodies[0].innerHTML=S.pagos.map((p,i)=>`<tr>
     <td class="n"><input id="pg-pct-${i}" data-p="${i}" data-k="pct" inputmode="decimal" value="${esc(p.pct)}"></td>
     <td><input id="pg-h-${i}" data-p="${i}" data-k="h" value="${esc(p.h)}" placeholder="Ej.: contra entrega de memoria de cálculo"></td>
-    <td class="t" id="pg-t-${i}">${f1(neto*num(p.pct)/100)}</td>
+    <td class="t" id="pg-t-${i}">${f2(neto*num(p.pct)/100)}</td>
     <td><button type="button" class="btn x" data-pdel="${i}" aria-label="Quitar hito">✕</button></td></tr>`).join("");
   updPagoSum();
 }
@@ -448,21 +448,21 @@ function updPagoSum(){
   $("pctSum").className="hint"+(bad?" w":"");
 }
 function updTotals(){
-  S.items.forEach((it,i)=>{const el=$("it-t-"+i);if(el)el.textContent=f1(itemUF(it))});
+  S.items.forEach((it,i)=>{const el=$("it-t-"+i);if(el)el.textContent=f2(itemUF(it))});
   const t=totales();
-  $("sumHH").textContent=`${f1(t.hi)} hh ing. · ${f1(t.hp)} hh proy. · ${f1(t.neto)} UF neto`;
-  S.pagos.forEach((p,i)=>{const el=$("pg-t-"+i);if(el)el.textContent=f1(t.neto*num(p.pct)/100)});
+  $("sumHH").textContent=`${f1(t.hi)} hh ing. · ${f1(t.hp)} hh proy. · ${f2(t.neto)} UF ${S.documento==="B"?"bruto":"neto"}`;
+  S.pagos.forEach((p,i)=>{const el=$("pg-t-"+i);if(el)el.textContent=f2(t.neto*num(p.pct)/100)});
 }
 
 /* ---------------- modelo del documento (lo usan la vista, Word y PDF) ---------------- */
 function modelo(){
   const bol=S.documento==="B", t=totales(), ivaP=bol?0:num(S.iva), vuf=num(S.valorUF), iva=t.neto*ivaP/100;
   const rows=S.items.filter(it=>String(it.n||"").trim()||num(it.hi)||num(it.hp));
-  return {t, bol, ivaP, vuf, iva, tot:t.neto+iva, rows, sec3:bol?TPL.sec3.replace("Los valores son netos, no incluyen IVA.","Los valores corresponden a honorarios brutos, a emitir con boleta de honorarios (no afecta a IVA)."):TPL.sec3,
+  return {t, bol, ivaP, vuf, iva, tot:t.neto+iva, rows, sec3:TPL.sec3.replace("Los valores son netos, no incluyen IVA.",bol?"Los valores corresponden a honorarios brutos, a emitir con boleta de honorarios.":"Los valores son netos."),
     pagos:S.pagos.filter(p=>num(p.pct)||String(p.h||"").trim()),
     ex2:S.ex2.filter(x=>String(x.t||"").trim()||lines(x.x).length).map((x,i)=>({n:"2."+(3+i),t:x.t,l:lines(x.x)})),
     ex5:S.ex5.filter(x=>String(x.t||"").trim()||lines(x.x).length).map((x,i)=>({n:"5."+(5+i),t:x.t,l:lines(x.x)})),
-    plazo52: String(S.plazoTxt||"").trim() || (S.plazo?`${S.plazo} ${S.plazoU||"días"} desde la orden de compra o el pago del anticipo.`:"")};
+    plazo52: [...(S.plazo?[`${S.plazo} ${S.plazoU||"días"} desde la orden de compra o el pago del anticipo.`]:[]), ...lines(S.plazoTxt)]};
 }
 
 /* ---------------- vista previa ---------------- */
@@ -489,9 +489,9 @@ function tablaDatos(){
 const COLS_CUADRO=`<colgroup><col style="width:50%"><col style="width:15%"><col style="width:15%"><col style="width:20%"></colgroup>`;
 function cuadroBloques(M){
   const pad=Math.max(0,5-M.rows.length);
-  const rows=[...M.rows.map(it=>`<tr><td class="v">${esc(it.n)}</td><td class="num v">${num(it.hi)||""}</td><td class="num v">${num(it.hp)||""}</td><td class="tot">${f1(itemUF(it))}</td></tr>`),
-    ...Array.from({length:pad},()=>`<tr><td class="v">&nbsp;</td><td class="v"></td><td class="v"></td><td class="tot">0,0</td></tr>`),
-    `<tr class="sum"><td>${M.bol?"TOTAL HONORARIOS (BRUTO)":"TOTAL NETO (SIN IVA)"}</td><td></td><td></td><td class="tot">${f1(M.t.neto)}</td></tr>`];
+  const rows=[...M.rows.map(it=>`<tr><td class="v">${esc(it.n)}</td><td class="num v">${num(it.hi)||""}</td><td class="num v">${num(it.hp)||""}</td><td class="tot">${f2(itemUF(it))}</td></tr>`),
+    ...Array.from({length:pad},()=>`<tr><td class="v">&nbsp;</td><td class="v"></td><td class="v"></td><td class="tot">0,00</td></tr>`),
+    `<tr class="sum"><td>${M.bol?"TOTAL HONORARIOS (BRUTO)":"TOTAL NETO"}</td><td></td><td></td><td class="tot">${f2(M.t.neto)}</td></tr>`];
   return [
     {tabla:{pre:`<div class="band">COTIZACIÓN</div>`, cols:COLS_CUADRO, head:`<tr><th>ITEM</th><th>hh/ing.</th><th>hh/proy.</th><th>TOTAL (UF)</th></tr>`, rows, keepLast:2}},
     {html:`<table class="tc" style="margin-top:14px">${COLS_CUADRO}<thead><tr><th>ENTREGABLES</th><th>PLANOS A1</th><th>MDC/INFORME</th><th>EETT</th></tr></thead><tbody>
@@ -507,7 +507,10 @@ function seccion(tit,items,phT,tag="h3"){ const L=items.length?items:[null];
 const HDR_RAPIDA=()=>hdr("J. GERMÁN AGUILERA HAFNER","Ingeniero Civil · Ingeniería Estructural");
 const HDR_FORMAL=()=>hdr("COTIZACIÓN DE SERVICIOS DE INGENIERÍA",val(S.proyecto,"proyecto"));
 function bloquesRapida(M){ return [{html:tablaDatos()}, ...cuadroBloques(M), {html:firma()}]; }
-function portadaFormal(){
+// valor y plazo de la portada: salen del panel (cuadro de ítems y plazo de ejecución)
+function valorTxt(M){ return M.t.neto?`${f2(M.t.neto)} UF ${M.bol?"(bruto, boleta de honorarios)":"neto"}`:""; }
+function plazoTxt(){ return S.plazo?`${S.plazo} ${S.plazoU||"días"}`:""; }
+function portadaFormal(){ const M=modelo();
   return `<div style="height:1.2cm"></div>
    <p class="ttl cover-t1">COTIZACIÓN</p><p class="ttl cover-t2">SERVICIOS DE INGENIERÍA</p><p class="ttl cover-t2" style="margin-bottom:1cm">${val(S.proyecto,"proyecto")}</p>
    <table class="cover"><tbody>
@@ -515,6 +518,8 @@ function portadaFormal(){
     <tr><td class="k"><b>Cliente / Mandante</b></td><td>${val(S.mandante,"mandante")}</td></tr>
     <tr><td class="k"><b>Contacto cliente</b></td><td>${val(S.contacto,"contacto")}</td></tr>
     <tr><td class="k"><b>Fecha de emisión</b></td><td>${S.fecha?fdate(S.fecha):ph("dd-mm-aaaa")}</td></tr>
+    <tr><td class="k"><b>Plazo de ejecución</b></td><td>${plazoTxt()?esc(plazoTxt()):ph("plazo de ejecución")}</td></tr>
+    <tr><td class="k"><b>Valor de la cotización</b></td><td>${valorTxt(M)?esc(valorTxt(M)):ph("ítems del cuadro")}</td></tr>
     <tr><td class="k"><b>Validez de la oferta</b></td><td>${S.validez?esc(vigencia()):ph("validez")}</td></tr>
     <tr><td class="k"><b>Preparado por</b></td><td>J. Germán Aguilera Hafner, Ingeniero Civil</td></tr>
     <tr><td class="k"><b>Contacto oficina</b></td><td>ingestructural@ingestructural.cl</td></tr>
@@ -526,16 +531,16 @@ function bloquesFormal(M){
   B.push({html:`<h2>2. ALCANCE DE LOS SERVICIOS</h2><p>${esc(TPL.alcance)}</p>`});
   B.push(...seccion("2.1 Incluye",lines(S.incluye),"actividades incluidas"), ...seccion("2.2 No incluye",lines(S.noIncluye),"exclusiones"));
   M.ex2.forEach(x=>B.push(...seccion(`${x.n} ${val(x.t,"título")}`,x.l,"contenido")));
-  B.push({html:`<h2>3. DETALLE DE HORAS HOMBRE E ÍTEMS DE ENTREGABLES</h2><p>${esc(M.sec3)}</p>`}, {html:tablaDatos()}, ...cuadroBloques(M));
+  B.push({html:`<h2>3. DETALLE DE HORAS HOMBRE E ÍTEMS DE ENTREGABLES</h2><p>${esc(M.sec3)}</p>`}, ...cuadroBloques(M));
   B.push({html:`<h2>4. RESUMEN ECONÓMICO</h2>
   <table><thead><tr><th style="text-align:left">Concepto</th><th>Monto (UF)</th><th>Monto (CLP)</th></tr></thead><tbody>
    <tr><td>${M.bol?"Honorarios (sección 3)":"Subtotal Neto (sección 3)"}</td><td class="tot">${f2(M.t.neto)}</td><td class="tot">${M.vuf?clp(M.t.neto*M.vuf):ph("valor UF")}</td></tr>
    ${M.bol?"":`<tr><td>IVA (${f1(M.ivaP)}%)</td><td class="tot">${f2(M.iva)}</td><td class="tot">${M.vuf?clp(M.iva*M.vuf):ph("valor UF")}</td></tr>`}
    <tr><td><b>${M.bol?"TOTAL COTIZACIÓN (BRUTO, BOLETA DE HONORARIOS)":"TOTAL COTIZACIÓN"}</b></td><td class="tot"><b>${f2(M.tot)}</b></td><td class="tot"><b>${M.vuf?clp(M.tot*M.vuf):ph("valor UF")}</b></td></tr>
   </tbody></table>${M.vuf?`<p style="font-size:10pt;margin-top:4px">Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.</p>`:""}`});
-  const pagos=M.pagos.length?`<table class="mini"><tbody>${M.pagos.map(p=>`<tr><td style="width:16%">${f1(num(p.pct))} %</td><td>${val(p.h,"hito")}</td><td class="tot">${f2(M.t.neto*num(p.pct)/100)} UF${M.bol?"":" + IVA"}</td></tr>`).join("")}</tbody></table>`:`<ul><li>${ph("hitos de pago")}</li></ul>`;
+  const pagos=M.pagos.length?`<table class="mini"><tbody>${M.pagos.map(p=>`<tr><td style="width:16%">${f1(num(p.pct))} %</td><td>${val(p.h,"hito")}</td><td class="tot">${f2(M.t.neto*num(p.pct)/100)} UF${M.bol?"":" neto"}</td></tr>`).join("")}</tbody></table>`:`<ul><li>${ph("hitos de pago")}</li></ul>`;
   B.push({html:`<h2>5. CONDICIONES GENERALES</h2><h3>5.1 Forma de pago</h3>${pagos}`});
-  B.push(...seccion("5.2 Plazo de entrega",M.plazo52?[M.plazo52]:[],"plazo de entrega"));
+  B.push(...seccion("5.2 Plazo de entrega",M.plazo52,"plazo de ejecución"));
   B.push({html:`<h3>5.3 Vigencia de la oferta</h3><ul><li>Esta cotización tiene una validez de ${S.validez?esc(vigencia()):ph("validez")}.</li></ul>`});
   B.push(...seccion("5.4 Otras condiciones",lines(S.otras),"otras condiciones"));
   M.ex5.forEach(x=>B.push(...seccion(`${x.n} ${val(x.t,"título")}`,x.l,"contenido")));
@@ -654,8 +659,8 @@ async function crearDocx(){
     const head=t=>C(run(t,{bold:true,color:"FFFFFF"}),{fill:BLUE,align:CE});
     return [P(run("COTIZACIÓN",{bold:true,color:NAVY}),{before:200,after:60,keepNext:true}),
       tabla([4960,1500,1500,1960],[{head:true,cells:["ITEM","hh/ing.","hh/proy.","TOTAL (UF)"].map(head)},
-        ...M.rows.map(it=>({cells:[C(run(it.n,{color:INK}),{fill:IN}),C(run(num(it.hi)||"",{color:INK}),{fill:IN,align:CE}),C(run(num(it.hp)||"",{color:INK}),{fill:IN,align:CE}),C(run(f1(itemUF(it))),{align:R})]})),
-        {cells:[C(run(M.bol?"TOTAL HONORARIOS (BRUTO)":"TOTAL NETO (SIN IVA)",{bold:true}),{fill:BLUE2}),C(run(""),{fill:BLUE2}),C(run(""),{fill:BLUE2}),C(run(f1(M.t.neto),{bold:true}),{fill:BLUE2,align:R})]}]),
+        ...M.rows.map(it=>({cells:[C(run(it.n,{color:INK}),{fill:IN}),C(run(num(it.hi)||"",{color:INK}),{fill:IN,align:CE}),C(run(num(it.hp)||"",{color:INK}),{fill:IN,align:CE}),C(run(f2(itemUF(it))),{align:R})]})),
+        {cells:[C(run(M.bol?"TOTAL HONORARIOS (BRUTO)":"TOTAL NETO",{bold:true}),{fill:BLUE2}),C(run(""),{fill:BLUE2}),C(run(""),{fill:BLUE2}),C(run(f2(M.t.neto),{bold:true}),{fill:BLUE2,align:R})]}]),
       P([],{after:120}),
       tabla([4960,1500,1800,1660],[{head:true,cells:["ENTREGABLES","PLANOS A1","MDC/INFORME","EETT"].map(head)},
         {cells:[C(run("Documentos")),C(run("—"),{align:CE}),C(run(M.t.ent.m,{bold:true}),{align:CE}),C(run(M.t.ent.e,{bold:true}),{align:CE})]},
@@ -680,6 +685,7 @@ async function crearDocx(){
     K.push(tabla([3400,6520],[
       kv("N° de Cotización",txt(numRev(),"código de proyecto en POWER",s28)), kv("Cliente / Mandante",txt(S.mandante,"mandante",s28)),
       kv("Contacto cliente",txt(S.contacto,"contacto",s28)), kv("Fecha de emisión",txt(fdate(S.fecha),"dd-mm-aaaa",s28)),
+      kv("Plazo de ejecución",txt(plazoTxt(),"plazo de ejecución",s28)), kv("Valor de la cotización",txt(valorTxt(M),"ítems del cuadro",s28)),
       kv("Validez de la oferta",S.validez?run(vigencia(),s28):txt("","validez",s28)),
       kv("Preparado por",run("J. Germán Aguilera Hafner, Ingeniero Civil",s28)), kv("Contacto oficina",run("ingestructural@ingestructural.cl",s28))]));
     K.push(...firmaW());
@@ -689,7 +695,7 @@ async function crearDocx(){
     K.push(H3("2.1 Incluye"),...bullets(lines(S.incluye),"actividades incluidas"));
     K.push(H3("2.2 No incluye"),...bullets(lines(S.noIncluye),"exclusiones"));
     M.ex2.forEach(x=>K.push(H3(x.n+" "+(x.t||"")),...bullets(x.l,"contenido")));
-    K.push(H2("3. DETALLE DE HORAS HOMBRE E ÍTEMS DE ENTREGABLES"),P(run(M.sec3)),datos(),...cuadroW());
+    K.push(H2("3. DETALLE DE HORAS HOMBRE E ÍTEMS DE ENTREGABLES"),P(run(M.sec3)),...cuadroW());
     K.push(H2("4. RESUMEN ECONÓMICO"));
     const cl=v=>M.vuf?run(clp(v*M.vuf)):txt("","valor UF");
     K.push(tabla([5200,2200,2520],[{head:true,cells:["Concepto","Monto (UF)","Monto (CLP)"].map(t=>C(run(t,{bold:true,color:"FFFFFF"}),{fill:BLUE,align:CE}))},
@@ -698,9 +704,9 @@ async function crearDocx(){
       {cells:[C(run(M.bol?"TOTAL COTIZACIÓN (BRUTO, BOLETA DE HONORARIOS)":"TOTAL COTIZACIÓN",{bold:true})),C(run(f2(M.tot),{bold:true}),{align:R}),C(M.vuf?run(clp(M.tot*M.vuf),{bold:true}):txt("","valor UF"),{align:R})]}]));
     if(M.vuf) K.push(P(run(`Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.`,{size:20}),{before:60}));
     K.push(H2("5. CONDICIONES GENERALES"),H3("5.1 Forma de pago"));
-    if(M.pagos.length) K.push(tabla([1500,5900,2520],M.pagos.map(p=>({cells:[C(run(f1(num(p.pct))+" %")),C(txt(p.h,"hito")),C(run(f2(M.t.neto*num(p.pct)/100)+(M.bol?" UF":" UF + IVA")),{align:R})]}))));
+    if(M.pagos.length) K.push(tabla([1500,5900,2520],M.pagos.map(p=>({cells:[C(run(f1(num(p.pct))+" %")),C(txt(p.h,"hito")),C(run(f2(M.t.neto*num(p.pct)/100)+(M.bol?" UF":" UF neto")),{align:R})]}))));
     else K.push(...bullets([],"hitos de pago"));
-    K.push(H3("5.2 Plazo de entrega"),...bullets(M.plazo52?[M.plazo52]:[],"plazo de entrega"));
+    K.push(H3("5.2 Plazo de entrega"),...bullets(M.plazo52,"plazo de ejecución"));
     K.push(H3("5.3 Vigencia de la oferta"),P([run("Esta cotización tiene una validez de "),S.validez?run(vigencia()):txt("","validez"),run(".")],{bullet:true}));
     K.push(H3("5.4 Otras condiciones"),...bullets(lines(S.otras),"otras condiciones"));
     M.ex5.forEach(x=>K.push(H3(x.n+" "+(x.t||"")),...bullets(x.l,"contenido")));
@@ -812,11 +818,16 @@ $("lgPass").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault(
 async function login(){ $("lgMsg").textContent="Entrando…";
   try{ await PW.login($("lgMail").value.trim(),$("lgPass").value); $("lgPass").value=""; $("loginBox").hidden=true; $("lgMsg").textContent=""; await cargarPower(); }
   catch(e){ $("lgMsg").textContent=e.message; } }
+/* Valor UF igual que en POWER: el valor UF propio del proyecto; si no tiene, la UF del día (mindicador.cl, la misma fuente de POWER);
+   sin conexión, la UF de referencia de Parámetros de POWER. Se completa sola, sin preguntar. */
 async function traerUF(){ if(DEMO){$("ufMsg").textContent="Disponible en el sitio instalado.";return;}
-  $("ufMsg").textContent="Consultando…";
+  const p=(PW.data.proyectos||[]).find(x=>x.id===S.proyId), par=(PW.data.params||{});
+  const fija=(v,txt)=>{ S.valorUF=v; $("valorUF").value=v; $("ufMsg").textContent=txt; renderDoc(); save(); };
+  if(p&&+p.valorUF>0) return fija(+p.valorUF,`UF del proyecto en POWER: ${f2(+p.valorUF)}`);
+  $("ufMsg").textContent="Consultando UF…";
   try{ const r=await fetch("https://mindicador.cl/api/uf"); const j=await r.json(); const s=j.serie&&j.serie[0]; if(!s) throw new Error("sin datos");
-    S.valorUF=s.valor; $("valorUF").value=s.valor; $("ufMsg").textContent=`UF ${fdate(s.fecha.slice(0,10))}: ${f2(s.valor)}`; renderDoc(); save(); }
-  catch(e){ $("ufMsg").textContent="No se pudo obtener la UF; ingrésela a mano."; } }
+    fija(s.valor,`UF del día ${fdate(s.fecha.slice(0,10))} (como en POWER): ${f2(s.valor)}`); }
+  catch(e){ if(+par.ufRef>0) fija(+par.ufRef,`UF de referencia de POWER: ${f2(+par.ufRef)}`); else $("ufMsg").textContent="No se pudo obtener la UF."; } }
 $("btnPower").addEventListener("click",()=>{ if(PW.logged) cargarPower(); else { $("loginBox").hidden=false; $("lgMail").focus(); } });
 $("expWord").addEventListener("click",exportarWord);
 $("expPdf").addEventListener("click",exportarPdf);
@@ -829,6 +840,7 @@ all();
 if(!DEMO&&"serviceWorker" in navigator&&location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
 if(PW.logged&&!DEMO) cargarPower();
 else if(!DEMO&&/^#abrir=/.test(location.hash)){ $("loginBox").hidden=false; toast("Inicie sesión para abrir la cotización"); }
+if(!PW.logged&&!DEMO&&!num(S.valorUF)) traerUF();
 </script>
 </body>
 </html>
