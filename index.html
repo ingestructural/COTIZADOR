@@ -46,6 +46,8 @@ legend{font-family:var(--f-display);font-weight:600;font-size:1.1rem;padding:0 6
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
 .grid2 .full{grid-column:1/-1}
 label{display:flex;flex-direction:column;gap:3px;font-size:.78rem;color:var(--muted);font-weight:600;min-width:0}
+label.chk{flex-direction:row;align-items:center;justify-content:flex-start;gap:8px;margin:4px 0}
+label.chk input{width:18px;height:18px;flex:0 0 auto;margin:0}
 input,select,textarea{font:inherit;font-size:.92rem;color:var(--fg);background:var(--input);border:1px solid var(--line);border-radius:4px;padding:6px 8px;width:100%;box-sizing:border-box;min-width:0}
 textarea{min-height:64px;resize:vertical}
 select[size]{background:var(--panel);padding:2px}
@@ -167,7 +169,13 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
     <div class="row"><button type="button" class="btn pri" id="guardar">Guardar en POWER</button><button type="button" class="btn" id="duplicar">Duplicar como nueva</button><button type="button" class="btn" id="refrescar" title="Vuelve a leer POWER y recarga mandante, proyecto, contacto, código, documento y UF del proyecto elegido">Recargar POWER</button><span class="hint" id="guardMsg"></span></div>
     <label for="buscaCot">Abrir una cotización guardada<input id="buscaCot" type="search" placeholder="Filtrar por N°, mandante, proyecto o estado…"></label>
     <select id="selCot" size="5" aria-label="Cotizaciones guardadas"></select>
-    <div class="row"><button type="button" class="btn" id="abrirCot">Abrir</button><button type="button" class="btn x" id="borrarCot" style="color:var(--warn)">Eliminar</button></div>
+    <div class="row"><button type="button" class="btn" id="abrirCot">Abrir</button><button type="button" class="btn x" id="borrarCot" style="color:var(--warn)">Eliminar</button><button type="button" class="btn" id="verRegistro" title="PDF archivados automáticamente cada vez que se guarda en POWER">Registro PDF</button></div>
+    <div id="boxRegistro" hidden>
+      <label for="buscaReg">Registro de PDF emitidos (uno por cada guardado)<input id="buscaReg" type="search" placeholder="Filtrar por N°, mandante, proyecto…"></label>
+      <label class="chk"><input type="checkbox" id="regSolo"> Solo la cotización abierta</label>
+      <select id="selReg" size="6" aria-label="Registro de PDF"></select>
+      <div class="row"><button type="button" class="btn" id="regAbrir">Ver PDF</button><button type="button" class="btn" id="regGuardar">Guardar PDF…</button></div>
+    </div>
   </fieldset>
 
   <fieldset>
@@ -253,7 +261,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 </div>
 </div>
 <div class="pdfbox" id="pdfBox" hidden>
-  <div class="pdfbar"><b>Vista del PDF</b><span class="sp"></span><button type="button" class="btn pri" id="pdfDl">Guardar PDF</button><button type="button" class="btn" id="pdfClose">Cerrar</button></div>
+  <div class="pdfbar"><b id="pdfTit">Vista del PDF</b><span class="sp"></span><button type="button" class="btn pri" id="pdfDl">Guardar PDF</button><button type="button" class="btn" id="pdfClose">Cerrar</button></div>
   <div class="pdfpages" id="pdfPages" aria-label="Hojas del PDF"></div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -342,6 +350,16 @@ const PW = (()=>{
       const r=await fetch(`${CFG.url}/rest/v1/docs?on_conflict=owner,col,id`,{method:"POST",headers:{...hdr(true),Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify([{owner:sess.uid,col,id,data,updated_at:new Date().toISOString()}])});
       if(r.status===401) throw Object.assign(new Error("La sesión expiró"),{code:"auth"}); if(!r.ok) throw new Error((await r.text().catch(()=>""))||("Error "+r.status));
       const L=(cache[col]=cache[col]||[]); const i=L.findIndex(x=>x.id===id); const row={...data,id}; if(i>=0) L[i]=row; else L.push(row); LS.set(K_C,cache); },
+    // Registro de PDF: colección aparte, no se carga con load() ni se guarda en el navegador
+    async putPdf(id,data){ await ensure(); if(!sess.uid) throw Object.assign(new Error("Vuelva a iniciar sesión"),{code:"auth"});
+      const r=await fetch(`${CFG.url}/rest/v1/docs`,{method:"POST",headers:{...hdr(true),Prefer:"return=minimal"},body:JSON.stringify([{owner:sess.uid,col:"cotizaciones_pdf",id,data,updated_at:new Date().toISOString()}])});
+      if(!r.ok) throw new Error((await r.text().catch(()=>""))||("Error "+r.status)); },
+    async listPdf(){ await ensure();
+      const r=await fetch(`${CFG.url}/rest/v1/docs?select=id,meta:data->meta&col=eq.cotizaciones_pdf&order=id.desc&limit=2000`,{headers:hdr(true)});
+      if(!r.ok) throw new Error("Error "+r.status); return (await r.json()).map(x=>({id:x.id,...(x.meta||{})})); },
+    async getPdf(id){ await ensure();
+      const r=await fetch(`${CFG.url}/rest/v1/docs?select=b64:data->>b64&col=eq.cotizaciones_pdf&id=eq.${encodeURIComponent(id)}`,{headers:hdr(true)});
+      if(!r.ok) throw new Error("Error "+r.status); const j=await r.json(); if(!j[0]||!j[0].b64) throw new Error("PDF no encontrado"); return j[0].b64; },
     async del(col,id){ await ensure();
       const r=await fetch(`${CFG.url}/rest/v1/docs?col=eq.${encodeURIComponent(col)}&id=eq.${encodeURIComponent(id)}`,{method:"DELETE",headers:hdr(true)});
       if(!r.ok) throw new Error("Error "+r.status); cache[col]=(cache[col]||[]).filter(x=>x.id!==id); LS.set(K_C,cache); } };
@@ -615,13 +633,54 @@ function renderGuardadas(){
   $("selCot").innerHTML=F.length?F.map(c=>`<option value="${esc(c.id)}"${c.id===S.id?" selected":""}>${esc(cotLabel(c))}</option>`).join(""):`<option disabled>${PW.logged?(L.length?"Sin resultados":"Aún no hay cotizaciones guardadas"):"Conecte POWER para ver sus cotizaciones"}</option>`;
   $("guardar").disabled=$("duplicar").disabled=false;
   $("guardMsg").textContent=S.guardado?`Guardada ${new Date(S.guardado).toLocaleString("es-CL")}`:"Sin guardar en POWER";
+  renderRegistro();
 }
 async function guardarCot(){
   if(!PW.logged){ $("loginBox").hidden=false; $("lgMail").focus(); return toast("Conecte POWER para guardar"); }
   $("guardar").disabled=true; $("guardMsg").textContent="Guardando…";
-  try{ const data={...S, guardado:new Date().toISOString()}; delete data.id; await PW.put("cotizaciones",S.id,data); S.guardado=data.guardado; save(); toast("Cotización guardada en POWER"); }
+  try{ const data={...S, guardado:new Date().toISOString()}; delete data.id; await PW.put("cotizaciones",S.id,data); S.guardado=data.guardado; save(); toast("Cotización guardada en POWER"); renderGuardadas(); await archivarPdf(data.guardado); }
   catch(e){ if(e.code==="auth"){ $("loginBox").hidden=false; } toast("No se pudo guardar: "+e.message); }
   finally{ renderGuardadas(); }
+}
+/* ---------------- Registro de PDF (se archiva al guardar en POWER) ---------------- */
+let REG=null;
+const blobB64=b=>new Promise((ok,ko)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(",")[1]);r.onerror=()=>ko(r.error);r.readAsDataURL(b);});
+const b64Blob=t=>{const bin=atob(t),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:"application/pdf"});};
+async function archivarPdf(ts){
+  $("guardMsg").textContent="Guardada; archivando PDF…";
+  try{ const [w]=await pdfWorker(); const blob=await w.outputPdf("blob"); const M=modelo();
+    const meta={cot:S.id,numero:S.numero,rev:S.rev,estado:S.estado,tipo:S.tipo,mandante:S.mandante,proyecto:S.proyecto,fecha:S.fecha,guardado:ts,neto:M.t.neto,documento:S.documento,archivo:nombreArchivo("pdf"),kb:Math.round(blob.size/1024)};
+    await PW.putPdf(ts.replace(/[^0-9]/g,"").slice(0,17)+"_"+S.id,{meta,b64:await blobB64(blob)});
+    if(REG) REG.unshift({id:ts.replace(/[^0-9]/g,"").slice(0,17)+"_"+S.id,...meta}); renderRegistro(); toast("Cotización guardada y PDF archivado en el registro"); }
+  catch(e){ toast("Guardada, pero no se pudo archivar el PDF: "+e.message); }
+  finally{ renderGuardadas(); }
+}
+const regLabel=r=>[new Date(r.guardado).toLocaleString("es-CL",{dateStyle:"short",timeStyle:"short"}),r.numero||"(sin N°)",r.rev?"Rev. "+r.rev:"",r.mandante,r.proyecto,r.estado,(r.neto!=null?f2(r.neto)+" UF":"")].filter(Boolean).join(" · ");
+function renderRegistro(){ if(!REG) return;
+  const norm=t=>String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const q=norm($("buscaReg").value.trim()), solo=$("regSolo").checked;
+  const F=REG.filter(r=>(!solo||r.cot===S.id)&&(!q||norm(regLabel(r)).includes(q)));
+  $("selReg").innerHTML=F.length?F.map(r=>`<option value="${esc(r.id)}">${esc(regLabel(r))}</option>`).join(""):`<option disabled>${REG.length?"Sin resultados":"Aún no hay PDF archivados"}</option>`;
+}
+async function verRegistro(){
+  if(!PW.logged){ $("loginBox").hidden=false; return toast("Conecte POWER para ver el registro"); }
+  const box=$("boxRegistro"); if(!box.hidden&&REG){ box.hidden=true; return; }
+  box.hidden=false; $("selReg").innerHTML="<option disabled>Cargando…</option>";
+  try{ REG=await PW.listPdf(); REG.sort((a,b)=>String(b.guardado||"").localeCompare(String(a.guardado||""))); renderRegistro(); }
+  catch(e){ $("selReg").innerHTML=""; toast("No se pudo leer el registro: "+e.message); }
+}
+const pedirPdf=async nombre=>!window.showSaveFilePicker?null:showSaveFilePicker({suggestedName:nombre,types:[{description:"Documento PDF",accept:{"application/pdf":[".pdf"]}}]}).catch(e=>e.name==="AbortError"?false:null);
+async function guardarBlobPdf(blob,nombre){ const fh=await pedirPdf(nombre); if(fh===false) return; if(fh) await escribirArchivo(fh,blob); else descargar(blob,nombre); }
+const regNombre=r=>(r.archivo||"Cotizacion.pdf").replace(/\.pdf$/i,"")+(r.rev?"_Rev"+r.rev:"")+"_"+String(r.guardado||"").slice(0,10)+".pdf";
+async function pdfRegistro(modo){
+  const id=$("selReg").value, r=(REG||[]).find(x=>x.id===id); if(!r) return toast("Elija un PDF del registro");
+  const nombre=regNombre(r); let fh=null; if(modo==="guardar"){ fh=await pedirPdf(nombre); if(fh===false) return; }
+  $("regAbrir").disabled=$("regGuardar").disabled=true;
+  try{ toast("Descargando PDF del registro…"); const blob=b64Blob(await PW.getPdf(id));
+    if(modo==="ver") await mostrarPdf(await blob.arrayBuffer(),{blob,nombre,titulo:regLabel(r)});
+    else if(fh) await escribirArchivo(fh,blob); else descargar(blob,nombre); }
+  catch(e){ toast("No se pudo obtener el PDF: "+e.message); }
+  finally{ $("regAbrir").disabled=$("regGuardar").disabled=false; }
 }
 let borrarPend=null, nuevaPend=null;
 // Nueva cotización: conserva tipo, tarifas y catálogo. Si el borrador no está guardado en POWER pide un segundo clic.
@@ -772,15 +831,18 @@ async function exportarPdf(){ if(DEMO) return toast("Descarga disponible en el s
 // Vista del PDF: se dibuja cada hoja con PDF.js (algunos Chrome no muestran PDF dentro de la página)
 async function verPdf(){ if(DEMO) return toast("Vista del PDF disponible en el sitio instalado");
   $("verPdf").disabled=true; toast("Generando PDF…");
-  try{ const [w]=await pdfWorker(); const buf=await w.outputPdf("arraybuffer");
-    const lib=await loadScript("pdfjs.min.js","pdfjsLib"); lib.GlobalWorkerOptions.workerSrc="pdfjs.worker.min.js";
-    const pdf=await lib.getDocument({data:new Uint8Array(buf)}).promise, box=$("pdfPages"); box.innerHTML="";
-    $("pdfBox").hidden=false;
-    for(let n=1;n<=pdf.numPages;n++){ const pg=await pdf.getPage(n), vp=pg.getViewport({scale:1.6}), c=document.createElement("canvas");
-      c.width=vp.width; c.height=vp.height; c.style.width=Math.round(vp.width/1.6*1.25)+"px"; box.appendChild(c);
-      await pg.render({canvasContext:c.getContext("2d"),viewport:vp}).promise; }
-    $("toast").hidden=true; }
+  try{ const [w]=await pdfWorker(); await mostrarPdf(await w.outputPdf("arraybuffer"),null); }
   catch(e){ toast("No se pudo generar el PDF: "+e.message); } finally{ $("verPdf").disabled=false; } }
+// vista: reg = {blob,nombre} cuando se muestra un PDF del registro (su botón Guardar guarda ese archivo, no la cotización abierta)
+let VISTA_REG=null;
+async function mostrarPdf(buf,reg){
+  const lib=await loadScript("pdfjs.min.js","pdfjsLib"); lib.GlobalWorkerOptions.workerSrc="pdfjs.worker.min.js";
+  const pdf=await lib.getDocument({data:new Uint8Array(buf)}).promise, box=$("pdfPages"); box.innerHTML="";
+  VISTA_REG=reg; $("pdfTit").textContent=reg?"PDF del registro · "+reg.titulo:"Vista del PDF"; $("pdfBox").hidden=false;
+  for(let n=1;n<=pdf.numPages;n++){ const pg=await pdf.getPage(n), vp=pg.getViewport({scale:1.6}), c=document.createElement("canvas");
+    c.width=vp.width; c.height=vp.height; c.style.width=Math.round(vp.width/1.6*1.25)+"px"; box.appendChild(c);
+    await pg.render({canvasContext:c.getContext("2d"),viewport:vp}).promise; }
+  $("toast").hidden=true; }
 
 /* ---------------- eventos ---------------- */
 document.querySelector(".seg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.tipo=b.dataset.t;renderTipo();renderDoc();save();});
@@ -788,6 +850,7 @@ $("ed").addEventListener("input",e=>{
   const el=e.target, d=el.dataset;
   if(el.id==="buscaProy"){ renderListaProy(); return; }
   if(el.id==="buscaCot"||el.id==="selCot"){ if(el.id==="buscaCot") renderGuardadas(); return; }
+  if(el.id==="buscaReg"||el.id==="regSolo"||el.id==="selReg"){ if(el.id!=="selReg") renderRegistro(); return; }
   if(el.id&&el.id.startsWith("lg")) return;
   if(d.i!==undefined){S.items[+d.i][d.k]=el.value;updTotals();}
   else if(d.c!==undefined){S.cat[+d.c][d.k]=el.value; if(d.k==="n") $("dlCat").innerHTML=S.cat.map(c=>`<option value="${esc(c.n)}">`).join(""); updTotals(); guardarCatalogo();}
@@ -815,6 +878,9 @@ $("ed").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)re
   else if(b.id==="refrescar"){refrescarPower();return;}
   else if(b.id==="nueva"){nuevaCot(b);return;}
   else if(b.id==="guardar"){guardarCot();return;}
+  else if(b.id==="verRegistro"){verRegistro();return;}
+  else if(b.id==="regAbrir"){pdfRegistro("ver");return;}
+  else if(b.id==="regGuardar"){pdfRegistro("guardar");return;}
   else if(b.id==="duplicar"){S={...JSON.parse(JSON.stringify(S)),id:uid(),estado:"Borrador",guardado:""};all();save();toast("Copia creada; guárdela para registrarla");return;}
   else if(b.id==="abrirCot"){const c=(PW.data.cotizaciones||[]).find(c=>c.id===$("selCot").value); if(!c) return toast("Elija una cotización de la lista");
     const cat=S.cat; S=Object.assign(nueva(c.tipo),JSON.parse(JSON.stringify(c))); S.cat=cat; (c.items||[]).forEach(it=>agregarAlCatalogo(it.n)); all(); save(); toast("Cotización abierta"); return;}
@@ -858,8 +924,8 @@ $("expWord").addEventListener("click",exportarWord);
 $("expPdf").addEventListener("click",exportarPdf);
 $("verPdf").addEventListener("click",verPdf);
 $("nuevaTop").addEventListener("click",e=>nuevaCot(e.currentTarget));
-$("pdfClose").addEventListener("click",()=>{ $("pdfBox").hidden=true; $("pdfPages").innerHTML=""; });
-$("pdfDl").addEventListener("click",exportarPdf);
+$("pdfClose").addEventListener("click",()=>{ $("pdfBox").hidden=true; $("pdfPages").innerHTML=""; VISTA_REG=null; });
+$("pdfDl").addEventListener("click",()=>VISTA_REG?guardarBlobPdf(VISTA_REG.blob,VISTA_REG.nombre):exportarPdf());
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&!$("pdfBox").hidden) $("pdfClose").click(); });
 all();
 if(!DEMO&&"serviceWorker" in navigator&&location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
