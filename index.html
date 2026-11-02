@@ -223,6 +223,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
     <div class="grid2">
       <label for="valorUF">Valor UF (se toma de POWER)<input id="valorUF" type="number" step="0.01" min="0"></label>
       <label for="iva">IVA (%)<input id="iva" type="number" step="0.1" min="0"></label>
+      <label for="conCLP">Monto en pesos en el resumen (punto 4)<select id="conCLP"><option value="no">No incluir (solo UF)</option><option value="si">Incluir columna en pesos</option></select></label>
       <label for="documento">Documento de cobro<select id="documento"><option value="F">Factura ING Estructural (+ IVA)</option><option value="B">Boleta de honorarios G. Aguilera (sin IVA)</option></select></label>
     </div>
     <div class="row"><button type="button" class="btn x" id="ufHoy" style="color:var(--accent)">Actualizar UF</button><span class="hint" id="ufMsg"></span></div>
@@ -285,7 +286,7 @@ function nueva(tipo){return {
  tipo:tipo||"rapida", proyId:"", numero:"", mandante:"", proyecto:"", contacto:"", fecha:today(), fechaIngreso:"", plazo:"", plazoU:"días",
  items:[{n:"",hi:"",hp:""}], tIng:1.22, tProy:0.75, cat:CAT0.map(c=>({...c})),
  validez:30, validezU:"días", antecedentes:TPL.antecedentes, incluye:"", noIncluye:TPL.noIncluye.join("\n"), ex2:[],
- valorUF:"", iva:19, documento:"F", pagos:[], plazoTxt:"", otras:TPL.otras.join("\n"), ex5:[]
+ valorUF:"", iva:19, documento:"F", conCLP:"no", pagos:[], plazoTxt:"", otras:TPL.otras.join("\n"), ex5:[]
 };}
 function ejemplo(){const s=nueva("rapida");Object.assign(s,{proyId:"ej1",mandante:EJEMPLOS[0].mandante,proyecto:EJEMPLOS[0].proyecto,contacto:EJEMPLOS[0].contacto,plazo:3,
  items:[{n:"Modelación 3D",hi:3,hp:2},{n:"Verificación Estructural",hi:5,hp:0},{n:"Elaboración memoria de cálculo",hi:3,hp:1}]});return s;}
@@ -293,7 +294,7 @@ function ejemplo(){const s=nueva("rapida");Object.assign(s,{proyId:"ej1",mandant
 const LS = { get:k=>{try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}}, set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}} };
 const KEY="cot_ing_borrador_v2";
 let S = LS.get(KEY); if(!S||!S.items) S = ejemplo();
-if(catalogoLocal()) aplicarCatalogo(catalogoLocal()); S.documento = S.documento||"F"; S.plazoU = S.plazoU||"días"; S.validezU = S.validezU||"días"; if(!S._v30){ if(S.validez===""||S.validez==null) S.validez=30; S._v30=true; } S.id = S.id||uid(); S.estado = S.estado||"Borrador"; S.rev = S.rev??""; S.ex2 = S.ex2||[]; S.ex5 = S.ex5||[]; S.pagos = S.pagos||[];
+if(catalogoLocal()) aplicarCatalogo(catalogoLocal()); S.documento = S.documento||"F"; S.conCLP = S.conCLP||"no"; S.plazoU = S.plazoU||"días"; S.validezU = S.validezU||"días"; if(!S._v30){ if(S.validez===""||S.validez==null) S.validez=30; S._v30=true; } S.id = S.id||uid(); S.estado = S.estado||"Borrador"; S.rev = S.rev??""; S.ex2 = S.ex2||[]; S.ex5 = S.ex5||[]; S.pagos = S.pagos||[];
 const save=()=>LS.set(KEY,S);
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -404,7 +405,7 @@ function totales(){
 }
 
 /* ---------------- editor ---------------- */
-const FIELDS=["estado","rev","plazoU","validezU","mandante","proyecto","contacto","fecha","numero","plazo","tIng","tProy","validez","antecedentes","incluye","noIncluye","valorUF","iva","documento","plazoTxt","otras"];
+const FIELDS=["estado","rev","plazoU","validezU","mandante","proyecto","contacto","fecha","numero","plazo","tIng","tProy","validez","antecedentes","incluye","noIncluye","valorUF","iva","documento","conCLP","plazoTxt","otras"];
 function fillFields(){FIELDS.forEach(k=>{$(k).value=S[k]??""}); renderListaProy();}
 function renderListaProy(){
   const q=$("buscaProy").value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
@@ -471,7 +472,7 @@ function updTotals(){
 function modelo(){
   const bol=S.documento==="B", t=totales(), ivaP=bol?0:num(S.iva), vuf=num(S.valorUF), iva=t.neto*ivaP/100;
   const rows=S.items.filter(it=>String(it.n||"").trim()||num(it.hi)||num(it.hp));
-  return {t, bol, ivaP, vuf, iva, tot:t.neto+iva, rows, sec3:TPL.sec3.replace("Los valores son netos, no incluyen IVA.",bol?"Los valores corresponden a honorarios brutos, a emitir con boleta de honorarios.":"Los valores son netos."),
+  return {t, bol, ivaP, vuf, iva, tot:t.neto+iva, rows, clp:S.conCLP==="si", sec3:TPL.sec3.replace("Los valores son netos, no incluyen IVA.",bol?"Los valores corresponden a honorarios brutos, a emitir con boleta de honorarios.":"Los valores son netos."),
     pagos:S.pagos.filter(p=>num(p.pct)||String(p.h||"").trim()),
     ex2:S.ex2.filter(x=>String(x.t||"").trim()||lines(x.x).length).map((x,i)=>({n:"2."+(3+i),t:x.t,l:lines(x.x)})),
     ex5:S.ex5.filter(x=>String(x.t||"").trim()||lines(x.x).length).map((x,i)=>({n:"5."+(5+i),t:x.t,l:lines(x.x)})),
@@ -538,6 +539,9 @@ function portadaFormal(){ const M=modelo();
     <tr><td class="k"><b>Contacto oficina</b></td><td>ingestructural@ingestructural.cl</td></tr>
    </tbody></table>${firma()}`;
 }
+// filas del resumen económico (sección 4): siempre en UF; la columna en pesos es opcional (panel: «Monto en pesos»)
+function resumenFilas(M){ return [{k:M.bol?"Honorarios (sección 3)":"Subtotal Neto (sección 3)",v:M.t.neto}, ...(M.bol?[]:[{k:`IVA (${f1(M.ivaP)}%)`,v:M.iva}]),
+  {k:M.bol?"TOTAL COTIZACIÓN (BRUTO, BOLETA DE HONORARIOS)":"TOTAL COTIZACIÓN",v:M.tot,b:true}]; }
 function bloquesFormal(M){
   const ant=lines(S.antecedentes), B=[];
   B.push({html:`<h2>1. ANTECEDENTES DEL PROYECTO</h2><p>${ant.length?esc(ant[0]):ph("descripción del proyecto")}</p>`}, ...ant.slice(1).map(x=>({html:`<p>${esc(x)}</p>`})));
@@ -546,11 +550,9 @@ function bloquesFormal(M){
   M.ex2.forEach(x=>B.push(...seccion(`${x.n} ${val(x.t,"título")}`,x.l,"contenido")));
   B.push({html:`<h2>3. DETALLE DE HORAS HOMBRE E ÍTEMS DE ENTREGABLES</h2><p>${esc(M.sec3)}</p>`, keep:true}, ...cuadroBloques(M));
   B.push({html:`<h2>4. RESUMEN ECONÓMICO</h2>
-  <table><thead><tr><th style="text-align:left">Concepto</th><th>Monto (UF)</th><th>Monto (CLP)</th></tr></thead><tbody>
-   <tr><td>${M.bol?"Honorarios (sección 3)":"Subtotal Neto (sección 3)"}</td><td class="tot">${f2(M.t.neto)}</td><td class="tot">${M.vuf?clp(M.t.neto*M.vuf):ph("valor UF")}</td></tr>
-   ${M.bol?"":`<tr><td>IVA (${f1(M.ivaP)}%)</td><td class="tot">${f2(M.iva)}</td><td class="tot">${M.vuf?clp(M.iva*M.vuf):ph("valor UF")}</td></tr>`}
-   <tr><td><b>${M.bol?"TOTAL COTIZACIÓN (BRUTO, BOLETA DE HONORARIOS)":"TOTAL COTIZACIÓN"}</b></td><td class="tot"><b>${f2(M.tot)}</b></td><td class="tot"><b>${M.vuf?clp(M.tot*M.vuf):ph("valor UF")}</b></td></tr>
-  </tbody></table>${M.vuf?`<p style="font-size:10pt;margin-top:4px">Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.</p>`:""}`});
+  <table><thead><tr><th style="text-align:left">Concepto</th><th>Monto (UF)</th>${M.clp?"<th>Monto (CLP)</th>":""}</tr></thead><tbody>
+   ${resumenFilas(M).map(r=>{const b=t=>r.b?`<b>${t}</b>`:t; return `<tr><td>${b(esc(r.k))}</td><td class="tot">${b(f2(r.v))}</td>${M.clp?`<td class="tot">${b(M.vuf?clp(r.v*M.vuf):ph("valor UF"))}</td>`:""}</tr>`;}).join("")}
+  </tbody></table>${M.clp&&M.vuf?`<p style="font-size:10pt;margin-top:4px">Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.</p>`:""}`});
   const pagos=M.pagos.length?`<table class="mini"><tbody>${M.pagos.map(p=>`<tr><td style="width:16%">${f1(num(p.pct))} %</td><td>${val(p.h,"hito")}</td><td class="tot">${f2(M.t.neto*num(p.pct)/100)} UF${M.bol?"":" neto"}</td></tr>`).join("")}</tbody></table>`:`<ul><li>${ph("hitos de pago")}</li></ul>`;
   B.push({html:`<h2>5. CONDICIONES GENERALES</h2><h3>5.1 Forma de pago</h3>${pagos}`});
   B.push(...seccion("5.2 Plazo de entrega",M.plazo52,"plazo de ejecución"));
@@ -715,12 +717,10 @@ async function crearDocx(){
     M.ex2.forEach(x=>K.push(H3(x.n+" "+(x.t||"")),...bullets(x.l,"contenido")));
     K.push(H2("3. DETALLE DE HORAS HOMBRE E ÍTEMS DE ENTREGABLES"),P(run(M.sec3),{keepNext:true}),...cuadroW());
     K.push(H2("4. RESUMEN ECONÓMICO"));
-    const cl=v=>M.vuf?run(clp(v*M.vuf)):txt("","valor UF");
-    K.push(tabla([5200,2200,2520],[{head:true,cells:["Concepto","Monto (UF)","Monto (CLP)"].map(t=>C(run(t,{bold:true,color:"FFFFFF"}),{fill:BLUE,align:CE}))},
-      {cells:[C(run(M.bol?"Honorarios (sección 3)":"Subtotal Neto (sección 3)")),C(run(f2(M.t.neto)),{align:R}),C(cl(M.t.neto),{align:R})]},
-      ...(M.bol?[]:[{cells:[C(run(`IVA (${f1(M.ivaP)}%)`)),C(run(f2(M.iva)),{align:R}),C(cl(M.iva),{align:R})]}]),
-      {cells:[C(run(M.bol?"TOTAL COTIZACIÓN (BRUTO, BOLETA DE HONORARIOS)":"TOTAL COTIZACIÓN",{bold:true})),C(run(f2(M.tot),{bold:true}),{align:R}),C(M.vuf?run(clp(M.tot*M.vuf),{bold:true}):txt("","valor UF"),{align:R})]}]));
-    if(M.vuf) K.push(P(run(`Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.`,{size:20}),{before:60}));
+    const cl=(v,o)=>M.vuf?run(clp(v*M.vuf),o):txt("","valor UF",o), cab=M.clp?["Concepto","Monto (UF)","Monto (CLP)"]:["Concepto","Monto (UF)"];
+    K.push(tabla(M.clp?[5200,2200,2520]:[7400,2520],[{head:true,cells:cab.map(t=>C(run(t,{bold:true,color:"FFFFFF"}),{fill:BLUE,align:CE}))},
+      ...resumenFilas(M).map(r=>{const o=r.b?{bold:true}:{}; return {cells:[C(run(r.k,o)),C(run(f2(r.v),o),{align:R}),...(M.clp?[C(cl(r.v,o),{align:R})]:[])]};})]));
+    if(M.clp&&M.vuf) K.push(P(run(`Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.`,{size:20}),{before:60}));
     K.push(H2("5. CONDICIONES GENERALES"),H3("5.1 Forma de pago"));
     if(M.pagos.length) K.push(tabla([1500,5900,2520],M.pagos.map(p=>({cells:[C(run(f1(num(p.pct))+" %")),C(txt(p.h,"hito")),C(run(f2(M.t.neto*num(p.pct)/100)+(M.bol?" UF":" UF neto")),{align:R})]}))));
     else K.push(...bullets([],"hitos de pago"));
