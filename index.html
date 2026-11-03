@@ -117,6 +117,8 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 .page td.num{text-align:center;color:var(--doc-ink)}
 .page td.tot{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .page tr.sum td{background:var(--doc-blue2);font-weight:700;padding:6px}
+.marco .pc{font-size:10pt}.marco .pc td,.marco .pc th{padding:2px 6px}.page table.cmt{font-size:9.5pt}.page table.cmt td,.page table.cmt th{padding:2px 5px}
+.page tr.sec td{background:var(--doc-band);color:var(--doc-navy)}
 .page .leg{background:var(--doc-band);font-size:9pt;color:#333;text-align:center;padding:4px;margin-top:6px}
 .page h2{font-size:14pt;margin:16px 0 6px;font-weight:700;color:var(--doc-navy)}
 .page h3{font-size:12pt;margin:10px 0 4px;font-weight:700}
@@ -142,6 +144,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
     <button type="button" data-t="rapida">Express</button>
     <button type="button" data-t="formal">Formal</button>
     <button type="button" data-t="flexible">Flexible</button>
+    <button type="button" data-t="marco">Contrato marco</button>
   </div>
   <button type="button" class="btn pri" id="nuevaTop">+ Nueva cotización</button>
   <span class="sp"></span>
@@ -196,7 +199,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
     <div class="row" id="fechaIngRow" hidden><button type="button" class="btn x" id="usarIngreso" style="color:var(--accent)"></button></div>
   </fieldset>
 
-  <fieldset>
+  <fieldset data-only="rapida formal flexible">
     <legend>Cuadro de ítems (HH)</legend>
     <table class="it" id="tItems">
       <thead><tr><th>Ítem</th><th>hh/ing.</th><th>hh/proy.</th><th style="text-align:right">UF</th><th></th></tr></thead>
@@ -222,16 +225,15 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
     </details>
   </fieldset>
 
-  <fieldset data-only="formal flexible">
-    <legend>Contenido del documento</legend>
-    <div class="hint" id="contHint"></div>
+  <fieldset data-only="marco">
+    <legend>Contrato marco <span class="src">tarifas del contrato</span></legend>
+    <div id="cmBox"></div>
+  </fieldset>
+
+  <fieldset data-only="formal flexible marco">
+    <legend>Valores y vigencia</legend>
     <div class="row" style="gap:6px;align-items:flex-end"><label for="validez" style="flex:1">Validez de la oferta<input id="validez" type="number" min="0" step="1"></label>
       <label for="validezU" style="width:110px">Unidad<select id="validezU"><option>días</option><option>semanas</option></select></label></div>
-    <label for="antecedentes">1. Antecedentes del proyecto<textarea id="antecedentes"></textarea></label>
-    <label for="incluye">2.1 Incluye (una línea por punto)<textarea id="incluye"></textarea></label>
-    <label for="noIncluye">2.2 No incluye (una línea por punto)<textarea id="noIncluye"></textarea></label>
-    <div id="ex2"></div>
-    <button type="button" class="btn" data-addx="2" id="addX2">Agregar punto al 2</button>
     <div class="grid2">
       <label for="valorUF">Valor UF (se toma de POWER)<input id="valorUF" type="number" step="0.01" min="0"></label>
       <label for="iva">IVA (%)<input id="iva" type="number" step="0.1" min="0"></label>
@@ -239,6 +241,19 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
       <label for="documento">Documento de cobro<select id="documento"><option value="F">Factura ING Estructural (+ IVA)</option><option value="B">Boleta de honorarios G. Aguilera (sin IVA)</option></select></label>
     </div>
     <div class="row"><button type="button" class="btn x" id="ufHoy" style="color:var(--accent)">Actualizar UF</button><span class="hint" id="ufMsg"></span></div>
+  </fieldset>
+
+  <fieldset data-only="formal flexible">
+    <legend>Contenido del documento</legend>
+    <div class="hint" id="contHint"></div>
+    <label for="antecedentes">1. Antecedentes del proyecto<textarea id="antecedentes"></textarea></label>
+    <label for="incluye">2.1 Incluye (una línea por punto)<textarea id="incluye"></textarea></label>
+    <label for="noIncluye">2.2 No incluye (una línea por punto)<textarea id="noIncluye"></textarea></label>
+    <div id="ex2"></div>
+    <button type="button" class="btn" data-addx="2" id="addX2">Agregar punto al 2</button>
+  </fieldset>
+  <fieldset data-only="formal flexible">
+    <legend>Condiciones</legend>
     <div>
       <div class="hint" style="font-weight:600;margin-bottom:4px">5.1 Forma de pago (hitos)</div>
       <table class="it" id="tPagos"><thead><tr><th style="width:70px">%</th><th>Hito</th><th style="text-align:right">UF</th><th></th></tr></thead><tbody></tbody></table>
@@ -298,7 +313,7 @@ function nueva(tipo){return {
  tipo:tipo||"rapida", proyId:"", numero:"", mandante:"", proyecto:"", contacto:"", fecha:today(), fechaIngreso:"", plazo:"", plazoU:"días",
  items:[{n:"",hi:"",hp:""}], tIng:1.22, tProy:0.75, cat:CAT0.map(c=>({...c})),
  validez:30, validezU:"días", antecedentes:TPL.antecedentes, incluye:"", noIncluye:TPL.noIncluye.join("\n"), ex2:[],
- valorUF:"", iva:19, documento:"F", conCLP:"no", pagos:[], plazoTxt:"", otras:TPL.otras.join("\n"), ex5:[]
+ valorUF:"", iva:19, documento:"F", conCLP:"no", cm:null, pagos:[], plazoTxt:"", otras:TPL.otras.join("\n"), ex5:[]
 };}
 function ejemplo(){const s=nueva("rapida");Object.assign(s,{proyId:"ej1",mandante:EJEMPLOS[0].mandante,proyecto:EJEMPLOS[0].proyecto,contacto:EJEMPLOS[0].contacto,plazo:3,
  items:[{n:"Modelación 3D",hi:3,hp:2},{n:"Verificación Estructural",hi:5,hp:0},{n:"Elaboración memoria de cálculo",hi:3,hp:1}]});return s;}
@@ -317,7 +332,7 @@ const clp=x=>"$ "+Math.round(x).toLocaleString("es-CL");
 const fdate=d=>{if(!d)return"";const[a,m,dd]=String(d).slice(0,10).split("-");return `${dd}-${m}-${a}`};
 const lines=t=>String(t||"").split("\n").map(s=>s.trim()).filter(Boolean);
 function toast(t){const el=$("toast");el.textContent=t;el.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>el.hidden=true,3200);}
-const TDESC={rapida:"Express · formato propio con cuadro de ítems",formal:"Formal · portada y secciones con textos de plantilla",flexible:"Flexible · estructura de la formal con contenido manual"};
+const TDESC={rapida:"Express · formato propio con cuadro de ítems",formal:"Formal · portada y secciones con textos de plantilla",flexible:"Flexible · estructura de la formal con contenido manual",marco:"Contrato marco · formato de licitación CMPC / Arauco con tarifas del contrato"};
 
 /* ---------------- POWER (Supabase, solo lectura) ---------------- */
 const PW = (()=>{
@@ -406,7 +421,8 @@ async function refrescarPower(){
     else toast(S.proyId||S.numero?"No se encontró en POWER el proyecto de esta cotización; elíjalo en la lista de proyectos":"Datos de POWER recargados (la cotización no tiene proyecto elegido)"); }
   finally{ $("refrescar").disabled=false; } }
 async function cargarPower(){
-  try{ await PW.load(); { const rc=(PW.data.config||{}).catalogo; if(rc){ aplicarCatalogo(rc); LS.set(K_CAT,rc); } else guardarCatalogo(); fillFields(); renderItems(); renderCat(); updTotals(); renderDoc(); }
+  try{ await PW.load(); { const mo=(PW.data.config||{}).marco_oferente; if(mo){ LS.set("cot_ing_marco_of",mo); if(S.cm&&mo[S.cm.cli]) S.cm.of={...S.cm.of,...mo[S.cm.cli]}; renderMarco(); } }
+    { const rc=(PW.data.config||{}).catalogo; if(rc){ aplicarCatalogo(rc); LS.set(K_CAT,rc); } else guardarCatalogo(); fillFields(); renderItems(); renderCat(); updTotals(); renderDoc(); }
     renderPwState(); renderGuardadas(); toast("Datos de POWER cargados"); abrirDesdeEnlace(); if(!num(S.valorUF)) traerUF(); }
   catch(e){ if(e.code==="auth"){ $("loginBox").hidden=false; $("lgMsg").textContent=e.message==="Sin sesión"?"":e.message; renderPwState(); } else toast("No se pudo leer POWER: "+e.message); }
 }
@@ -414,6 +430,7 @@ function aplicarProyecto(p){
   const cli=(PW.data.clientes||[]).find(c=>c.nombre===p.mandante);
   Object.assign(S,{proyId:p.id, numero:p.codigo||"", mandante:p.mandante||(cli&&cli.nombre)||"", proyecto:p.proyecto||"", contacto:p.contacto||"", fechaIngreso:p.creado||"", documento:p.documento==="B"?"B":"F"});
   if(p.descripcion && (!S.antecedentes.trim()||S.antecedentes===TPL.antecedentes)) S.antecedentes = TPL.antecedentes+"\n"+p.descripcion;
+  if(S.tipo==="marco"){ const k=cliDeMandante(S.mandante); if(k&&(!S.cm||S.cm.cli!==k)){ const L=S.cm&&S.cm.cli===k?S.cm.L:null; S.cm=cmNuevo(k); if(L) S.cm.L=L; S.documento=p.documento?S.documento:TAR[k].doc; } renderMarco(); }
   fillFields(); renderIngreso(); renderDoc(); save(); traerUF();
 }
 function renderIngreso(){ const r=$("fechaIngRow"); r.hidden=!S.fechaIngreso||S.fechaIngreso===S.fecha; $("usarIngreso").textContent=`Usar fecha de ingreso en POWER (${fdate(S.fechaIngreso)})`; }
@@ -421,7 +438,7 @@ function renderIngreso(){ const r=$("fechaIngRow"); r.hidden=!S.fechaIngreso||S.
 /* ---------------- cálculo ---------------- */
 function itemUF(it){return String(it.n||"").trim()?num(it.hi)*num(S.tIng)+num(it.hp)*num(S.tProy):0}
 function totales(){
-  const neto=S.items.reduce((s,it)=>s+itemUF(it),0), ent={p:0,m:0,e:0};
+  const neto=S.tipo==="marco"?marcoCalc().neto:S.items.reduce((s,it)=>s+itemUF(it),0), ent={p:0,m:0,e:0};
   S.items.forEach(it=>{const n=String(it.n||"").trim().toLowerCase(); const c=n&&S.cat.find(c=>String(c.n).trim().toLowerCase()===n); if(c){ent.p+=num(c.p);ent.m+=num(c.m);ent.e+=num(c.e)}});
   // cuadro de entregables del panel: lo que se escribe manda; en blanco se usa lo que suma el catálogo de los ítems
   const auto={...ent}; ["p","m","e"].forEach(k=>{ const v=S["ent_"+k]; if(v!==""&&v!=null) ent[k]=num(v); });
@@ -440,7 +457,7 @@ function renderListaProy(){
 function renderTipo(){
   document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.t===S.tipo)));
   document.querySelectorAll("[data-only]").forEach(el=>el.hidden=!el.dataset.only.split(" ").includes(S.tipo));
-  $("tdesc").textContent=TDESC[S.tipo];
+  $("tdesc").textContent=TDESC[S.tipo]; if(S.tipo==="marco"){ if(!S.cm) S.cm=cmNuevo(cliDeMandante(S.mandante)||"CMPC"); renderMarco(); }
   $("contHint").textContent=S.tipo==="formal"?"Textos precargados desde su formato Word. Complete o ajuste cada sección.":"Ingrese el contenido a mano. El botón al final rellena con los textos de plantilla si los necesita.";
 }
 let selIt=-1;   // fila marcada del cuadro de ítems (la última en que se hizo clic o se escribió)
@@ -504,6 +521,119 @@ function modelo(){
     plazo52: [...(S.plazo?[`${S.plazo} ${S.plazoU||"días"} desde la orden de compra o el pago del anticipo.`]:[]), ...lines(S.plazoTxt)]};
 }
 
+/* ---------------- Contrato marco (CMPC / AASA): tarifas tomadas de las planillas del usuario ---------------- */
+// CMPC: «0__FORMATO COTIZACION JGAH_CMPC.xlsx» (hojas ENTREGABLES, HH X CATEGORIA, GG X PLANTA)
+// AASA: «0_FORMATO COTIZACION JGAH_AASA.xlsx» (hojas PU PRODUCTOS y PU Servicios Categoría 1, especialidad 6.- OO.CC.)
+const c123=g=>[g,g/2,g*0.75];   // CMPC: condición 2 = 50 % y condición 3 = 75 % de la condición 1 (fórmulas de la planilla)
+const TAR={
+ CMPC:{nombre:"CMPC", titulo:"COTIZACIÓN SERVICIOS DE INGENIERÍA CIVIL", doc:"F",
+  cond:["Levantamientos y diseños generados por empresa de ingeniería","CMPC entrega levantamiento y diseño en archivo digital para su revisión y comentarios (trabajo oficina)","CMPC entrega diseño en archivo digital para su revisión y corrección (re-ingeniería)"],
+  pl:[["Plano Formato A0",[11,8,10]],["Plano Formato A1",[10,6,8]],["Plano Formato A2",[5.4,3,5]],["Plano Formato A3",[4,2,3]],["Plano Formato A4",[2.15,2,2]]],
+  dc:[["Verificación / Informe Técnico",c123(12)],["Memoria de Cálculo Simple",c123(7.4)],["Memoria de Cálculo Estructuras Menores",c123(7.4)],["Modelación Estructura Simple",c123(8)],["Modelación Estructura Compleja",c123(20)],
+      ["Especificaciones Técnicas de Construcción para Hormigón Armado",[4.5,2,3]],["Especificaciones Técnicas de Construcción para Estructuras de Acero",[4.5,2,3]],["Especificaciones Técnicas de Construcción para Madera",[4.5,2,3]],["Especificaciones Técnicas de Construcción para Madera Laminada",[4.5,2,3]],["EETT (Generales de Especialidad)",[4.5,2,3]],
+      ["Especificaciones Técnicas para Licitación",c123(3.5)],["Informe de estudios estructurales",c123(11.5)],["Informe de estudios capacidad resistente",c123(11.5)],["Informe de estudios estado estructural",c123(11.5)],["Informe de estudios inspección ocular",c123(10)],
+      ["Informe Topográfico",c123(8)],["Lista «A» para licitación (formulario de cotización)",c123(7.5)],["Presupuesto e itemizado",c123(20)],["Presupuesto e itemizado estructuras mayores",c123(45)]],
+  sv:[["Ingeniero Senior","hh",1.2],["Ingeniero de Especialidad","hh",1.2],["Ingeniero Ayudante","hh",0.75],["Proyectista de Especialidad","hh",0.75],["Proyectista Ayudante","hh",0.6],["Dibujante de Especialidad","hh",0.5],["Asesor de Prevención Seguridad","hh",0.8],["Dibujante Ayudante","hh",0.35]],
+  ogN:["Traslado a planta (combustible, mantención, peajes, alimentación y otros)","Reunión vía Google Meet u otro (1 hora)","Visita técnica a terreno, lunes a viernes (incluye HH y traslado; 2-3 h en planta)","Visita técnica a terreno, sábado (incluye HH y traslado; 2-3 h en planta)","Visita técnica a terreno, domingo (incluye HH y traslado; 2-3 h en planta)"],
+  plantas:{"Aserradero Nacimiento":[3.41,0.6,5.57,7.24,9.75],"Remanufactura Los Ángeles":[3.33,0.6,5.13,6.67,8.98],"Aserradero Bucalemu":[2.92,0.6,4.42,5.75,7.74],"Remanufactura Coronel":[1.15,0.6,2.05,2.67,3.59],"Aserradero Mulchén":[3.94,0.6,6.1,7.93,10.68],"Planta Plywood":[4.2,0.6,6.96,9.048,12.18]},
+  of:{razon:"ING ESTRUCTURAL SpA",rut:"76.987.907-2",sap:"119709",contrato:"CM_4600021844",rep:"J. GERMÁN AGUILERA HAFNER",rutRep:"",contacto:"J. GERMÁN AGUILERA HAFNER",fono:"",mail:""}},
+ AASA:{nombre:"ARAUCO (AASA)", titulo:"COTIZACIÓN SERVICIOS DE INGENIERÍA", doc:"B",
+  cond:["Nuevo documento: levantamientos y diseños generados por EPS","Nuevo documento: ARAUCO S.A. entrega levantamiento y diseño en borrador (papel)","Modificación de documento: ARAUCO S.A. entrega documento a modificar en formato DWG","Digitalización de documento: ARAUCO S.A. entrega documento en papel"],
+  pl:[["Plano Formato A0",[9,4.5,2.5,4.5]],["Plano Formato A1",[8.2,4.1,1.75,4.1]],["Plano Formato A2",[4,2,1.5,2]],["Plano Formato A3",[3,1.5,1,1.5]],["Plano Formato A4",[1.8,1,6,1]]],
+  dc:[["Memoria de Cálculo Simple",6],["Memoria de Cálculo Específica",8],["Plano 3D",12],["Especificaciones Técnicas para licitación de servicios",3],["Listado de Materiales",1.2],["Informe Topográfico",6],["Lista A para licitación",4]],
+  sv:(()=>{const N=["Ingeniero Senior","Ingeniero de Especialidad","Ingeniero de Proyecto","Ingeniero Ayudante","Inspector Técnico de Obra, clase A","Inspector Técnico de Obra, clase B","Ingeniero Comisionamiento, clase A","Ingeniero Comisionamiento, clase B","Proyectista de Especialidad","Proyectista Ayudante","Dibujante de Especialidad","Dibujante Ayudante"],
+     HH=[1.1,0.9,0.7,0.62,0.92,0.79,0.66,0.6,0.62,0.35,0.4,0.25], DH=[11.16,8.64,6.48,4.68,10.08,7.92,5.76,4.68,5.04,2.52,2.88,1.8], MH=[223.2,172.8,129.6,93.6,201.3,158.4,115.2,93.6,100.8,50.4,57.6,36];
+     return [...N.map((n,i)=>[n,"hh",HH[i]]),...N.map((n,i)=>[n+" (día hombre)","dh",DH[i]]),...N.map((n,i)=>[n+" (mes hombre)","mh",MH[i]])];})(),
+  ogN:["Traslado a planta","Almuerzo diario (por persona)","Estadía (por persona)"],
+  plantas:{"Teno":[2.5,0.2,0.6],"Constitución":[2.7,0.2,0.6],"Trupan":[1.5,0.2,0.6],"Cholguán":[1.5,0.2,0.6],"Nueva Aldea":[1,0.2,0.6],"Horcones (I y II)":[1.2,0.2,0.6],"Colorado / Valdivia":[1.8,0.2,0.6]},
+  of:{razon:"J. GERMÁN AGUILERA HAFNER",rut:"",sap:"10381",contrato:"",rep:"J. GERMÁN AGUILERA HAFNER",rutRep:"",contacto:"J. GERMÁN AGUILERA HAFNER",fono:"",mail:""}}
+};
+const SECC=[["pl","1.- PLANOS","Costo planos"],["dc","2.- DOCUMENTOS","Costo documentos"],["sv","3.- SERVICIOS","Costo servicios"],["og","4.- OTROS GASTOS","Otros gastos"]];
+const OTRO="Otro (indicar)";
+const OF_K=[["razon","Razón social"],["rut","RUT empresa"],["sap","Código SAP (proveedor)"],["contrato","N° contrato marco"],["rep","Representante legal"],["rutRep","RUT representante legal"],["contacto","Persona de contacto"],["fono","Teléfono"],["mail","E-mail"]];
+const cmNuevo=cli=>({cli, planta:"", cond:0, solped:"", licit:"", alc:"", notas:"", of:{...TAR[cli].of,...((LS.get("cot_ing_marco_of")||{})[cli]||{})}, L:{pl:[],dc:[],sv:[],og:[]}});
+const T=()=>TAR[(S.cm&&S.cm.cli)||"CMPC"];
+// precio unitario de una línea según el contrato, la condición y la planta
+function cmPU(sec,ln){
+  if(ln.n===OTRO) return num(ln.p);
+  const t=T(), c=S.cm.cond|0;
+  if(sec==="pl"){ const r=t.pl.find(x=>x[0]===ln.n); return r?num(r[1][c]??r[1][0]):0; }
+  if(sec==="dc"){ const r=t.dc.find(x=>x[0]===ln.n); return r?(Array.isArray(r[1])?num(r[1][c]??r[1][0]):num(r[1])):0; }
+  if(sec==="sv"){ const r=t.sv.find(x=>x[0]===ln.n); return r?num(r[2]):0; }
+  if(sec==="og"){ const i=t.ogN.indexOf(ln.n), p=t.plantas[S.cm.planta]; return i>=0&&p?num(p[i]):0; }
+  return 0;
+}
+function cmUnid(sec,ln){ if(sec==="sv"){ const r=T().sv.find(x=>x[0]===ln.n); return r?r[1]:"hh"; } return "c/u"; }
+function cmOpciones(sec){ const t=T(); return sec==="og"?t.ogN:(t[sec]||[]).map(x=>x[0]); }
+function marcoCalc(){
+  const out={secs:{},neto:0};
+  SECC.forEach(([k])=>{ const L=((S.cm&&S.cm.L[k])||[]).map(ln=>({...ln,u:cmUnid(k,ln),pu:cmPU(k,ln),c:num(ln.c)})).map(ln=>({...ln,tot:ln.pu*ln.c}));
+    const sub=L.reduce((a,x)=>a+x.tot,0); out.secs[k]={L,sub,usadas:L.filter(x=>x.c&&String(x.n===OTRO?x.d:x.n||"").trim())}; out.neto+=sub; });
+  return out;
+}
+function renderMarco(){
+  const box=$("cmBox"); if(!box) return; if(S.tipo!=="marco"){ box.innerHTML=""; return; }
+  if(!S.cm) S.cm=cmNuevo("CMPC");
+  const t=T(), cm=S.cm, R=marcoCalc();
+  const opt=(L,v)=>L.map(x=>`<option${x===v?" selected":""}>${esc(x)}</option>`).join("");
+  box.innerHTML=`
+  <div class="grid2">
+    <label for="cm-cli">Contrato marco<select id="cm-cli" data-cm="cli">${Object.keys(TAR).map(k=>`<option value="${k}"${k===cm.cli?" selected":""}>${esc(TAR[k].nombre)}</option>`).join("")}</select></label>
+    <label for="cm-planta">Planta<select id="cm-planta" data-cm="planta"><option value="">— elegir —</option>${opt(Object.keys(t.plantas),cm.planta)}</select></label>
+    <label class="full" for="cm-cond">Condición (precios de planos${cm.cli==="CMPC"?" y documentos":""})<select id="cm-cond" data-cm="cond">${t.cond.map((x,i)=>`<option value="${i}"${i==(cm.cond|0)?" selected":""}>${i+1}. ${esc(x)}</option>`).join("")}</select></label>
+    <label for="cm-solped">N° solicitud de pedido<input id="cm-solped" data-cm="solped" value="${esc(cm.solped)}"></label>
+    <label for="cm-licit">N° licitación<input id="cm-licit" data-cm="licit" value="${esc(cm.licit)}"></label>
+  </div>
+  <label for="cm-alc">Detalle y alcances técnicos (una línea por punto)<textarea id="cm-alc" data-cm="alc" placeholder="Ej.: Verificación tensiones inducidas">${esc(cm.alc)}</textarea></label>
+  ${SECC.map(([k,tit])=>`<div class="hint" style="font-weight:600;margin:10px 0 4px">${tit}</div>
+    <table class="it"><thead><tr><th>Descripción</th><th style="width:64px">Cant.</th><th style="width:72px;text-align:right">P.U. UF</th><th style="width:72px;text-align:right">UF</th><th></th></tr></thead><tbody>
+    ${R.secs[k].L.map((ln,j)=>`<tr><td><select id="cm-${k}-n-${j}" data-ml="${k}" data-j="${j}" data-k="n"><option value="">— elegir —</option>${opt([...cmOpciones(k),OTRO],ln.n)}</select>
+        ${ln.n===OTRO?`<input id="cm-${k}-d-${j}" data-ml="${k}" data-j="${j}" data-k="d" value="${esc(ln.d||"")}" placeholder="Descripción" style="margin-top:4px">`:""}</td>
+      <td class="n"><input id="cm-${k}-c-${j}" data-ml="${k}" data-j="${j}" data-k="c" inputmode="decimal" value="${esc(S.cm.L[k][j].c??"")}" aria-label="Cantidad"></td>
+      <td class="t">${ln.n===OTRO?`<input id="cm-${k}-p-${j}" data-ml="${k}" data-j="${j}" data-k="p" inputmode="decimal" value="${esc(S.cm.L[k][j].p??"")}" aria-label="Precio unitario">`:f2(ln.pu)}</td>
+      <td class="t" id="cm-${k}-t-${j}">${f2(ln.tot)}</td><td><button type="button" class="btn x" data-mdel="${k}" data-j="${j}" aria-label="Quitar línea">✕</button></td></tr>`).join("")}
+    </tbody><tfoot><tr class="sumrow"><td>Subtotal</td><td></td><td></td><td class="t" id="cm-${k}-sub">${f2(R.secs[k].sub)}</td><td></td></tr></tfoot></table>
+    <button type="button" class="btn" data-madd="${k}" style="margin-top:6px">Agregar línea</button>`).join("")}
+  ${!cm.planta&&R.secs.og.L.some(x=>x.n&&x.n!==OTRO)?`<p class="hint w">Elija la planta para valorizar los otros gastos.</p>`:""}
+  <div class="row" style="margin-top:10px;justify-content:space-between"><b>Valor total oferta (${S.documento==="B"?"bruto":"neto"})</b><b id="cm-tot">${f2(R.neto)} UF</b></div>
+  <label for="cm-notas">Notas (una línea por punto, opcional)<textarea id="cm-notas" data-cm="notas">${esc(cm.notas)}</textarea></label>
+  <details><summary>Datos del oferente (${esc(t.nombre)})</summary>
+    <p class="hint">Se guardan para las próximas cotizaciones de este contrato.</p>
+    <div class="grid2">${OF_K.map(([k,l])=>`<label for="cm-of-${k}">${l}<input id="cm-of-${k}" data-of="${k}" value="${esc(cm.of[k]||"")}"></label>`).join("")}</div>
+  </details>`;
+}
+function cmTotales(){ const R=marcoCalc(); SECC.forEach(([k])=>{ R.secs[k].L.forEach((ln,j)=>{const el=$(`cm-${k}-t-${j}`); if(el) el.textContent=f2(ln.tot);}); const s=$(`cm-${k}-sub`); if(s) s.textContent=f2(R.secs[k].sub); });
+  const t=$("cm-tot"); if(t) t.textContent=f2(R.neto)+" UF"; }
+let ofTimer=null;
+function guardarOferente(){ const all=LS.get("cot_ing_marco_of")||{}; all[S.cm.cli]={...S.cm.of}; LS.set("cot_ing_marco_of",all); clearTimeout(ofTimer);
+  if(PW.logged&&!DEMO) ofTimer=setTimeout(()=>PW.put("cotizador_config","marco_oferente",all).catch(()=>{}),1200); }
+function cliDeMandante(m){ const x=String(m||"").toUpperCase(); return /CMPC/.test(x)?"CMPC":(/ARAUCO|AASA/.test(x)?"AASA":null); }
+// --- documento breve ---
+const COLS_CM=`<colgroup><col style="width:52%"><col style="width:9%"><col style="width:10%"><col style="width:14%"><col style="width:15%"></colgroup>`;
+function cmDesc(ln){ return ln.n===OTRO?(ln.d||""):ln.n; }
+function bloquesMarco(M){
+  const cm=S.cm||cmNuevo("CMPC"), t=T(), R=marcoCalc(), of=cm.of, bol=S.documento==="B";
+  const kv=(k,v,phT)=>`<td class="k" style="width:16%">${k}</td><td class="v" style="width:34%">${phT?val(v,phT):esc(v||"")}</td>`;
+  const izq=[["Código SAP",of.sap,"código SAP"],["RUT empresa",of.rut,"RUT"],["Razón social",of.razon,"razón social"],["Representante legal",of.rep,"representante"],["RUT rep. legal",of.rutRep,"RUT"],["Contacto",of.contacto,""],["Teléfono / e-mail",[of.fono,of.mail].filter(Boolean).join(" · "),""]];
+  const der=[["Contrato marco",of.contrato,""],["Planta",cm.planta,"planta"],["N° sol. pedido",cm.solped,""],["N° licitación",cm.licit,""],["Fecha oferta",fdate(S.fecha),"fecha"],["Validez oferta",S.validez?vigencia():"","validez"],["N° cotización",numRev(),"N° cotización"]];
+  const ej=S.plazo?`${S.plazo} ${S.plazoU==="semanas"?"semanas":"días hábiles"}`:""; der[4]=["Fecha / validez",[fdate(S.fecha),S.validez?"validez "+vigencia():""].filter(Boolean).join(" · "),"fecha"]; der[5]=["Ejecución",ej,"plazo"];
+  const ante=`<table class="tc cmt"><colgroup><col style="width:19%"><col style="width:31%"><col style="width:16%"><col style="width:34%"></colgroup><thead><tr><th colspan="2">ANTECEDENTES EMPRESA DE SERVICIOS</th><th colspan="2">ANTECEDENTES LICITACIÓN</th></tr></thead><tbody>${izq.map((a,i)=>`<tr>${kv(a[0],a[1],a[2],1)}${kv(der[i][0],der[i][1],der[i][2])}</tr>`).join("")}</tbody></table>`;
+  const desc=`<div class="band">DESCRIPCIÓN DEL SERVICIO</div><p style="margin:6px 8px"><b>${val(S.proyecto,"proyecto")}</b>${S.mandante?` · ${esc(S.mandante)}`:""}</p>${lines(cm.alc).length?`<ul>${lines(cm.alc).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}`;
+  const cl=M.clp&&M.vuf;
+  const resRows=[...SECC.map(([k,,n],i)=>`<tr><td>0${i+1}. ${n}</td><td class="tot">${f2(R.secs[k].sub)}</td>${cl?`<td class="tot">${clp(R.secs[k].sub*M.vuf)}</td>`:""}</tr>`),
+    `<tr class="sum"><td>VALOR TOTAL OFERTA (${bol?"BRUTO, BOLETA DE HONORARIOS":"VALOR NETO"})</td><td class="tot">${f2(R.neto)}</td>${cl?`<td class="tot">${clp(R.neto*M.vuf)}</td>`:""}</tr>`];
+  const colsRes=cl?`<colgroup><col style="width:56%"><col style="width:20%"><col style="width:24%"></colgroup>`:`<colgroup><col style="width:75%"><col style="width:25%"></colgroup>`;
+  const det=[];
+  SECC.forEach(([k,tit])=>{ const U=R.secs[k].usadas; if(!U.length) return;
+    det.push(`<tr class="sec"><td colspan="5"><b>${tit}</b></td></tr>`, ...U.map(ln=>`<tr><td>${esc(cmDesc(ln))}</td><td class="num">${esc(ln.u)}</td><td class="num">${esc(String(ln.c).replace(".",","))}</td><td class="tot">${f2(ln.pu)}</td><td class="tot">${f2(ln.tot)}</td></tr>`)); });
+  const B=[{html:ante},{html:desc},
+    {tabla:{pre:`<div class="band">OFERTA ECONÓMICA (UF)</div>`,cols:colsRes,head:`<tr><th>PARTIDA</th><th>UF</th>${cl?"<th>CLP</th>":""}</tr>`,rows:resRows,keepLast:2}}];
+  if(det.length) B.push({tabla:{pre:`<div style="height:10px"></div>`,cols:COLS_CM,head:`<tr><th>DESCRIPCIÓN</th><th>UNID.</th><th>CANT.</th><th>P.U. (UF)</th><th>TOTAL (UF)</th></tr>`,rows:det,keepLast:1}});
+  const notas=[`Condición ${(cm.cond|0)+1}: ${t.cond[cm.cond|0]}.`, "Entregables en formato DWG y PDF.", ...(cl?[`Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.`]:[]), ...lines(cm.notas)];
+  B.push({html:`<div style="display:flex;gap:18px;align-items:flex-start;margin-top:10px"><div class="leg" style="text-align:left;flex:1;margin-top:0">${notas.map(esc).join("<br>")}</div><div class="firma" style="margin-top:0.5cm;flex:0 0 auto">${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div></div>`});
+  return B;
+}
+
 /* ---------------- vista previa ---------------- */
 const ph=t=>`<span class="ph">[${esc(t)}]</span>`;
 const val=(v,t)=>String(v??"").trim()?esc(v):ph(t);
@@ -543,6 +673,7 @@ const lst=(l,phT)=>l.length?`<ul>${l.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
 function seccion(tit,items,phT,tag="h3"){ const L=items.length?items:[null];
   const li=x=>x==null?`<li>${ph(phT)}</li>`:`<li>${esc(x)}</li>`;
   return [{html:`<${tag}>${tit}</${tag}><ul>${li(L[0])}</ul>`}, ...L.slice(1).map(x=>({html:`<ul class="cont">${li(x)}</ul>`}))]; }
+const HDR_MARCO=()=>hdr(T().titulo,"Contrato marco "+esc(T().nombre)+((S.cm&&S.cm.of.contrato)?" · "+esc(S.cm.of.contrato):""));
 const HDR_RAPIDA=()=>hdr("J. GERMÁN AGUILERA HAFNER","Ingeniero Civil · Ingeniería Estructural");
 const HDR_FORMAL=()=>hdr("COTIZACIÓN DE SERVICIOS DE INGENIERÍA",val(S.proyecto,"proyecto"));
 function bloquesRapida(M){ return [{html:tablaDatos()}, ...cuadroBloques(M), {html:firma()}]; }
@@ -589,7 +720,7 @@ function bloquesFormal(M){
 const hoja=(H,inner)=>`<div class="page">${H}<div class="pc">${inner}</div>${pie()}</div>`;
 // Reparte los bloques en hojas midiendo su alto real con la misma tipografía y ancho de la hoja
 function paginar(H,bloques){
-  const m=document.createElement("div"); m.style.cssText="position:absolute;left:-10000px;top:0;visibility:hidden";
+  const m=document.createElement("div"); m.style.cssText="position:absolute;left:-10000px;top:0;visibility:hidden"; m.className=$("doc").className;
   m.innerHTML=hoja(H,""); document.body.appendChild(m);
   const pc=m.querySelector(".pc"), disp=pc.clientHeight;
   // se mide como segundo bloque (sin el ajuste del primer bloque de la hoja), así el cálculo queda del lado seguro
@@ -623,8 +754,9 @@ function paginar(H,bloques){
   return hojas.map(bs=>hoja(H,bs.map(h=>`<div class="blk">${h}</div>`).join(""))).join("");
 }
 function renderDoc(){ const M=modelo(); if($("guardMsg")&&S.guardado) $("guardMsg").textContent=`Guardada ${new Date(S.guardado).toLocaleString("es-CL")} · cambios sin guardar`;
-  $("doc").innerHTML = S.tipo==="rapida" ? paginar(HDR_RAPIDA(),bloquesRapida(M)) : hoja(HDR_FORMAL(),portadaFormal())+paginar(HDR_FORMAL(),bloquesFormal(M)); }
-const cotLabel=c=>[c.numero||"(sin N°)", c.rev?"Rev. "+c.rev:"", c.mandante, c.proyecto, {rapida:"Express",formal:"Formal",flexible:"Flexible"}[c.tipo]||"", c.estado, fdate(c.fecha)].filter(Boolean).join(" · ");
+  $("doc").className = S.tipo==="marco"?"marco":"";
+  $("doc").innerHTML = S.tipo==="marco" ? paginar(HDR_MARCO(),bloquesMarco(M)) : S.tipo==="rapida" ? paginar(HDR_RAPIDA(),bloquesRapida(M)) : hoja(HDR_FORMAL(),portadaFormal())+paginar(HDR_FORMAL(),bloquesFormal(M)); }
+const cotLabel=c=>[c.numero||"(sin N°)", c.rev?"Rev. "+c.rev:"", c.mandante, c.proyecto, {rapida:"Express",formal:"Formal",flexible:"Flexible",marco:"Contrato marco"}[c.tipo]||"", c.estado, fdate(c.fecha)].filter(Boolean).join(" · ");
 function renderGuardadas(){
   const box=$("boxGuardadas"); box.hidden=DEMO; if(DEMO) return;
   const norm=t=>String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
@@ -638,7 +770,7 @@ function renderGuardadas(){
 async function guardarCot(){
   if(!PW.logged){ $("loginBox").hidden=false; $("lgMail").focus(); return toast("Conecte POWER para guardar"); }
   $("guardar").disabled=true; $("guardMsg").textContent="Guardando…";
-  try{ const data={...S, guardado:new Date().toISOString()}; delete data.id; await PW.put("cotizaciones",S.id,data); S.guardado=data.guardado; save(); toast("Cotización guardada en POWER"); renderGuardadas(); await archivarPdf(data.guardado); }
+  try{ const data={...S, netoUF:Math.round(totales().neto*100)/100, guardado:new Date().toISOString()}; delete data.id; await PW.put("cotizaciones",S.id,data); S.guardado=data.guardado; save(); toast("Cotización guardada en POWER"); renderGuardadas(); await archivarPdf(data.guardado); }
   catch(e){ if(e.code==="auth"){ $("loginBox").hidden=false; } toast("No se pudo guardar: "+e.message); }
   finally{ renderGuardadas(); }
 }
@@ -758,7 +890,36 @@ async function crearDocx(){
   const bullets=(l,phT)=>(l.length?l:[null]).map(x=>P(x==null?txt("",phT):run(x),{bullet:true,after:60}));
   const K=[];
   let r1,r2;
-  if(S.tipo==="rapida"){
+  if(S.tipo==="marco"){
+    const cm=S.cm||cmNuevo("CMPC"), t=T(), Rm=marcoCalc(), of=cm.of, bol=S.documento==="B", cl=M.clp&&M.vuf;
+    r1=t.titulo; r2="Contrato marco "+t.nombre+(of.contrato?" · "+of.contrato:"");
+    const v=(x,phT)=>phT?txt(x,phT,{size:20,color:INK}):run(x||"",{size:20,color:INK}), k=x=>run(x,{size:20});
+    const izq=[["Código SAP",of.sap,"código SAP"],["RUT empresa",of.rut,"RUT"],["Razón social",of.razon,"razón social"],["Representante legal",of.rep,"representante"],["RUT rep. legal",of.rutRep,"RUT"],["Contacto",of.contacto,""],["Teléfono / e-mail",[of.fono,of.mail].filter(Boolean).join(" · "),""]];
+    const der=[["Contrato marco",of.contrato,""],["Planta",cm.planta,"planta"],["N° sol. pedido",cm.solped,""],["N° licitación",cm.licit,""],["Fecha oferta",fdate(S.fecha),"fecha"],["Validez oferta",S.validez?vigencia():"","validez"],["N° cotización",numRev(),"N° cotización"]];
+  const ej=S.plazo?`${S.plazo} ${S.plazoU==="semanas"?"semanas":"días hábiles"}`:""; der[4]=["Fecha / validez",[fdate(S.fecha),S.validez?"validez "+vigencia():""].filter(Boolean).join(" · "),"fecha"]; der[5]=["Ejecución",ej,"plazo"];
+    const hd=x=>C(run(x,{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,align:CE});
+    K.push(tabla([1900,3260,1500,3260],[{head:true,cells:[C(run("ANTECEDENTES EMPRESA DE SERVICIOS",{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,span:2,align:CE}),C(run("ANTECEDENTES LICITACIÓN",{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,span:2,align:CE})]},
+      ...izq.map((a,i)=>({cells:[C(k(a[0])),C(v(a[1],a[2]),{fill:IN}),C(k(der[i][0])),C(v(der[i][1],der[i][2]),{fill:IN})]}))]));
+    K.push(P(run("DESCRIPCIÓN DEL SERVICIO",{bold:true,color:NAVY}),{before:140,after:40,keepNext:true,align:L}));
+    K.push(P([txt(S.proyecto,"proyecto",{bold:true,size:20}),run(S.mandante?" · "+S.mandante:"",{size:20})],{align:L,after:40}));
+    lines(cm.alc).forEach(x=>K.push(P(run(x,{size:20}),{bullet:true,after:0})));
+    K.push(P(run("OFERTA ECONÓMICA (UF)",{bold:true,color:NAVY}),{before:140,after:40,keepNext:true,align:L}));
+    const fila=(a,b,c,o={})=>(o={size:20,...o},{cells:[C(run(a,o),o.fill?{fill:o.fill}:{}),C(run(b,o),{align:R,...(o.fill?{fill:o.fill}:{})}),...(cl?[C(run(c,o),{align:R,...(o.fill?{fill:o.fill}:{})})]:[])]});
+    K.push(tabla(cl?[5560,2000,2360]:[7440,2480],[{head:true,cells:["PARTIDA","UF",...(cl?["CLP"]:[])].map(hd)},
+      ...SECC.map(([kk,,n],i)=>fila(`0${i+1}. ${n}`,f2(Rm.secs[kk].sub),cl?clp(Rm.secs[kk].sub*M.vuf):"")),
+      fila(`VALOR TOTAL OFERTA (${bol?"BRUTO, BOLETA DE HONORARIOS":"VALOR NETO"})`,f2(Rm.neto),cl?clp(Rm.neto*M.vuf):"",{bold:true,fill:BLUE2})]));
+    const det=[]; SECC.forEach(([kk,tit])=>{ const U=Rm.secs[kk].usadas; if(!U.length) return;
+      det.push({cells:[C(run(tit,{bold:true,color:NAVY,size:20}),{fill:BAND,span:5})]}, ...U.map(ln=>({cells:[C(run(cmDesc(ln),{size:20})),C(run(ln.u,{size:20}),{align:CE}),C(run(String(ln.c).replace(".",","),{size:20}),{align:CE}),C(run(f2(ln.pu),{size:20}),{align:R}),C(run(f2(ln.tot),{size:20}),{align:R})]}))); });
+    if(det.length){ K.push(P([],{after:120,keepNext:true}));
+      K.push(tabla([5160,900,1000,1380,1480],[{head:true,cells:["DESCRIPCIÓN","UNID.","CANT.","P.U. (UF)","TOTAL (UF)"].map(hd)},...det])); }
+    const notas=[`Condición ${(cm.cond|0)+1}: ${t.cond[cm.cond|0]}.`,"Entregables en formato DWG y PDF.",...(cl?[`Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.`]:[]),...lines(cm.notas)];
+    const nb={top:none,bottom:none,left:none,right:none};
+    K.push(P([],{after:0,keepNext:true}));
+    K.push(new Table({width:{size:W,type:WidthType.DXA},columnWidths:[6420,3500],layout:TableLayoutType.FIXED,borders:{top:none,left:none,right:none,bottom:none,insideHorizontal:none,insideVertical:none},
+      rows:[new TableRow({cantSplit:true,children:[
+        new TableCell({width:{size:6420,type:WidthType.DXA},borders:nb,shading:{fill:BAND,type:ShadingType.CLEAR,color:"auto"},margins:{top:60,bottom:60,left:100,right:100},children:notas.map(x=>new Paragraph({spacing:{after:20},children:[run(x,{size:18})]}))}),
+        new TableCell({width:{size:3500,type:WidthType.DXA},borders:nb,margins:{left:300},children:[new Paragraph({spacing:{before:300,after:0},children:[run(FIRMA[0],{bold:true})]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[1])]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[2])]})]})]})]}));
+  } else if(S.tipo==="rapida"){
     r1="J. GERMÁN AGUILERA HAFNER"; r2="Ingeniero Civil · Ingeniería Estructural";
     K.push(datos(),...cuadroW(),...firmaW());
   } else {
@@ -852,15 +1013,23 @@ $("ed").addEventListener("input",e=>{
   if(el.id==="buscaCot"||el.id==="selCot"){ if(el.id==="buscaCot") renderGuardadas(); return; }
   if(el.id==="buscaReg"||el.id==="regSolo"||el.id==="selReg"){ if(el.id!=="selReg") renderRegistro(); return; }
   if(el.id&&el.id.startsWith("lg")) return;
+  if(d.cm!==undefined){ const v=el.value;
+    if(d.cm==="cli"){ const L=S.cm.L, keep={alc:S.cm.alc,notas:S.cm.notas,solped:S.cm.solped,licit:S.cm.licit}; S.cm=Object.assign(cmNuevo(v),keep); S.cm.L={pl:[],dc:[],sv:[],og:[]}; ["pl","dc","sv","og"].forEach(k=>S.cm.L[k]=L[k].filter(x=>x.n===OTRO||cmOpciones(k).includes(x.n))); S.documento=TAR[v].doc; fillFields(); renderMarco(); }
+    else if(d.cm==="cond"){ S.cm.cond=+v; renderMarco(); } else if(d.cm==="planta"){ S.cm.planta=v; renderMarco(); }
+    else S.cm[d.cm]=v; updTotals(); renderDoc(); save(); return; }
+  if(d.ml!==undefined){ const ln=S.cm.L[d.ml][+d.j]; ln[d.k]=el.value; if(d.k==="n"){ renderMarco(); $(`cm-${d.ml}-c-${d.j}`)?.focus(); } else cmTotales(); updTotals(); renderDoc(); save(); return; }
+  if(d.of!==undefined){ S.cm.of[d.of]=el.value; guardarOferente(); renderDoc(); save(); return; }
   if(d.i!==undefined){S.items[+d.i][d.k]=el.value;updTotals();}
   else if(d.c!==undefined){S.cat[+d.c][d.k]=el.value; if(d.k==="n") $("dlCat").innerHTML=S.cat.map(c=>`<option value="${esc(c.n)}">`).join(""); updTotals(); guardarCatalogo();}
   else if(d.p!==undefined){S.pagos[+d.p][d.k]=el.value;updTotals();updPagoSum();}
   else if(d.x!==undefined){S["ex"+d.x][+d.j][d.k]=el.value;}
-  else if(FIELDS.includes(el.id)){S[el.id]=el.value; if(["tIng","tProy"].includes(el.id)){updTotals();guardarCatalogo();} if(el.id==="fecha")renderIngreso();}
+  else if(FIELDS.includes(el.id)){S[el.id]=el.value; if(el.id==="documento"&&S.tipo==="marco") renderMarco(); if(["tIng","tProy"].includes(el.id)){updTotals();guardarCatalogo();} if(el.id==="fecha")renderIngreso();}
   renderDoc();save();
 });
 $("ed").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const d=b.dataset;
-  if(d.del!==undefined){S.items.splice(+d.del,1);renderItems();}
+  if(d.madd!==undefined){S.cm.L[d.madd].push({n:"",c:""});renderMarco();$(`cm-${d.madd}-n-${S.cm.L[d.madd].length-1}`).focus();}
+  else if(d.mdel!==undefined){S.cm.L[d.mdel].splice(+d.j,1);renderMarco();}
+  else if(d.del!==undefined){S.items.splice(+d.del,1);renderItems();}
   else if(b.id==="delItem"||b.id==="editItem"){ if(!S.items.length) return toast("No hay ítems en el cuadro");
     if(selIt<0) return toast("Haga clic primero en la fila del ítem");
     if(b.id==="editItem"){ const el=$("it-n-"+selIt); el.focus(); el.select(); return; }
