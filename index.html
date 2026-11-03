@@ -530,7 +530,7 @@ function modelo(){
 // AASA: «0_FORMATO COTIZACION JGAH_AASA.xlsx» (hojas PU PRODUCTOS y PU Servicios Categoría 1, especialidad 6.- OO.CC.)
 const c123=g=>[g,g/2,g*0.75];   // CMPC: condición 2 = 50 % y condición 3 = 75 % de la condición 1 (fórmulas de la planilla)
 const TAR={
- CMPC:{nombre:"CMPC", titulo:"COTIZACIÓN SERVICIOS DE INGENIERÍA CIVIL", doc:"F", rutMand:"",
+ CMPC:{nombre:"CMPC", titulo:"COTIZACIÓN SERVICIOS DE INGENIERÍA CIVIL", doc:"F", rutMand:"12.345.678-9",
   cond:["Levantamientos y diseños generados por empresa de ingeniería","CMPC entrega levantamiento y diseño en archivo digital para su revisión y comentarios (trabajo oficina)","CMPC entrega diseño en archivo digital para su revisión y corrección (re-ingeniería)"],
   pl:[["Plano Formato A0",[11,8,10]],["Plano Formato A1",[10,6,8]],["Plano Formato A2",[5.4,3,5]],["Plano Formato A3",[4,2,3]],["Plano Formato A4",[2.15,2,2]]],
   dc:[["Verificación / Informe Técnico",c123(12)],["Memoria de Cálculo Simple",c123(7.4)],["Memoria de Cálculo Estructuras Menores",c123(7.4)],["Modelación Estructura Simple",c123(8)],["Modelación Estructura Compleja",c123(20)],
