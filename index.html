@@ -427,8 +427,7 @@ async function refrescarPower(){
     else toast(S.proyId||S.numero?"No se encontró en POWER el proyecto de esta cotización; elíjalo en la lista de proyectos":"Datos de POWER recargados (la cotización no tiene proyecto elegido)"); }
   finally{ $("refrescar").disabled=false; } }
 async function cargarPower(){
-  try{ await PW.load(); { const mo=(PW.data.config||{}).marco_oferente; if(mo){ LS.set("cot_ing_marco_of",mo); if(S.cm&&mo[S.cm.cli]) S.cm.of={...S.cm.of,...mo[S.cm.cli]}; renderMarco(); } }
-    { const rc=(PW.data.config||{}).catalogo; if(rc){ aplicarCatalogo(rc); LS.set(K_CAT,rc); } else guardarCatalogo(); fillFields(); renderItems(); renderCat(); updTotals(); renderDoc(); }
+  try{ await PW.load(); { const rc=(PW.data.config||{}).catalogo; if(rc){ aplicarCatalogo(rc); LS.set(K_CAT,rc); } else guardarCatalogo(); fillFields(); renderItems(); renderCat(); updTotals(); renderDoc(); }
     renderPwState(); renderGuardadas(); toast("Datos de POWER cargados"); abrirDesdeEnlace(); if(!num(S.valorUF)) traerUF(); }
   catch(e){ if(e.code==="auth"){ $("loginBox").hidden=false; $("lgMsg").textContent=e.message==="Sin sesión"?"":e.message; renderPwState(); } else toast("No se pudo leer POWER: "+e.message); }
 }
@@ -557,9 +556,8 @@ const TAR={
 };
 const SECC=[["pl","1.- PLANOS","Costo planos"],["dc","2.- DOCUMENTOS","Costo documentos"],["sv","3.- SERVICIOS","Costo servicios"],["og","4.- OTROS GASTOS","Otros gastos"]];
 const OTRO="Otro (indicar)";
-const OF_K=[["razon","Razón social"],["rut","RUT empresa"],["sap","Código SAP (proveedor)"],["contrato","N° contrato marco"],["rep","Representante legal"],["rutRep","RUT representante legal"],["contacto","Persona de contacto"],["fono","Teléfono"],["mail","E-mail"]];
 const OF_FIJO=["rutRep","mail"];   // datos fijos del oferente (no se editan)
-const cmNuevo=cli=>({cli, planta:"", cond:0, solped:"", licit:"", alc:"", notas:"", of:{...TAR[cli].of,...((LS.get("cot_ing_marco_of")||{})[cli]||{}),...Object.fromEntries(OF_FIJO.map(k=>[k,TAR[cli].of[k]]))}, L:{pl:[],dc:[],sv:[],og:[]}});
+const cmNuevo=cli=>({cli, planta:"", cond:0, solped:"", licit:"", alc:"", notas:"", of:{...TAR[cli].of}, L:{pl:[],dc:[],sv:[],og:[]}});
 const T=()=>TAR[(S.cm&&S.cm.cli)||"CMPC"];
 // precio unitario de una línea según el contrato, la condición y la planta
 function cmPU(sec,ln){
@@ -608,22 +606,16 @@ function renderMarco(){
   <div class="row" style="margin-top:10px;justify-content:space-between"><b>Valor total oferta (${S.documento==="B"?"bruto":"neto"})</b><b id="cm-tot">${f2(R.neto)} UF</b></div>
   <div class="cmsec">NOTAS ADICIONALES</div>
   <label for="cm-notas">Una línea por punto. Si queda vacío, no aparece en la cotización.<textarea id="cm-notas" data-cm="notas">${esc(cm.notas)}</textarea></label>
-  <details><summary>Datos del oferente (${esc(t.nombre)})</summary>
-    <p class="hint">Se guardan para las próximas cotizaciones de este contrato.</p>
-    <div class="grid2">${OF_K.map(([k,l])=>`<label for="cm-of-${k}">${l}<input id="cm-of-${k}" data-of="${k}" value="${esc(OF_FIJO.includes(k)?t.of[k]:(cm.of[k]||""))}"${OF_FIJO.includes(k)?" readonly":""}></label>`).join("")}</div>
-  </details>`;
+`;
 }
 function cmTotales(){ const R=marcoCalc(); SECC.forEach(([k])=>{ R.secs[k].L.forEach((ln,j)=>{const el=$(`cm-${k}-t-${j}`); if(el) el.textContent=f2(ln.tot);}); const s=$(`cm-${k}-sub`); if(s) s.textContent=f2(R.secs[k].sub); });
   const t=$("cm-tot"); if(t) t.textContent=f2(R.neto)+" UF"; }
-let ofTimer=null;
-function guardarOferente(){ const all=LS.get("cot_ing_marco_of")||{}; all[S.cm.cli]={...S.cm.of}; LS.set("cot_ing_marco_of",all); clearTimeout(ofTimer);
-  if(PW.logged&&!DEMO) ofTimer=setTimeout(()=>PW.put("cotizador_config","marco_oferente",all).catch(()=>{}),1200); }
 function cliDeMandante(m){ const x=String(m||"").toUpperCase(); return /CMPC/.test(x)?"CMPC":(/ARAUCO|AASA/.test(x)?"AASA":null); }
 // --- documento breve ---
 const COLS_CM=`<colgroup><col style="width:52%"><col style="width:9%"><col style="width:10%"><col style="width:14%"><col style="width:15%"></colgroup>`;
 function cmDesc(ln){ return ln.n===OTRO?(ln.d||""):ln.n; }
 function bloquesMarco(M){
-  const cm=S.cm||cmNuevo("CMPC"), t=T(), R=marcoCalc(), of={...cm.of,...Object.fromEntries(OF_FIJO.map(k=>[k,t.of[k]]))}, bol=S.documento==="B";
+  const cm=S.cm||cmNuevo("CMPC"), t=T(), R=marcoCalc(), of={...t.of}, bol=S.documento==="B";
   const kv=(k,v,phT)=>`<td class="k" style="width:16%">${k}</td><td class="v" style="width:34%">${phT?val(v,phT):esc(v||"")}</td>`;
   const izq=[["Código SAP",of.sap,"código SAP"],["RUT empresa",of.rut,"RUT"],["Razón social",of.razon,"razón social"],["Representante legal",of.rep,"representante"],["RUT rep. legal",of.rutRep,"RUT"],["Contacto",of.contacto,""],["Teléfono / e-mail",[of.fono,of.mail].filter(Boolean).join(" · "),""]];
   const der=[["RUT mandante",t.rutMand,"RUT mandante"],["Planta",cm.planta,"planta"],["N° sol. pedido",cm.solped,""],["N° licitación",cm.licit,""],["Fecha oferta",fdate(S.fecha),"fecha"],["Validez oferta",S.validez?vigencia():"","validez"],["N° cotización",numRev(),"N° cotización"]];
@@ -904,7 +896,7 @@ async function crearDocx(){
   const K=[];
   let r1,r2;
   if(S.tipo==="marco"){
-    const cm=S.cm||cmNuevo("CMPC"), t=T(), Rm=marcoCalc(), of={...cm.of,...Object.fromEntries(OF_FIJO.map(k=>[k,t.of[k]]))}, bol=S.documento==="B", cl=M.clp&&M.vuf;
+    const cm=S.cm||cmNuevo("CMPC"), t=T(), Rm=marcoCalc(), of={...t.of}, bol=S.documento==="B", cl=M.clp&&M.vuf;
     r1=t.titulo; r2="Contrato marco "+t.nombre+(of.contrato?" · "+of.contrato:"");
     const v=(x,phT)=>phT?txt(x,phT,{size:20,color:INK}):run(x||"",{size:20,color:INK}), k=x=>run(x,{size:20});
     const izq=[["Código SAP",of.sap,"código SAP"],["RUT empresa",of.rut,"RUT"],["Razón social",of.razon,"razón social"],["Representante legal",of.rep,"representante"],["RUT rep. legal",of.rutRep,"RUT"],["Contacto",of.contacto,""],["Teléfono / e-mail",[of.fono,of.mail].filter(Boolean).join(" · "),""]];
@@ -1031,7 +1023,6 @@ $("ed").addEventListener("input",e=>{
     if(d.cm==="cond"){ S.cm.cond=+v; renderMarco(); } else if(d.cm==="planta"){ S.cm.planta=v; renderMarco(); }
     else S.cm[d.cm]=v; updTotals(); renderDoc(); save(); return; }
   if(d.ml!==undefined){ const ln=S.cm.L[d.ml][+d.j]; ln[d.k]=el.value; if(d.k==="n"){ renderMarco(); $(`cm-${d.ml}-c-${d.j}`)?.focus(); } else cmTotales(); updTotals(); renderDoc(); save(); return; }
-  if(d.of!==undefined){ S.cm.of[d.of]=el.value; guardarOferente(); renderDoc(); save(); return; }
   if(d.i!==undefined){S.items[+d.i][d.k]=el.value;updTotals();}
   else if(d.c!==undefined){S.cat[+d.c][d.k]=el.value; if(d.k==="n") $("dlCat").innerHTML=S.cat.map(c=>`<option value="${esc(c.n)}">`).join(""); updTotals(); guardarCatalogo();}
   else if(d.p!==undefined){S.pagos[+d.p][d.k]=el.value;updTotals();updPagoSum();}
