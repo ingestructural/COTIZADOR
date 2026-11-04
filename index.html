@@ -543,7 +543,7 @@ const TAR={
   ogN:["Traslado a planta (combustible, mantención, peajes, alimentación y otros)","Reunión vía Google Meet u otro (1 hora)","Visita técnica a terreno, lunes a viernes (incluye HH y traslado; 2-3 h en planta)","Visita técnica a terreno, sábado (incluye HH y traslado; 2-3 h en planta)","Visita técnica a terreno, domingo (incluye HH y traslado; 2-3 h en planta)"],
   plantas:{"Aserradero Nacimiento":[3.41,0.6,5.57,7.24,9.75],"Remanufactura Los Ángeles":[3.33,0.6,5.13,6.67,8.98],"Aserradero Bucalemu":[2.92,0.6,4.42,5.75,7.74],"Remanufactura Coronel":[1.15,0.6,2.05,2.67,3.59],"Aserradero Mulchén":[3.94,0.6,6.1,7.93,10.68],"Planta Plywood":[4.2,0.6,6.96,9.048,12.18]},
   of:{razon:"ING ESTRUCTURAL SpA",rut:"76.987.907-2",sap:"119709",contrato:"CM_4600021844",rep:"J. GERMÁN AGUILERA HAFNER",rutRep:"8.849.089-4",contacto:"J. GERMÁN AGUILERA HAFNER",fono:"",mail:"ingestructural@ingestructural.cl"}},
- AASA:{nombre:"ARAUCO (AASA)", titulo:"COTIZACIÓN SERVICIOS DE INGENIERÍA", doc:"B", rutMand:"96.510.970-6",
+ AASA:{nombre:"ARAUCO (AASA)", titulo:"COTIZACIÓN SERVICIOS DE INGENIERÍA", doc:"B", rutMand:"96.510.970-6", mandante:"MADERAS ARAUCO S.A.",
   cond:["Nuevo documento: levantamientos y diseños generados por EPS","Nuevo documento: ARAUCO S.A. entrega levantamiento y diseño en borrador (papel)","Modificación de documento: ARAUCO S.A. entrega documento a modificar en formato DWG","Digitalización de documento: ARAUCO S.A. entrega documento en papel"],
   pl:[["Plano Formato A0",[9,4.5,2.5,4.5]],["Plano Formato A1",[8.2,4.1,1.75,4.1]],["Plano Formato A2",[4,2,1.5,2]],["Plano Formato A3",[3,1.5,1,1.5]],["Plano Formato A4",[1.8,1,6,1]]],
   dc:[["Memoria de Cálculo Simple",6],["Memoria de Cálculo Específica",8],["Plano 3D",12],["Especificaciones Técnicas para licitación de servicios",3],["Listado de Materiales",1.2],["Informe Topográfico",6],["Lista A para licitación",4]],
@@ -589,7 +589,6 @@ function renderMarco(){
     <div><div class="hint" style="font-weight:600">Planilla</div><div style="padding:6px 0;font-weight:700">${esc(t.nombre)}${cm.cli==="CMPC"&&cm.of.contrato?" · "+esc(cm.of.contrato):""}</div></div>
     <label for="cm-planta">Planta<select id="cm-planta" data-cm="planta"><option value="">— elegir —</option>${opt(Object.keys(t.plantas),cm.planta)}</select></label>
     <label class="full" for="cm-cond">Condición (precios de planos${cm.cli==="CMPC"?" y documentos":""})<select id="cm-cond" data-cm="cond">${t.cond.map((x,i)=>`<option value="${i}"${i==(cm.cond|0)?" selected":""}>${i+1}. ${esc(x)}</option>`).join("")}</select></label>
-    <label for="cm-solped">N° solicitud de pedido<input id="cm-solped" data-cm="solped" value="${esc(cm.solped)}"></label>
     <label for="cm-licit">N° licitación<input id="cm-licit" data-cm="licit" value="${esc(cm.licit)}"></label>
   </div>
   <label for="cm-alc">Detalle y alcances técnicos (una línea por punto)<textarea id="cm-alc" data-cm="alc" placeholder="Ej.: Verificación tensiones inducidas">${esc(cm.alc)}</textarea></label>
@@ -618,7 +617,7 @@ function bloquesMarco(M){
   const cm=S.cm||cmNuevo("CMPC"), t=T(), R=marcoCalc(), of={...t.of}, bol=S.documento==="B";
   const kv=(k,v,phT)=>`<td class="k" style="width:16%">${k}</td><td class="v" style="width:34%">${phT?val(v,phT):esc(v||"")}</td>`;
   const izq=[["Código SAP",of.sap,"código SAP"],["RUT empresa",of.rut,"RUT"],["Razón social",of.razon,"razón social"],["Representante legal",of.rep,"representante"],["RUT rep. legal",of.rutRep,"RUT"],["Contacto",of.contacto,""],["Teléfono / e-mail",[of.fono,of.mail].filter(Boolean).join(" · "),""]];
-  const der=[["RUT mandante",t.rutMand,"RUT mandante"],["Planta",cm.planta,"planta"],["N° sol. pedido",cm.solped,""],["N° licitación",cm.licit,""],["Fecha oferta",fdate(S.fecha),"fecha"],["Validez oferta",S.validez?vigencia():"","validez"],["N° cotización",numRev(),"N° cotización"]];
+  const der=[["Mandante",t.mandante||S.mandante,"mandante"],["RUT mandante",t.rutMand,"RUT mandante"],["Planta",cm.planta,"planta"],["N° licitación",cm.licit,""],["Fecha oferta",fdate(S.fecha),"fecha"],["Validez oferta",S.validez?vigencia():"","validez"],["N° cotización",numRev(),"N° cotización"]];
   const ej=S.plazo?`${S.plazo} ${S.plazoU==="semanas"?"semanas":"días hábiles"}`:""; der[4]=["Fecha / validez",[fdate(S.fecha),S.validez?"validez "+vigencia():""].filter(Boolean).join(" · "),"fecha"]; der[5]=["Ejecución",ej,"plazo"];
   const ante=`<table class="tc cmt"><colgroup><col style="width:19%"><col style="width:31%"><col style="width:16%"><col style="width:34%"></colgroup><thead><tr><th colspan="2">ANTECEDENTES EMPRESA DE SERVICIOS</th><th colspan="2">ANTECEDENTES LICITACIÓN</th></tr></thead><tbody>${izq.map((a,i)=>`<tr>${kv(a[0],a[1],a[2],1)}${kv(der[i][0],der[i][1],der[i][2])}</tr>`).join("")}</tbody></table>`;
   const desc=`<div class="band">DESCRIPCIÓN DEL SERVICIO</div><p style="margin:6px 8px"><b>${val(S.proyecto,"proyecto")}</b></p>${lines(cm.alc).length?`<ul>${lines(cm.alc).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}`;
@@ -900,7 +899,7 @@ async function crearDocx(){
     r1=t.titulo; r2="Contrato marco "+t.nombre+(of.contrato?" · "+of.contrato:"");
     const v=(x,phT)=>phT?txt(x,phT,{size:20,color:INK}):run(x||"",{size:20,color:INK}), k=x=>run(x,{size:20});
     const izq=[["Código SAP",of.sap,"código SAP"],["RUT empresa",of.rut,"RUT"],["Razón social",of.razon,"razón social"],["Representante legal",of.rep,"representante"],["RUT rep. legal",of.rutRep,"RUT"],["Contacto",of.contacto,""],["Teléfono / e-mail",[of.fono,of.mail].filter(Boolean).join(" · "),""]];
-    const der=[["RUT mandante",t.rutMand,"RUT mandante"],["Planta",cm.planta,"planta"],["N° sol. pedido",cm.solped,""],["N° licitación",cm.licit,""],["Fecha oferta",fdate(S.fecha),"fecha"],["Validez oferta",S.validez?vigencia():"","validez"],["N° cotización",numRev(),"N° cotización"]];
+    const der=[["Mandante",t.mandante||S.mandante,"mandante"],["RUT mandante",t.rutMand,"RUT mandante"],["Planta",cm.planta,"planta"],["N° licitación",cm.licit,""],["Fecha oferta",fdate(S.fecha),"fecha"],["Validez oferta",S.validez?vigencia():"","validez"],["N° cotización",numRev(),"N° cotización"]];
   const ej=S.plazo?`${S.plazo} ${S.plazoU==="semanas"?"semanas":"días hábiles"}`:""; der[4]=["Fecha / validez",[fdate(S.fecha),S.validez?"validez "+vigencia():""].filter(Boolean).join(" · "),"fecha"]; der[5]=["Ejecución",ej,"plazo"];
     const hd=x=>C(run(x,{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,align:CE});
     K.push(tabla([1900,3260,1500,3260],[{head:true,cells:[C(run("ANTECEDENTES EMPRESA DE SERVICIOS",{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,span:2,align:CE}),C(run("ANTECEDENTES LICITACIÓN",{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,span:2,align:CE})]},
