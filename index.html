@@ -117,7 +117,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 .page td.num{text-align:center;color:var(--doc-ink)}
 .page td.tot{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .page tr.sum td{background:var(--doc-blue2);font-weight:700;padding:6px}
-.marco .pc{font-size:10pt}.marco .pc td,.marco .pc th{padding:2px 6px}.page table.cmt{font-size:9.5pt}.page table.cmt td,.page table.cmt th{padding:2px 5px}
+.marco .pc{font-size:10pt}.marco .pc .band{margin-top:8px;padding:3px 8px}.marco .pc ul{margin:4px 0}.marco .pc p{margin:4px 8px}.marco .pc td,.marco .pc th{padding:1px 6px}.page table.cmt{font-size:9.5pt}.page table.cmt td,.page table.cmt th{padding:1px 5px}
 .cmsec{font-weight:800;font-size:1.12rem;color:var(--accent);margin:18px 0 6px;padding-bottom:3px;border-bottom:2px solid var(--accent);letter-spacing:.03em}
 #selCot,#selReg{color:var(--muted);opacity:.75}
 #selCot option:checked,#selReg option:checked{color:var(--fg)}
@@ -606,7 +606,8 @@ function renderMarco(){
     <button type="button" class="btn" data-madd="${k}" style="margin-top:6px">Agregar línea</button>`).join("")}
   ${!cm.planta&&R.secs.og.L.some(x=>x.n&&x.n!==OTRO)?`<p class="hint w">Elija la planta para valorizar los otros gastos.</p>`:""}
   <div class="row" style="margin-top:10px;justify-content:space-between"><b>Valor total oferta (${S.documento==="B"?"bruto":"neto"})</b><b id="cm-tot">${f2(R.neto)} UF</b></div>
-  <label for="cm-notas">Notas (una línea por punto, opcional)<textarea id="cm-notas" data-cm="notas">${esc(cm.notas)}</textarea></label>
+  <div class="cmsec">NOTAS ADICIONALES</div>
+  <label for="cm-notas">Una línea por punto. Si queda vacío, no aparece en la cotización.<textarea id="cm-notas" data-cm="notas">${esc(cm.notas)}</textarea></label>
   <details><summary>Datos del oferente (${esc(t.nombre)})</summary>
     <p class="hint">Se guardan para las próximas cotizaciones de este contrato.</p>
     <div class="grid2">${OF_K.map(([k,l])=>`<label for="cm-of-${k}">${l}<input id="cm-of-${k}" data-of="${k}" value="${esc(OF_FIJO.includes(k)?t.of[k]:(cm.of[k]||""))}"${OF_FIJO.includes(k)?" readonly":""}></label>`).join("")}</div>
@@ -639,8 +640,10 @@ function bloquesMarco(M){
   const B=[{html:ante},{html:desc},
     {tabla:{pre:`<div class="band">OFERTA ECONÓMICA (UF)</div>`,cols:colsRes,head:`<tr><th>PARTIDA</th><th>UF</th>${cl?"<th>CLP</th>":""}</tr>`,rows:resRows,keepLast:2}}];
   if(det.length) B.push({tabla:{pre:`<div style="height:10px"></div>`,cols:COLS_CM,head:`<tr><th>DESCRIPCIÓN</th><th>UNID.</th><th>CANT.</th><th>P.U. (UF)</th><th>TOTAL (UF)</th></tr>`,rows:det,keepLast:1}});
-  const notas=[`Condición ${(cm.cond|0)+1}: ${t.cond[cm.cond|0]}.`, "Entregables en formato DWG y PDF.", ...(cl?[`Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.`]:[]), ...lines(cm.notas)];
-  B.push({html:`<div style="display:flex;gap:18px;align-items:flex-start;margin-top:10px"><div class="leg" style="text-align:left;flex:1;margin-top:0">${notas.map(esc).join("<br>")}</div><div class="firma" style="margin-top:0.5cm;flex:0 0 auto">${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div></div>`});
+  const adic=lines(cm.notas);
+  if(adic.length) B.push({html:`<div class="band">NOTAS ADICIONALES</div><ul>${adic.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`});
+  const notas=[`Condición ${(cm.cond|0)+1}: ${t.cond[cm.cond|0]}.`, "Entregables en formato DWG y PDF.", ...(cl?[`Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.`]:[])];
+  B.push({html:`<div style="display:flex;gap:18px;align-items:flex-start;margin-top:4px"><div class="leg" style="text-align:left;flex:1;margin-top:0;line-height:1.25">${notas.map(esc).join("<br>")}</div><div class="firma" style="margin-top:0.2cm;flex:0 0 auto;line-height:1.25">${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div></div>`});
   return B;
 }
 
@@ -922,7 +925,8 @@ async function crearDocx(){
       det.push({cells:[C(run(tit,{bold:true,color:NAVY,size:20}),{fill:BAND,span:5})]}, ...U.map(ln=>({cells:[C(run(cmDesc(ln),{size:20})),C(run(ln.u,{size:20}),{align:CE}),C(run(String(ln.c).replace(".",","),{size:20}),{align:CE}),C(run(f2(ln.pu),{size:20}),{align:R}),C(run(f2(ln.tot),{size:20}),{align:R})]}))); });
     if(det.length){ K.push(P([],{after:120,keepNext:true}));
       K.push(tabla([5160,900,1000,1380,1480],[{head:true,cells:["DESCRIPCIÓN","UNID.","CANT.","P.U. (UF)","TOTAL (UF)"].map(hd)},...det])); }
-    const notas=[`Condición ${(cm.cond|0)+1}: ${t.cond[cm.cond|0]}.`,"Entregables en formato DWG y PDF.",...(cl?[`Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.`]:[]),...lines(cm.notas)];
+    if(lines(cm.notas).length){ K.push(P(run("NOTAS ADICIONALES",{bold:true,color:NAVY}),{before:140,after:40,keepNext:true,align:L})); lines(cm.notas).forEach(x=>K.push(P(run(x,{size:20}),{bullet:true,after:0}))); }
+    const notas=[`Condición ${(cm.cond|0)+1}: ${t.cond[cm.cond|0]}.`,"Entregables en formato DWG y PDF.",...(cl?[`Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.`]:[])];
     const nb={top:none,bottom:none,left:none,right:none};
     K.push(P([],{after:0,keepNext:true}));
     K.push(new Table({width:{size:W,type:WidthType.DXA},columnWidths:[6420,3500],layout:TableLayoutType.FIXED,borders:{top:none,left:none,right:none,bottom:none,insideHorizontal:none,insideVertical:none},
@@ -1075,6 +1079,12 @@ function elegirContrato(cli){ if(S.cm&&S.cm.cli===cli) return; S.cm=cmNuevo(cli)
     if(S.proyId){ const p=(PW.data.proyectos||[]).find(x=>x.id===S.proyId); if(!p||cliDeMandante(p.mandante)!==cli) Object.assign(S,{proyId:"",numero:"",mandante:"",proyecto:"",contacto:""}); }
     fillFields(); renderMarco(); toast("Planilla "+TAR[cli].nombre+": elija el proyecto en la lista"); renderListaProy(); renderDoc(); save(); }
 $("cmSeg").addEventListener("click",e=>{const b=e.target.closest("button[data-cmcli]"); if(b) elegirContrato(b.dataset.cmcli);});
+// Contrato marco: al entrar a una casilla se selecciona su contenido; Enter pasa a la casilla siguiente
+$("cmBox").addEventListener("focusin",e=>{ const el=e.target; if(el.tagName==="INPUT"&&!el.readOnly){ try{el.select();}catch(_){} } });
+$("cmBox").addEventListener("pointerdown",e=>{ const el=e.target; if(el.tagName==="INPUT"&&!el.readOnly&&el.value&&document.activeElement!==el){ e.preventDefault(); el.focus(); el.select(); } });
+$("cmBox").addEventListener("keydown",e=>{ const el=e.target; if(e.key!=="Enter"||!(el.tagName==="INPUT"||el.tagName==="SELECT")) return;
+  e.preventDefault(); const L=[...$("cmBox").querySelectorAll("input:not([readonly]),select,textarea")].filter(x=>x.offsetParent!==null), i=L.indexOf(el);
+  const nx=L[i+1]; if(nx){ nx.focus(); if(nx.select) try{nx.select();}catch(_){} } });
 // Cuadro de ítems: al entrar a una celda de horas se selecciona su contenido; Enter pasa a la celda de la derecha
 $("tItems").addEventListener("focusin",e=>{ const el=e.target; if(el.dataset&&el.dataset.i!==undefined) marcarItem(+el.dataset.i); if(el.dataset&&(el.dataset.k==="hi"||el.dataset.k==="hp")) { try{el.select();}catch(_){} } });
 $("tItems").addEventListener("pointerdown",e=>{ const el=e.target; if(el.dataset&&(el.dataset.k==="hi"||el.dataset.k==="hp")&&document.activeElement!==el){ e.preventDefault(); el.focus(); el.select(); } });
