@@ -672,8 +672,8 @@ function cuadroBloques(M){
     ...Array.from({length:pad},()=>`<tr><td class="v">&nbsp;</td><td class="v"></td><td class="v"></td><td class="tot">0,00</td></tr>`),
     `<tr class="sum"><td>${M.bol?"TOTAL HONORARIOS (BRUTO)":"TOTAL NETO"}</td><td></td><td></td><td class="tot">${f2(M.t.neto)}</td></tr>`];
   return [
-    {tabla:{pre:`<div class="band">COTIZACIÓN</div>`, cols:COLS_CUADRO, head:`<tr><th>ITEM</th><th>hh/ing.</th><th>hh/proy.</th><th>TOTAL (UF)</th></tr>`, rows, keepLast:2}},
-    {html:`<table class="tc" style="margin-top:14px">${COLS_CUADRO}<thead><tr><th>ENTREGABLES</th><th>PLANOS A1</th><th>MDC<br>INFORME</th><th>EETT</th></tr></thead><tbody>
+    {tabla:{pre:`<div class="band">A. COTIZACIÓN</div>`, cols:COLS_CUADRO, head:`<tr><th>ITEM</th><th>hh/ing.</th><th>hh/proy.</th><th>TOTAL (UF)</th></tr>`, rows, keepLast:2}},
+    {html:`<table class="tc" style="margin-top:14px">${COLS_CUADRO}<thead><tr><th>B. ENTREGABLES</th><th>PLANOS A1</th><th>MDC<br>INFORME</th><th>EETT</th></tr></thead><tbody>
   <tr><td>Documentos</td><td class="num">—</td><td class="num"><b>${M.t.ent.m}</b></td><td class="num"><b>${M.t.ent.e}</b></td></tr>
   <tr><td>Planos</td><td class="num"><b>${M.t.ent.p}</b></td><td class="num">—</td><td class="num">—</td></tr></tbody></table>
   <div class="leg">PLANO A1: DIGITAL FORMATO A1 · MDC/INF.: MEMORIA DE CÁLCULO/INFORME · EETT: ESPECIFICACIONES TÉCNICAS</div>`}];
@@ -899,12 +899,12 @@ async function crearDocx(){
     ...(S.tipo==="rapida"&&S.numero?[{cells:[C(run("N° COTIZACIÓN:")),C(run(numRev(),{color:INK}),{fill:IN,span:2})]}]:[])]);
   const cuadroW=()=>{
     const head=t=>C(run(t,{bold:true,color:"FFFFFF"}),{fill:BLUE,align:CE});
-    return [P(run("COTIZACIÓN",{bold:true,color:NAVY}),{before:200,after:60,keepNext:true}),
+    return [P(run("A. COTIZACIÓN",{bold:true,color:NAVY}),{before:200,after:60,keepNext:true}),
       tabla([4960,1500,1500,1960],[{head:true,cells:["ITEM","hh/ing.","hh/proy.","TOTAL (UF)"].map(head)},
         ...M.rows.map(it=>({cells:[C(run(it.n,{color:INK}),{fill:IN}),C(run(num(it.hi)||"",{color:INK}),{fill:IN,align:CE}),C(run(num(it.hp)||"",{color:INK}),{fill:IN,align:CE}),C(run(f2(itemUF(it))),{align:R})]})),
         {cells:[C(run(M.bol?"TOTAL HONORARIOS (BRUTO)":"TOTAL NETO",{bold:true}),{fill:BLUE2}),C(run(""),{fill:BLUE2}),C(run(""),{fill:BLUE2}),C(run(f2(M.t.neto),{bold:true}),{fill:BLUE2,align:R})]}]),
       P([],{after:120}),
-      tabla([4960,1500,1800,1660],[{head:true,cells:[head("ENTREGABLES"),head("PLANOS A1"),C([run("MDC",{bold:true,color:"FFFFFF"}),run("INFORME",{bold:true,color:"FFFFFF",break:1})],{fill:BLUE,align:CE}),head("EETT")]},
+      tabla([4960,1500,1800,1660],[{head:true,cells:[head("B. ENTREGABLES"),head("PLANOS A1"),C([run("MDC",{bold:true,color:"FFFFFF"}),run("INFORME",{bold:true,color:"FFFFFF",break:1})],{fill:BLUE,align:CE}),head("EETT")]},
         {cells:[C(run("Documentos")),C(run("—"),{align:CE}),C(run(M.t.ent.m,{bold:true}),{align:CE}),C(run(M.t.ent.e,{bold:true}),{align:CE})]},
         {cells:[C(run("Planos")),C(run(M.t.ent.p,{bold:true}),{align:CE}),C(run("—"),{align:CE}),C(run("—"),{align:CE})]}]),
       P(run("PLANO A1: DIGITAL FORMATO A1 · MDC/INF.: MEMORIA DE CÁLCULO/INFORME · EETT: ESPECIFICACIONES TÉCNICAS",{size:16}),{align:CE,before:60})];
