@@ -543,7 +543,7 @@ const TAR={
   sv:[["Ingeniero Senior","hh",1.2],["Ingeniero de Especialidad","hh",1.2],["Ingeniero Ayudante","hh",0.75],["Proyectista de Especialidad","hh",0.75],["Proyectista Ayudante","hh",0.6],["Dibujante de Especialidad","hh",0.5],["Asesor de Prevención Seguridad","hh",0.8],["Dibujante Ayudante","hh",0.35]],
   ogN:["Traslado a planta (combustible, mantención, peajes, alimentación y otros)","Reunión vía Google Meet u otro (1 hora)","Visita técnica a terreno, lunes a viernes (incluye HH y traslado; 2-3 h en planta)","Visita técnica a terreno, sábado (incluye HH y traslado; 2-3 h en planta)","Visita técnica a terreno, domingo (incluye HH y traslado; 2-3 h en planta)"],
   plantas:{"Aserradero Nacimiento":[3.41,0.6,5.57,7.24,9.75],"Remanufactura Los Ángeles":[3.33,0.6,5.13,6.67,8.98],"Aserradero Bucalemu":[2.92,0.6,4.42,5.75,7.74],"Remanufactura Coronel":[1.15,0.6,2.05,2.67,3.59],"Aserradero Mulchén":[3.94,0.6,6.1,7.93,10.68],"Planta Plywood":[4.2,0.6,6.96,9.048,12.18]},
-  of:{razon:"ING ESTRUCTURAL SpA",rut:"76.987.907-2",sap:"119709",contrato:"CM_4600021844",rep:"J. GERMÁN AGUILERA HAFNER",rutRep:"8.849.089-4",contacto:"J. GERMÁN AGUILERA HAFNER",fono:"",mail:""}},
+  of:{razon:"ING ESTRUCTURAL SpA",rut:"76.987.907-2",sap:"119709",contrato:"CM_4600021844",rep:"J. GERMÁN AGUILERA HAFNER",rutRep:"8.849.089-4",contacto:"J. GERMÁN AGUILERA HAFNER",fono:"",mail:"ingestructural@ingestructural.cl"}},
  AASA:{nombre:"ARAUCO (AASA)", titulo:"COTIZACIÓN SERVICIOS DE INGENIERÍA", doc:"B", rutMand:"96.510.970-6",
   cond:["Nuevo documento: levantamientos y diseños generados por EPS","Nuevo documento: ARAUCO S.A. entrega levantamiento y diseño en borrador (papel)","Modificación de documento: ARAUCO S.A. entrega documento a modificar en formato DWG","Digitalización de documento: ARAUCO S.A. entrega documento en papel"],
   pl:[["Plano Formato A0",[9,4.5,2.5,4.5]],["Plano Formato A1",[8.2,4.1,1.75,4.1]],["Plano Formato A2",[4,2,1.5,2]],["Plano Formato A3",[3,1.5,1,1.5]],["Plano Formato A4",[1.8,1,6,1]]],
@@ -553,12 +553,12 @@ const TAR={
      return [...N.map((n,i)=>[n,"hh",HH[i]]),...N.map((n,i)=>[n+" (día hombre)","dh",DH[i]]),...N.map((n,i)=>[n+" (mes hombre)","mh",MH[i]])];})(),
   ogN:["Traslado a planta","Almuerzo diario (por persona)","Estadía (por persona)"],
   plantas:{"Teno":[2.5,0.2,0.6],"Constitución":[2.7,0.2,0.6],"Trupan":[1.5,0.2,0.6],"Cholguán":[1.5,0.2,0.6],"Nueva Aldea":[1,0.2,0.6],"Horcones (I y II)":[1.2,0.2,0.6],"Colorado / Valdivia":[1.8,0.2,0.6]},
-  of:{razon:"J. GERMÁN AGUILERA HAFNER",rut:"8.849.089-4",sap:"10381",contrato:"",rep:"J. GERMÁN AGUILERA HAFNER",rutRep:"8.849.089-4",contacto:"J. GERMÁN AGUILERA HAFNER",fono:"",mail:""}}
+  of:{razon:"J. GERMÁN AGUILERA HAFNER",rut:"8.849.089-4",sap:"10381",contrato:"",rep:"J. GERMÁN AGUILERA HAFNER",rutRep:"8.849.089-4",contacto:"J. GERMÁN AGUILERA HAFNER",fono:"",mail:"ingestructural@ingestructural.cl"}}
 };
 const SECC=[["pl","1.- PLANOS","Costo planos"],["dc","2.- DOCUMENTOS","Costo documentos"],["sv","3.- SERVICIOS","Costo servicios"],["og","4.- OTROS GASTOS","Otros gastos"]];
 const OTRO="Otro (indicar)";
 const OF_K=[["razon","Razón social"],["rut","RUT empresa"],["sap","Código SAP (proveedor)"],["contrato","N° contrato marco"],["rep","Representante legal"],["rutRep","RUT representante legal"],["contacto","Persona de contacto"],["fono","Teléfono"],["mail","E-mail"]];
-const OF_FIJO=["rutRep"];   // datos fijos del oferente (no se editan)
+const OF_FIJO=["rutRep","mail"];   // datos fijos del oferente (no se editan)
 const cmNuevo=cli=>({cli, planta:"", cond:0, solped:"", licit:"", alc:"", notas:"", of:{...TAR[cli].of,...((LS.get("cot_ing_marco_of")||{})[cli]||{}),...Object.fromEntries(OF_FIJO.map(k=>[k,TAR[cli].of[k]]))}, L:{pl:[],dc:[],sv:[],og:[]}});
 const T=()=>TAR[(S.cm&&S.cm.cli)||"CMPC"];
 // precio unitario de una línea según el contrato, la condición y la planta
@@ -623,7 +623,7 @@ function cliDeMandante(m){ const x=String(m||"").toUpperCase(); return /CMPC/.te
 const COLS_CM=`<colgroup><col style="width:52%"><col style="width:9%"><col style="width:10%"><col style="width:14%"><col style="width:15%"></colgroup>`;
 function cmDesc(ln){ return ln.n===OTRO?(ln.d||""):ln.n; }
 function bloquesMarco(M){
-  const cm=S.cm||cmNuevo("CMPC"), t=T(), R=marcoCalc(), of={...cm.of,rutRep:t.of.rutRep}, bol=S.documento==="B";
+  const cm=S.cm||cmNuevo("CMPC"), t=T(), R=marcoCalc(), of={...cm.of,...Object.fromEntries(OF_FIJO.map(k=>[k,t.of[k]]))}, bol=S.documento==="B";
   const kv=(k,v,phT)=>`<td class="k" style="width:16%">${k}</td><td class="v" style="width:34%">${phT?val(v,phT):esc(v||"")}</td>`;
   const izq=[["Código SAP",of.sap,"código SAP"],["RUT empresa",of.rut,"RUT"],["Razón social",of.razon,"razón social"],["Representante legal",of.rep,"representante"],["RUT rep. legal",of.rutRep,"RUT"],["Contacto",of.contacto,""],["Teléfono / e-mail",[of.fono,of.mail].filter(Boolean).join(" · "),""]];
   const der=[["RUT mandante",t.rutMand,"RUT mandante"],["Planta",cm.planta,"planta"],["N° sol. pedido",cm.solped,""],["N° licitación",cm.licit,""],["Fecha oferta",fdate(S.fecha),"fecha"],["Validez oferta",S.validez?vigencia():"","validez"],["N° cotización",numRev(),"N° cotización"]];
@@ -904,7 +904,7 @@ async function crearDocx(){
   const K=[];
   let r1,r2;
   if(S.tipo==="marco"){
-    const cm=S.cm||cmNuevo("CMPC"), t=T(), Rm=marcoCalc(), of={...cm.of,rutRep:t.of.rutRep}, bol=S.documento==="B", cl=M.clp&&M.vuf;
+    const cm=S.cm||cmNuevo("CMPC"), t=T(), Rm=marcoCalc(), of={...cm.of,...Object.fromEntries(OF_FIJO.map(k=>[k,t.of[k]]))}, bol=S.documento==="B", cl=M.clp&&M.vuf;
     r1=t.titulo; r2="Contrato marco "+t.nombre+(of.contrato?" · "+of.contrato:"");
     const v=(x,phT)=>phT?txt(x,phT,{size:20,color:INK}):run(x||"",{size:20,color:INK}), k=x=>run(x,{size:20});
     const izq=[["Código SAP",of.sap,"código SAP"],["RUT empresa",of.rut,"RUT"],["Razón social",of.razon,"razón social"],["Representante legal",of.rep,"representante"],["RUT rep. legal",of.rutRep,"RUT"],["Contacto",of.contacto,""],["Teléfono / e-mail",[of.fono,of.mail].filter(Boolean).join(" · "),""]];
