@@ -621,7 +621,7 @@ function bloquesMarco(M){
   const der=[["RUT mandante",t.rutMand,"RUT mandante"],["Planta",cm.planta,"planta"],["N° sol. pedido",cm.solped,""],["N° licitación",cm.licit,""],["Fecha oferta",fdate(S.fecha),"fecha"],["Validez oferta",S.validez?vigencia():"","validez"],["N° cotización",numRev(),"N° cotización"]];
   const ej=S.plazo?`${S.plazo} ${S.plazoU==="semanas"?"semanas":"días hábiles"}`:""; der[4]=["Fecha / validez",[fdate(S.fecha),S.validez?"validez "+vigencia():""].filter(Boolean).join(" · "),"fecha"]; der[5]=["Ejecución",ej,"plazo"];
   const ante=`<table class="tc cmt"><colgroup><col style="width:19%"><col style="width:31%"><col style="width:16%"><col style="width:34%"></colgroup><thead><tr><th colspan="2">ANTECEDENTES EMPRESA DE SERVICIOS</th><th colspan="2">ANTECEDENTES LICITACIÓN</th></tr></thead><tbody>${izq.map((a,i)=>`<tr>${kv(a[0],a[1],a[2],1)}${kv(der[i][0],der[i][1],der[i][2])}</tr>`).join("")}</tbody></table>`;
-  const desc=`<div class="band">DESCRIPCIÓN DEL SERVICIO</div><p style="margin:6px 8px"><b>${val(S.proyecto,"proyecto")}</b>${S.mandante?` · ${esc(S.mandante)}`:""}</p>${lines(cm.alc).length?`<ul>${lines(cm.alc).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}`;
+  const desc=`<div class="band">DESCRIPCIÓN DEL SERVICIO</div><p style="margin:6px 8px"><b>${val(S.proyecto,"proyecto")}</b></p>${lines(cm.alc).length?`<ul>${lines(cm.alc).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}`;
   const cl=M.clp&&M.vuf;
   const resRows=[...SECC.map(([k,,n],i)=>`<tr><td>0${i+1}. ${n}</td><td class="tot">${f2(R.secs[k].sub)}</td>${cl?`<td class="tot">${clp(R.secs[k].sub*M.vuf)}</td>`:""}</tr>`),
     `<tr class="sum"><td>VALOR TOTAL OFERTA (${bol?"BRUTO, BOLETA DE HONORARIOS":"VALOR NETO"})</td><td class="tot">${f2(R.neto)}</td>${cl?`<td class="tot">${clp(R.neto*M.vuf)}</td>`:""}</tr>`];
@@ -635,7 +635,7 @@ function bloquesMarco(M){
   const adic=lines(cm.notas);
   if(adic.length) B.push({html:`<div class="band">NOTAS ADICIONALES</div><ul>${adic.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`});
   const notas=[`Condición ${(cm.cond|0)+1}: ${t.cond[cm.cond|0]}.`, "Entregables en formato DWG y PDF.", ...(cl?[`Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.`]:[])];
-  B.push({html:`<div style="display:flex;gap:18px;align-items:flex-start;margin-top:4px"><div class="leg" style="text-align:left;flex:1;margin-top:0;line-height:1.25">${notas.map(esc).join("<br>")}</div><div class="firma" style="margin-top:0.2cm;flex:0 0 auto;line-height:1.25">${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div></div>`});
+  B.push({html:`<div style="display:flex;gap:24px;align-items:flex-start;margin-top:4px"><div class="leg" style="text-align:left;flex:0 0 46%;margin-top:0;line-height:1.2;font-size:7pt;padding:3px 5px">${notas.map(esc).join("<br>")}</div><div class="firma" style="margin:1.0cm 0 0 auto;flex:0 0 auto;line-height:1.25;border-top:1px solid #555;padding-top:3px;min-width:6.5cm">${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div></div>`});
   return B;
 }
 
@@ -906,7 +906,7 @@ async function crearDocx(){
     K.push(tabla([1900,3260,1500,3260],[{head:true,cells:[C(run("ANTECEDENTES EMPRESA DE SERVICIOS",{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,span:2,align:CE}),C(run("ANTECEDENTES LICITACIÓN",{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,span:2,align:CE})]},
       ...izq.map((a,i)=>({cells:[C(k(a[0])),C(v(a[1],a[2]),{fill:IN}),C(k(der[i][0])),C(v(der[i][1],der[i][2]),{fill:IN})]}))]));
     K.push(P(run("DESCRIPCIÓN DEL SERVICIO",{bold:true,color:NAVY}),{before:140,after:40,keepNext:true,align:L}));
-    K.push(P([txt(S.proyecto,"proyecto",{bold:true,size:20}),run(S.mandante?" · "+S.mandante:"",{size:20})],{align:L,after:40}));
+    K.push(P([txt(S.proyecto,"proyecto",{bold:true,size:20})],{align:L,after:40}));
     lines(cm.alc).forEach(x=>K.push(P(run(x,{size:20}),{bullet:true,after:0})));
     K.push(P(run("OFERTA ECONÓMICA (UF)",{bold:true,color:NAVY}),{before:140,after:40,keepNext:true,align:L}));
     const fila=(a,b,c,o={})=>(o={size:20,...o},{cells:[C(run(a,o),o.fill?{fill:o.fill}:{}),C(run(b,o),{align:R,...(o.fill?{fill:o.fill}:{})}),...(cl?[C(run(c,o),{align:R,...(o.fill?{fill:o.fill}:{})})]:[])]});
@@ -921,10 +921,10 @@ async function crearDocx(){
     const notas=[`Condición ${(cm.cond|0)+1}: ${t.cond[cm.cond|0]}.`,"Entregables en formato DWG y PDF.",...(cl?[`Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.`]:[])];
     const nb={top:none,bottom:none,left:none,right:none};
     K.push(P([],{after:0,keepNext:true}));
-    K.push(new Table({width:{size:W,type:WidthType.DXA},columnWidths:[6420,3500],layout:TableLayoutType.FIXED,borders:{top:none,left:none,right:none,bottom:none,insideHorizontal:none,insideVertical:none},
+    K.push(new Table({width:{size:W,type:WidthType.DXA},columnWidths:[4700,5220],layout:TableLayoutType.FIXED,borders:{top:none,left:none,right:none,bottom:none,insideHorizontal:none,insideVertical:none},
       rows:[new TableRow({cantSplit:true,children:[
-        new TableCell({width:{size:6420,type:WidthType.DXA},borders:nb,shading:{fill:BAND,type:ShadingType.CLEAR,color:"auto"},margins:{top:60,bottom:60,left:100,right:100},children:notas.map(x=>new Paragraph({spacing:{after:20},children:[run(x,{size:18})]}))}),
-        new TableCell({width:{size:3500,type:WidthType.DXA},borders:nb,margins:{left:300},children:[new Paragraph({spacing:{before:300,after:0},children:[run(FIRMA[0],{bold:true})]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[1])]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[2])]})]})]})]}));
+        new TableCell({width:{size:4700,type:WidthType.DXA},borders:nb,shading:{fill:BAND,type:ShadingType.CLEAR,color:"auto"},margins:{top:60,bottom:60,left:100,right:100},children:notas.map(x=>new Paragraph({spacing:{after:0},children:[run(x,{size:14})]}))}),
+        new TableCell({width:{size:5220,type:WidthType.DXA},borders:nb,margins:{left:1400},children:[new Paragraph({spacing:{before:700,after:0},border:{top:{style:BorderStyle.SINGLE,size:6,color:"555555",space:2}},children:[run(FIRMA[0],{bold:true})]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[1])]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[2])]})]})]})]}));
   } else if(S.tipo==="rapida"){
     r1="J. GERMÁN AGUILERA HAFNER"; r2="Ingeniero Civil · Ingeniería Estructural";
     K.push(datos(),...cuadroW(),...firmaW());
