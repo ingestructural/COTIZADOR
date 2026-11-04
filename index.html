@@ -101,6 +101,11 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 .page{height:11in;min-height:0;overflow:hidden}
 .page .pc{flex:1;min-height:0;overflow:hidden}
 .page .blk{display:flow-root}
+#doc .brk{box-shadow:0 -3px 0 0 #d9480f}
+.laybar{position:absolute;z-index:5;display:none;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:3px;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.laybar button{font:inherit;font-size:.78rem;font-weight:600;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:4px;padding:3px 7px;cursor:pointer}
+.laybar button:hover{border-color:var(--accent);color:var(--accent)}
+#doc [data-k]:hover{outline:1px dashed var(--accent);outline-offset:2px}
 .page table.tc{table-layout:fixed}
 .page ul.cont{margin-top:-6pt}
 .page .blk:first-child h2{margin-top:0}
@@ -275,9 +280,10 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 </form>
 
 <div class="pv">
-  <div class="pvbar"><span>Vista de la cotización · tamaño carta</span>
-    <span class="row"><button type="button" class="btn pri" id="expWord">Guardar Word</button><button type="button" class="btn" id="verPdf">Ver PDF</button><button type="button" class="btn" id="expPdf">Guardar PDF</button></span></div>
-  <div class="paperwrap"><div id="doc"></div></div>
+  <div class="pvbar"><span>Vista de la cotización · tamaño carta · pase el mouse sobre un bloque para ajustar la hoja</span>
+    <span class="row"><button type="button" class="btn pri" id="expWord">Guardar Word</button><button type="button" class="btn x" id="layReset" title="Vuelve a la distribución automática de hojas">Restablecer diseño</button><button type="button" class="btn" id="verPdf">Ver PDF</button><button type="button" class="btn" id="expPdf">Guardar PDF</button></span></div>
+  <div class="paperwrap" style="position:relative"><div id="doc"></div>
+    <div class="laybar" id="laybar"><button type="button" data-lay="brk" title="Este bloque y lo que sigue pasan a la hoja siguiente">⤓ A hoja siguiente</button><button type="button" data-lay="mas" title="Más espacio antes del bloque">＋ espacio</button><button type="button" data-lay="menos" title="Menos espacio antes del bloque">− espacio</button></div></div>
 </div>
 </div>
 <div class="pdfbox" id="pdfBox" hidden>
@@ -318,7 +324,7 @@ function nueva(tipo){return {
  tipo:tipo||"rapida", proyId:"", numero:"", mandante:"", proyecto:"", contacto:"", fecha:today(), fechaIngreso:"", plazo:"", plazoU:"días",
  items:[{n:"",hi:"",hp:""}], tIng:1.22, tProy:0.75, cat:CAT0.map(c=>({...c})),
  validez:30, validezU:"días", antecedentes:TPL.antecedentes, incluye:"", noIncluye:TPL.noIncluye.join("\n"), ex2:[],
- valorUF:"", iva:19, documento:"F", conCLP:"no", cm:null, pagos:[], plazoTxt:"", otras:TPL.otras.join("\n"), ex5:[]
+ valorUF:"", iva:19, documento:"F", conCLP:"no", cm:null, lay:{}, pagos:[], plazoTxt:"", otras:TPL.otras.join("\n"), ex5:[]
 };}
 function ejemplo(){const s=nueva("rapida");Object.assign(s,{proyId:"ej1",mandante:EJEMPLOS[0].mandante,proyecto:EJEMPLOS[0].proyecto,contacto:EJEMPLOS[0].contacto,plazo:3,
  items:[{n:"Modelación 3D",hi:3,hp:2},{n:"Verificación Estructural",hi:5,hp:0},{n:"Elaboración memoria de cálculo",hi:3,hp:1}]});return s;}
@@ -722,6 +728,7 @@ function bloquesFormal(M){
   return B;   // sin firma al final: la cotización formal se firma en la portada
 }
 const hoja=(H,inner)=>`<div class="page">${H}<div class="pc">${inner}</div>${pie()}</div>`;
+const blkSig=h=>{ const d=document.createElement("div"); d.innerHTML=h; return d.textContent.replace(/\s+/g," ").trim().slice(0,40)||"(bloque)"; };
 // Reparte los bloques en hojas midiendo su alto real con la misma tipografía y ancho de la hoja
 function paginar(H,bloques){
   const m=document.createElement("div"); m.style.cssText="position:absolute;left:-10000px;top:0;visibility:hidden"; m.className=$("doc").className;
@@ -735,9 +742,14 @@ function paginar(H,bloques){
   const poner=(h,a,keep)=>{ cur.push({h,a,keep}); usado+=a; };
   // pasa a hoja nueva; los títulos marcados «keep» al final de la hoja se van junto con lo que sigue
   const saltar=()=>{ const mov=[]; while(cur.length>1&&cur[cur.length-1].keep){ const x=cur.pop(); usado-=x.a; mov.unshift(x); } nueva(); mov.forEach(x=>poner(x.h,x.a,x.keep)); };
+  const vistos={}, LAY=S.lay||{};
   for(const b of bloques){
+    // clave estable del bloque (su texto inicial): con ella se guardan los saltos y espacios que fija el usuario
+    const h0=b.html!=null?b.html:tabla(b.tabla,b.tabla.rows,true), sig=blkSig(h0); vistos[sig]=(vistos[sig]||0)+1;
+    const key=sig+"#"+vistos[sig], L=LAY[key]||{};
+    const h=`<div data-k="${esc(key)}"${L.brk?' class="brk"':''}>${L.esp?`<div class="esp" style="height:${L.esp*12}px"></div>`:""}${h0}</div>`, a=alto(h);
+    if(L.brk&&cur.length){ nueva(); }
     // toda tabla va completa en una hoja: si no cabe en lo que queda, pasa entera a la hoja siguiente
-    const h=b.html!=null?b.html:tabla(b.tabla,b.tabla.rows,true), a=alto(h);
     if(usado+a>disp&&cur.length) saltar();
     if(b.html!=null||usado+a<=disp){ poner(h,a,b.keep); continue; }
     // solo una tabla más alta que una hoja completa se reparte por filas (sin cortar filas y con el total junto a la última)
@@ -847,17 +859,25 @@ async function crearDocx(){
   const d = await loadScript("docx.iife.js","docx");
   const {Document,Packer,Paragraph,TextRun,ImageRun,Table,TableRow,TableCell,Header,Footer,AlignmentType,WidthType,BorderStyle,ShadingType,PageNumber,PageBreak,TabStopType,VerticalAlign,LevelFormat,TableLayoutType} = d;
   const M=modelo(), FONT="Arial", NAVY="1F3864", BLUE="4472C4", BLUE2="9DC3E6", BAND="D9E1F2", IN="EEF0F3", INK="1F3FBF", W=9920;
-  const run=(t,o={})=>new TextRun({text:String(t??""),font:FONT,size:o.size||24,bold:o.bold,italics:o.italics,color:o.color,underline:o.underline,highlight:o.hl,break:o.break});
+  // saltos y espacios que fijó el usuario en la vista previa: se ubican por el texto inicial de cada bloque
+  const TXT=new WeakMap(), PRE=new Map(), nz=t=>String(t||"").replace(/\s+/g," ").trim();
+  const LAYW=Object.entries(S.lay||{}).filter(([k,v])=>v&&(v.brk||v.esp)).map(([k,v])=>({sig:k.replace(/#\d+$/,""),n:+k.split("#").pop()||1,seen:0,...v}));
+  const layDe=t=>{ const x=nz(t); if(x.length<4) return null; for(const f of LAYW){ if(f.done) continue; const m=x.slice(0,Math.min(x.length,f.sig.length));
+      if(m.length>=4&&f.sig.startsWith(m)){ f.seen++; if(f.seen===f.n){ f.done=true; return f; } } } return null; };
+  const run=(t,o={})=>{ const r=new TextRun({text:String(t??""),font:FONT,size:o.size||24,bold:o.bold,italics:o.italics,color:o.color,underline:o.underline,highlight:o.hl,break:o.break}); TXT.set(r,String(t??"")); return r; };
   const txt=(v,phT,o={})=>String(v??"").trim()?run(v,o):run(`[${phT}]`,{...o,hl:"yellow"});
-  const P=(children,o={})=>new Paragraph({children:Array.isArray(children)?children:[children],alignment:o.align||AlignmentType.JUSTIFIED,spacing:{before:o.before??0,after:o.after??120},keepNext:o.keepNext,numbering:o.bullet?{reference:"vin",level:0}:undefined});
+  const P=(children,o={})=>{ const ch=Array.isArray(children)?children:[children], f=layDe(ch.map(c=>TXT.get(c)||"").join(""));
+    return new Paragraph({children:ch,alignment:o.align||AlignmentType.JUSTIFIED,spacing:{before:(o.before??0)+(f&&f.esp?f.esp*180:0),after:o.after??120},pageBreakBefore:!!(f&&f.brk),keepNext:o.keepNext,numbering:o.bullet?{reference:"vin",level:0}:undefined}); };
   const bd={style:BorderStyle.SINGLE,size:4,color:"BFBFBF"}, borders={top:bd,bottom:bd,left:bd,right:bd}, none={style:BorderStyle.NONE,size:0,color:"FFFFFF"};
   const cell=(children,w,o={})=>new TableCell({width:{size:w,type:WidthType.DXA},borders,columnSpan:o.span,verticalAlign:VerticalAlign.CENTER,
     shading:o.fill?{fill:o.fill,type:ShadingType.CLEAR,color:"auto"}:undefined,margins:{top:40,bottom:40,left:80,right:80},
     children:[new Paragraph({alignment:o.align||AlignmentType.LEFT,spacing:{after:0},keepNext:o.keep,children:Array.isArray(children)?children:[children]})]});
   const tabla=(widths,rows)=>{const sc=W/widths.reduce((a,b)=>a+b,0);const ws=widths.map(w=>Math.round(w*sc));ws[ws.length-1]+=W-ws.reduce((a,b)=>a+b,0);
-    return new Table({width:{size:W,type:WidthType.DXA},columnWidths:ws,layout:TableLayoutType.FIXED,rows:rows.map((r,ri)=>new TableRow({cantSplit:true,tableHeader:!!r.head,children:r.cells.map((c,i)=>{
+    const c0=rows[0]&&rows[0].cells[0], f=c0?layDe((Array.isArray(c0.r)?c0.r:[c0.r]).map(c=>TXT.get(c)||"").join("")):null;
+    const T=new Table({width:{size:W,type:WidthType.DXA},columnWidths:ws,layout:TableLayoutType.FIXED,rows:rows.map((r,ri)=>new TableRow({cantSplit:true,tableHeader:!!r.head,children:r.cells.map((c,i)=>{
       // keepNext en todas las filas menos la última: ninguna fila se corta y el total nunca queda solo en una hoja
-      const w=c.span?ws.slice(i,i+c.span).reduce((a,b)=>a+b,0):ws[i]; return cell(c.r,w,{...c,keep:ri<rows.length-1});})}))});};
+      const w=c.span?ws.slice(i,i+c.span).reduce((a,b)=>a+b,0):ws[i]; return cell(c.r,w,{...c,keep:ri<rows.length-1});})}))});
+    if(f) PRE.set(T,new Paragraph({pageBreakBefore:!!f.brk,spacing:{before:f.esp?f.esp*180:0,after:0},children:[]})); return T;};
   const C=(r,o={})=>({r,...o}), L=AlignmentType.LEFT, CE=AlignmentType.CENTER, R=AlignmentType.RIGHT;
   const logo=await logoBytes().catch(()=>null);
   const enc=(r1,r2)=>new Header({children:[new Table({width:{size:W,type:WidthType.DXA},columnWidths:[4600,5320],layout:TableLayoutType.FIXED,
@@ -964,7 +984,7 @@ async function crearDocx(){
   const doc=new Document({creator:"ING Estructural",title:"Cotización "+(S.numero||"")+" "+(S.proyecto||""),
     styles:{default:{document:{run:{font:FONT,size:24}}}},
     numbering:{config:[{reference:"vin",levels:[{level:0,format:LevelFormat.BULLET,text:"•",alignment:AlignmentType.LEFT,style:{paragraph:{indent:{left:500,hanging:280}}}}]}]},
-    sections:[{properties:{page:{size:{width:12240,height:15840},margin:{top:2269,bottom:1418,left:902,right:1418,header:227,footer:227}}},headers:{default:enc(r1,r2)},footers:{default:pieW},children:K}]});
+    sections:[{properties:{page:{size:{width:12240,height:15840},margin:{top:2269,bottom:1418,left:902,right:1418,header:227,footer:227}}},headers:{default:enc(r1,r2)},footers:{default:pieW},children:K.flatMap(x=>PRE.has(x)?[PRE.get(x),x]:[x])}]});
   return Packer.toBlob(doc);
 }
 const nombreArchivo=ext=>{const s=x=>String(x||"").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,50);
@@ -982,7 +1002,7 @@ async function exportarWord(){ if(DEMO) return toast("Descarga disponible en el 
   $("expWord").disabled=true; try{ const blob=await crearDocx(); if(fh) await escribirArchivo(fh,blob); else descargar(blob,nombreArchivo("docx")); }catch(e){ toast("No se pudo generar el Word: "+e.message); } finally{ $("expWord").disabled=false; } }
 async function pdfWorker(){
   const h2p=await loadScript("html2pdf.bundle.min.js","html2pdf");
-  const el=$("doc").cloneNode(true); el.querySelectorAll(".page").forEach(p=>{p.style.boxShadow="none";p.style.margin="0";});
+  const el=$("doc").cloneNode(true); el.removeAttribute("id"); el.querySelectorAll(".brk").forEach(x=>x.classList.remove("brk")); el.querySelectorAll(".page").forEach(p=>{p.style.boxShadow="none";p.style.margin="0";});
   el.querySelectorAll(".page").forEach(p=>p.style.height="10.97in");   // un poco menos que la hoja: evita hojas en blanco por redondeo
   el.querySelectorAll(".page:not(:last-child)").forEach(p=>p.style.pageBreakAfter="always");
   return [h2p().set({margin:0,filename:nombreArchivo("pdf"),image:{type:"jpeg",quality:0.97},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:"in",format:"letter",orientation:"portrait"},pagebreak:{mode:["css","legacy"],avoid:["tr","h2","h3"]}}).from(el)];   // en arreglo: el worker de html2pdf es "thenable" y un await lo consumiría
@@ -1069,6 +1089,18 @@ function elegirContrato(cli){ if(S.cm&&S.cm.cli===cli) return; S.cm=cmNuevo(cli)
     if(S.proyId){ const p=(PW.data.proyectos||[]).find(x=>x.id===S.proyId); if(!p||cliDeMandante(p.mandante)!==cli) Object.assign(S,{proyId:"",numero:"",mandante:"",proyecto:"",contacto:""}); }
     fillFields(); renderMarco(); toast("Planilla "+TAR[cli].nombre+": elija el proyecto en la lista"); renderListaProy(); renderDoc(); save(); }
 $("cmSeg").addEventListener("click",e=>{const b=e.target.closest("button[data-cmcli]"); if(b) elegirContrato(b.dataset.cmcli);});
+// Edición de la distribución: barra sobre el bloque bajo el mouse
+let layKey=null;
+$("doc").addEventListener("mouseover",e=>{ const b=e.target.closest("[data-k]"); if(!b) return; layKey=b.dataset.k;
+  const bar=$("laybar"), w=$("doc").parentElement.getBoundingClientRect(), r=b.getBoundingClientRect(), L=(S.lay||{})[layKey]||{};
+  bar.querySelector('[data-lay=brk]').textContent=L.brk?"⤒ Quitar salto":"⤓ A hoja siguiente";
+  bar.style.display="flex"; bar.style.top=(r.top-w.top+$("doc").parentElement.scrollTop-4)+"px"; bar.style.left=Math.max(4,r.right-w.left-bar.offsetWidth+$("doc").parentElement.scrollLeft)+"px"; });
+$("doc").parentElement.addEventListener("mouseleave",()=>{ $("laybar").style.display="none"; });
+$("laybar").addEventListener("click",e=>{ const b=e.target.closest("button[data-lay]"); if(!b||!layKey) return; S.lay=S.lay||{}; const L=S.lay[layKey]=S.lay[layKey]||{};
+  if(b.dataset.lay==="brk") L.brk=!L.brk; else L.esp=Math.max(0,Math.min(30,(L.esp||0)+(b.dataset.lay==="mas"?1:-1)));
+  if(!L.brk&&!L.esp) delete S.lay[layKey]; $("laybar").style.display="none"; renderDoc(); save();
+  toast(b.dataset.lay==="brk"?(L.brk?"Salto de hoja agregado":"Salto de hoja quitado"):"Espacio: "+((L.esp||0)*12)+" px"); });
+$("layReset").addEventListener("click",()=>{ S.lay={}; renderDoc(); save(); toast("Distribución automática restablecida"); });
 // Contrato marco: al entrar a una casilla se selecciona su contenido; Enter pasa a la casilla siguiente
 $("cmBox").addEventListener("focusin",e=>{ const el=e.target; if(el.tagName==="INPUT"&&!el.readOnly){ try{el.select();}catch(_){} } });
 $("cmBox").addEventListener("pointerdown",e=>{ const el=e.target; if(el.tagName==="INPUT"&&!el.readOnly&&el.value&&document.activeElement!==el){ e.preventDefault(); el.focus(); el.select(); } });
