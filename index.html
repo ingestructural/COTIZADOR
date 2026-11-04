@@ -118,6 +118,9 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 .page td.tot{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .page tr.sum td{background:var(--doc-blue2);font-weight:700;padding:6px}
 .marco .pc{font-size:10pt}.marco .pc td,.marco .pc th{padding:2px 6px}.page table.cmt{font-size:9.5pt}.page table.cmt td,.page table.cmt th{padding:2px 5px}
+.cmsec{font-weight:800;font-size:1.12rem;color:var(--accent);margin:18px 0 6px;padding-bottom:3px;border-bottom:2px solid var(--accent);letter-spacing:.03em}
+#selCot,#selReg{color:var(--muted);opacity:.75}
+#selCot option:checked,#selReg option:checked{color:var(--fg)}
 .page tr.sec td{background:var(--doc-band);color:var(--doc-navy)}
 .page .leg{background:var(--doc-band);font-size:9pt;color:#333;text-align:center;padding:4px;margin-top:6px}
 .page h2{font-size:14pt;margin:16px 0 6px;font-weight:700;color:var(--doc-navy)}
@@ -592,7 +595,7 @@ function renderMarco(){
     <label for="cm-licit">N° licitación<input id="cm-licit" data-cm="licit" value="${esc(cm.licit)}"></label>
   </div>
   <label for="cm-alc">Detalle y alcances técnicos (una línea por punto)<textarea id="cm-alc" data-cm="alc" placeholder="Ej.: Verificación tensiones inducidas">${esc(cm.alc)}</textarea></label>
-  ${SECC.map(([k,tit])=>`<div class="hint" style="font-weight:600;margin:10px 0 4px">${tit}</div>
+  ${SECC.map(([k,tit])=>`<div class="cmsec">${tit}</div>
     <table class="it"><thead><tr><th>Descripción</th><th style="width:64px">Cant.</th><th style="width:72px;text-align:right">P.U. UF</th><th style="width:72px;text-align:right">UF</th><th></th></tr></thead><tbody>
     ${R.secs[k].L.map((ln,j)=>`<tr><td><select id="cm-${k}-n-${j}" data-ml="${k}" data-j="${j}" data-k="n"><option value="">— elegir —</option>${opt([...cmOpciones(k),OTRO],ln.n)}</select>
         ${ln.n===OTRO?`<input id="cm-${k}-d-${j}" data-ml="${k}" data-j="${j}" data-k="d" value="${esc(ln.d||"")}" placeholder="Descripción" style="margin-top:4px">`:""}</td>
