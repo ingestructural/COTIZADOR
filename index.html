@@ -122,7 +122,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 .page td.num{text-align:center;color:var(--doc-ink)}
 .page td.tot{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .page tr.sum td{background:var(--doc-blue2);font-weight:700;padding:6px}
-.marco .pc{font-size:10pt}.marco .pc .band{margin-top:8px;padding:3px 8px}.marco .pc ul{margin:4px 0}.marco .pc p{margin:4px 8px}.marco .pc td,.marco .pc th{padding:1px 6px}.page table.cmt{font-size:9.5pt}.page table.cmt td,.page table.cmt th{padding:1px 5px}
+.marco .pc{font-size:10pt}.marco .pc .band{margin-top:6px;padding:2px 8px}.marco .pc ul{margin:4px 0}.marco .pc p{margin:4px 8px}.marco .pc td,.marco .pc th{padding:1px 6px}.page table.cmt{font-size:9.5pt}.page table.cmt td,.page table.cmt th{padding:1px 5px}
 .cmsec{font-weight:800;font-size:1.12rem;color:var(--accent);margin:18px 0 6px;padding-bottom:3px;border-bottom:2px solid var(--accent);letter-spacing:.03em}
 #selCot,#selReg{color:var(--muted);opacity:.75}
 #selCot option:checked,#selReg option:checked{color:var(--fg)}
@@ -626,7 +626,7 @@ function bloquesMarco(M){
   const der=[["Mandante",t.mandante||S.mandante,"mandante"],["RUT mandante",t.rutMand,"RUT mandante"],["Planta",cm.planta,"planta"],["N° licitación",cm.licit,""],["Fecha oferta",fdate(S.fecha),"fecha"],["Validez oferta",S.validez?vigencia():"","validez"],["N° cotización",numRev(),"N° cotización"]];
   const ej=S.plazo?`${S.plazo} ${S.plazoU==="semanas"?"semanas":"días hábiles"}`:""; der[4]=["Fecha / validez",[fdate(S.fecha),S.validez?"validez "+vigencia():""].filter(Boolean).join(" · "),"fecha"]; der[5]=["Ejecución",ej,"plazo"];
   const ante=`<table class="tc cmt"><colgroup><col style="width:19%"><col style="width:31%"><col style="width:16%"><col style="width:34%"></colgroup><thead><tr><th colspan="2">ANTECEDENTES EMPRESA DE SERVICIOS</th><th colspan="2">ANTECEDENTES LICITACIÓN</th></tr></thead><tbody>${izq.map((a,i)=>`<tr>${kv(a[0],a[1],a[2],1)}${kv(der[i][0],der[i][1],der[i][2])}</tr>`).join("")}</tbody></table>`;
-  const desc=`<div class="band">DESCRIPCIÓN DEL SERVICIO</div><p style="margin:6px 8px"><b>${val(S.proyecto,"proyecto")}</b></p>${lines(cm.alc).length?`<ul>${lines(cm.alc).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}`;
+  const desc=`<div class="band">A. DESCRIPCIÓN DEL SERVICIO</div><p style="margin:6px 8px"><b>${val(S.proyecto,"proyecto")}</b></p>${lines(cm.alc).length?`<ul>${lines(cm.alc).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}`;
   const cl=M.clp&&M.vuf;
   const resRows=[...SECC.map(([k,,n],i)=>`<tr><td>0${i+1}. ${n}</td><td class="tot">${f2(R.secs[k].sub)}</td>${cl?`<td class="tot">${clp(R.secs[k].sub*M.vuf)}</td>`:""}</tr>`),
     `<tr class="sum"><td>VALOR TOTAL OFERTA (${bol?"BRUTO, BOLETA DE HONORARIOS":"VALOR NETO"})</td><td class="tot">${f2(R.neto)}</td>${cl?`<td class="tot">${clp(R.neto*M.vuf)}</td>`:""}</tr>`];
@@ -635,12 +635,12 @@ function bloquesMarco(M){
   SECC.forEach(([k,tit])=>{ const U=R.secs[k].usadas; if(!U.length) return;
     det.push(`<tr class="sec"><td colspan="5"><b>${tit}</b></td></tr>`, ...U.map(ln=>`<tr><td>${esc(cmDesc(ln))}</td><td class="num">${esc(ln.u)}</td><td class="num">${esc(String(ln.c).replace(".",","))}</td><td class="tot">${f2(ln.pu)}</td><td class="tot">${f2(ln.tot)}</td></tr>`)); });
   const B=[{html:ante},{html:desc},
-    {tabla:{pre:`<div class="band">OFERTA ECONÓMICA (UF)</div>`,cols:colsRes,head:`<tr><th>PARTIDA</th><th>UF</th>${cl?"<th>CLP</th>":""}</tr>`,rows:resRows,keepLast:2}}];
-  if(det.length) B.push({tabla:{pre:`<div style="height:10px"></div>`,cols:COLS_CM,head:`<tr><th>DESCRIPCIÓN</th><th>UNID.</th><th>CANT.</th><th>P.U. (UF)</th><th>TOTAL (UF)</th></tr>`,rows:det,keepLast:1}});
+    {tabla:{pre:`<div class="band">B. OFERTA ECONÓMICA (UF)</div>`,cols:colsRes,head:`<tr><th>PARTIDA</th><th>UF</th>${cl?"<th>CLP</th>":""}</tr>`,rows:resRows,keepLast:2}}];
+  if(det.length) B.push({tabla:{pre:`<div class="band">C. DETALLE DE LA OFERTA</div>`,cols:COLS_CM,head:`<tr><th>DESCRIPCIÓN</th><th>UNID.</th><th>CANT.</th><th>P.U. (UF)</th><th>TOTAL (UF)</th></tr>`,rows:det,keepLast:1}});
   const adic=lines(cm.notas);
-  if(adic.length) B.push({html:`<div class="band">NOTAS ADICIONALES</div><ul>${adic.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`});
+  if(adic.length) B.push({html:`<div class="band">${det.length?"D":"C"}. NOTAS ADICIONALES</div><ul>${adic.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`});
   const notas=[`Condición ${(cm.cond|0)+1}: ${t.cond[cm.cond|0]}.`, "Entregables en formato DWG y PDF.", ...(cl?[`Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.`]:[])];
-  B.push({html:`<div style="display:flex;gap:24px;align-items:flex-start;margin-top:4px"><div class="leg" style="text-align:left;flex:0 0 46%;margin-top:0;line-height:1.2;font-size:7pt;padding:3px 5px">${notas.map(esc).join("<br>")}</div><div class="firma" style="margin:1.0cm 0 0 auto;flex:0 0 auto;line-height:1.25;border-top:1px solid #555;padding-top:3px;min-width:6.5cm">${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div></div>`});
+  B.push({html:`<div style="display:flex;gap:24px;align-items:flex-start;margin-top:4px"><div class="leg" style="text-align:left;flex:0 0 46%;margin-top:0;line-height:1.2;font-size:7pt;padding:3px 5px">${notas.map(esc).join("<br>")}</div><div class="firma" style="margin:0.9cm 0 0 auto;flex:0 0 auto;line-height:1.25;border-top:1px solid #555;padding-top:3px;min-width:6.5cm">${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div></div>`});
   return B;
 }
 
@@ -924,19 +924,19 @@ async function crearDocx(){
     const hd=x=>C(run(x,{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,align:CE});
     K.push(tabla([1900,3260,1500,3260],[{head:true,cells:[C(run("ANTECEDENTES EMPRESA DE SERVICIOS",{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,span:2,align:CE}),C(run("ANTECEDENTES LICITACIÓN",{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,span:2,align:CE})]},
       ...izq.map((a,i)=>({cells:[C(k(a[0])),C(v(a[1],a[2]),{fill:IN}),C(k(der[i][0])),C(v(der[i][1],der[i][2]),{fill:IN})]}))]));
-    K.push(P(run("DESCRIPCIÓN DEL SERVICIO",{bold:true,color:NAVY}),{before:140,after:40,keepNext:true,align:L}));
+    K.push(P(run("A. DESCRIPCIÓN DEL SERVICIO",{bold:true,color:NAVY}),{before:140,after:40,keepNext:true,align:L}));
     K.push(P([txt(S.proyecto,"proyecto",{bold:true,size:20})],{align:L,after:40}));
     lines(cm.alc).forEach(x=>K.push(P(run(x,{size:20}),{bullet:true,after:0})));
-    K.push(P(run("OFERTA ECONÓMICA (UF)",{bold:true,color:NAVY}),{before:140,after:40,keepNext:true,align:L}));
+    K.push(P(run("B. OFERTA ECONÓMICA (UF)",{bold:true,color:NAVY}),{before:140,after:40,keepNext:true,align:L}));
     const fila=(a,b,c,o={})=>(o={size:20,...o},{cells:[C(run(a,o),o.fill?{fill:o.fill}:{}),C(run(b,o),{align:R,...(o.fill?{fill:o.fill}:{})}),...(cl?[C(run(c,o),{align:R,...(o.fill?{fill:o.fill}:{})})]:[])]});
     K.push(tabla(cl?[5560,2000,2360]:[7440,2480],[{head:true,cells:["PARTIDA","UF",...(cl?["CLP"]:[])].map(hd)},
       ...SECC.map(([kk,,n],i)=>fila(`0${i+1}. ${n}`,f2(Rm.secs[kk].sub),cl?clp(Rm.secs[kk].sub*M.vuf):"")),
       fila(`VALOR TOTAL OFERTA (${bol?"BRUTO, BOLETA DE HONORARIOS":"VALOR NETO"})`,f2(Rm.neto),cl?clp(Rm.neto*M.vuf):"",{bold:true,fill:BLUE2})]));
     const det=[]; SECC.forEach(([kk,tit])=>{ const U=Rm.secs[kk].usadas; if(!U.length) return;
       det.push({cells:[C(run(tit,{bold:true,color:NAVY,size:20}),{fill:BAND,span:5})]}, ...U.map(ln=>({cells:[C(run(cmDesc(ln),{size:20})),C(run(ln.u,{size:20}),{align:CE}),C(run(String(ln.c).replace(".",","),{size:20}),{align:CE}),C(run(f2(ln.pu),{size:20}),{align:R}),C(run(f2(ln.tot),{size:20}),{align:R})]}))); });
-    if(det.length){ K.push(P([],{after:120,keepNext:true}));
+    if(det.length){ K.push(P(run("C. DETALLE DE LA OFERTA",{bold:true,color:NAVY}),{before:140,after:40,keepNext:true,align:L}));
       K.push(tabla([5160,900,1000,1380,1480],[{head:true,cells:["DESCRIPCIÓN","UNID.","CANT.","P.U. (UF)","TOTAL (UF)"].map(hd)},...det])); }
-    if(lines(cm.notas).length){ K.push(P(run("NOTAS ADICIONALES",{bold:true,color:NAVY}),{before:140,after:40,keepNext:true,align:L})); lines(cm.notas).forEach(x=>K.push(P(run(x,{size:20}),{bullet:true,after:0}))); }
+    if(lines(cm.notas).length){ K.push(P(run((det.length?"D":"C")+". NOTAS ADICIONALES",{bold:true,color:NAVY}),{before:140,after:40,keepNext:true,align:L})); lines(cm.notas).forEach(x=>K.push(P(run(x,{size:20}),{bullet:true,after:0}))); }
     const notas=[`Condición ${(cm.cond|0)+1}: ${t.cond[cm.cond|0]}.`,"Entregables en formato DWG y PDF.",...(cl?[`Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.`]:[])];
     const nb={top:none,bottom:none,left:none,right:none};
     K.push(P([],{after:0,keepNext:true}));
