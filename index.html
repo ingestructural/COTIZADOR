@@ -43,6 +43,7 @@ img{max-width:100%}
 .seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
 .pill{font-family:var(--f-mono);font-size:.72rem;padding:3px 8px;border:1px solid currentColor;border-radius:99px}
 .pill.ok{color:var(--ok)} .pill.off{color:var(--warn)}
+#pwState{cursor:pointer}
 .main{display:grid;grid-template-columns:minmax(0,clamp(460px,40vw,700px)) minmax(0,1fr);gap:20px;padding-block:18px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));align-items:start}
 @media (max-width:1100px){.main{grid-template-columns:minmax(0,1fr)}}
 .ed{display:flex;flex-direction:column;gap:14px;min-width:0}
@@ -163,7 +164,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
   <div class="seg" id="cmSeg" data-only="marco" role="group" aria-label="Contrato marco"><button type="button" data-cmcli="CMPC">CMPC</button><button type="button" data-cmcli="AASA">Arauco</button></div>
   <button type="button" class="btn pri" id="nuevaTop">+ Nueva cotización</button>
   <span class="sp"></span>
-  <span class="pill off" id="pwState">POWER: sin conectar</span>
+  <span class="pill off" id="pwState" role="button" tabindex="0" title="Conectar POWER">POWER: sin conectar</span>
   <button type="button" class="btn" id="btnPower">Conectar POWER</button>
 </div>
 
@@ -1139,7 +1140,11 @@ async function traerUF(){ if(DEMO){$("ufMsg").textContent="Disponible en el siti
   try{ const r=await fetch("https://mindicador.cl/api/uf"); const j=await r.json(); const s=j.serie&&j.serie[0]; if(!s) throw new Error("sin datos");
     fija(s.valor,`UF del día ${fdate(s.fecha.slice(0,10))} (como en POWER): ${f2(s.valor)}`); }
   catch(e){ if(+par.ufRef>0) fija(+par.ufRef,`UF de referencia de POWER: ${f2(+par.ufRef)}`); else $("ufMsg").textContent="No se pudo obtener la UF."; } }
-$("btnPower").addEventListener("click",()=>{ if(PW.logged) cargarPower(); else { $("loginBox").hidden=false; $("lgMail").focus(); } });
+const abrirPower=()=>{ if(PW.logged) cargarPower(); else { $("loginBox").hidden=false; $("loginBox").scrollIntoView({block:"start",behavior:"smooth"}); $("lgMail").focus(); } };
+$("btnPower").addEventListener("click",abrirPower);
+// la etiqueta de estado (amarilla) también conecta: en el teléfono se toca por error en vez del botón
+$("pwState").addEventListener("click",abrirPower);
+$("pwState").addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); abrirPower(); } });
 $("expWord").addEventListener("click",exportarWord);
 $("expPdf").addEventListener("click",exportarPdf);
 $("verPdf").addEventListener("click",verPdf);
