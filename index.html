@@ -34,9 +34,12 @@
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45}
 img{max-width:100%}
 .top{padding-block:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;border-bottom:1px solid var(--line);background:var(--panel)}
-.top h1{font-family:var(--f-display);font-size:1.6rem;margin:0;font-weight:700}
+.top h1{font-family:var(--f-display);font-size:1.6rem;margin:0;font-weight:700;display:flex;align-items:center;gap:10px}
+.top h1 img{width:40px;height:40px;display:block;flex:none}
 .top .sub{color:var(--muted);font-size:.85rem}
 .top .sp{flex:1}
+.top .btn{align-self:center}
+#nuevaTop{font-size:inherit;padding:7px 14px;border-radius:6px}
 .seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
 .seg button{font:inherit;font-weight:600;padding:7px 14px;border:0;background:var(--panel);color:var(--fg);cursor:pointer;border-right:1px solid var(--line)}
 .seg button:last-child{border-right:0}
@@ -154,7 +157,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 <body>
 
 <div class="top">
-  <div><h1>Cotizador ING Estructural</h1><div class="sub" id="tdesc"></div></div>
+  <div><h1><img src="cot-192.png?v=2" alt="" width="40" height="40">Cotizador ING Estructural</h1><div class="sub" id="tdesc"></div></div>
   <div class="seg" role="group" aria-label="Tipo de cotización">
     <button type="button" data-t="rapida">Express</button>
     <button type="button" data-t="formal">Formal</button>
