@@ -1142,8 +1142,9 @@ async function traerUF(){ if(DEMO){$("ufMsg").textContent="Disponible en el siti
   if(PW.logged&&(PW.data.params||{}).ufFecha!==hoyCL()){ try{ await PW.load(); }catch(e){} }   // recarga POWER solo si la UF guardada no es la de hoy
   const par=(PW.data.params||{});
   if(+par.ufRef>0&&par.ufFecha===hoyCL()) return fija(+par.ufRef,`UF del día de POWER ${fdate(par.ufFecha)}: ${f2(+par.ufRef)}`);
-  try{ const r=await fetch("https://mindicador.cl/api/uf",{cache:"no-store"}); const j=await r.json(); const s=j.serie&&j.serie[0]; if(!s) throw new Error("sin datos");
-    fija(+s.valor,`UF del día ${fdate(s.fecha.slice(0,10))} (mindicador.cl, la misma fuente de POWER): ${f2(+s.valor)}`); }
+  try{ let v,f; try{ const r=await fetch("https://mindicador.cl/api/uf",{cache:"no-store"}); const j=await r.json(); const s=j.serie&&j.serie[0]; if(!s) throw new Error("sin datos"); v=+s.valor; f=s.fecha.slice(0,10); }
+    catch(e1){ const r=await fetch("https://ingestructural.github.io/power-ing/uf.json?t="+Date.now(),{cache:"no-store"}); const j=await r.json(); if(!j.valor) throw new Error("sin datos"); v=+j.valor; f=String(j.fecha).slice(0,10); }   // respaldo: UF publicada por POWER
+    fija(v,`UF del día ${fdate(f)} (mindicador.cl, la misma fuente de POWER): ${f2(v)}`); }
   catch(e){ if(+par.ufRef>0) fija(+par.ufRef,`UF guardada en POWER${par.ufFecha?" al "+fdate(par.ufFecha):""}: ${f2(+par.ufRef)} (sin conexión a mindicador.cl)`); else $("ufMsg").textContent="No se pudo obtener la UF."; } }
 const abrirPower=()=>{ if(PW.logged) cargarPower(); else { $("loginBox").hidden=false; $("loginBox").scrollIntoView({block:"start",behavior:"smooth"}); $("lgMail").focus(); } };
 $("btnPower").addEventListener("click",abrirPower);
