@@ -362,7 +362,7 @@ function nueva(tipo){return {
  tipo:tipo||"rapida", proyId:"", numero:"", mandante:"", proyecto:"", contacto:"", fecha:today(), fechaIngreso:"", plazo:"", plazoU:"días",
  items:[{n:"",hi:"",hp:""}], tIng:1.22, tProy:0.75, cat:CAT0.map(c=>({...c})),
  validez:30, validezU:"días", antecedentes:TPL.antecedentes, incluye:"", noIncluye:TPL.noIncluye.join("\n"), ex2:[],
- valorUF:"", iva:19, documento:"F", conCLP:"no", cm:null, lay:{}, firmar:false, pagos:[], plazoTxt:"", otras:TPL.otras.join("\n"), ex5:[]
+ valorUF:"", iva:19, documento:"F", conCLP:"no", cm:null, lay:{}, firmar:true, pagos:[], plazoTxt:"", otras:TPL.otras.join("\n"), ex5:[]
 };}
 function ejemplo(){const s=nueva("rapida");Object.assign(s,{proyId:"ej1",mandante:EJEMPLOS[0].mandante,proyecto:EJEMPLOS[0].proyecto,contacto:EJEMPLOS[0].contacto,plazo:3,
  items:[{n:"Modelación 3D",hi:3,hp:2},{n:"Verificación Estructural",hi:5,hp:0},{n:"Elaboración memoria de cálculo",hi:3,hp:1}]});return s;}
@@ -472,7 +472,7 @@ async function refrescarPower(){
   finally{ $("refrescar").disabled=false; } }
 async function cargarPower(){
   try{ await PW.load(); { const rc=(PW.data.config||{}).catalogo; if(rc){ aplicarCatalogo(rc); LS.set(K_CAT,rc); } else guardarCatalogo(); fillFields(); renderItems(); renderCat(); updTotals(); renderDoc(); }
-    renderPwState(); renderGuardadas(); firmaSync(); if(S.firmar) renderDoc(); toast("Datos de POWER cargados"); abrirDesdeEnlace(); if(!num(S.valorUF)) traerUF(); }
+    renderPwState(); renderGuardadas(); firmaSync(); renderDoc(); toast("Datos de POWER cargados"); abrirDesdeEnlace(); if(!num(S.valorUF)) traerUF(); }
   catch(e){ if(e.code==="auth"){ $("loginBox").hidden=false; $("lgMsg").textContent=e.message==="Sin sesión"?"":e.message; renderPwState(); } else toast("No se pudo leer POWER: "+e.message); }
 }
 function aplicarProyecto(p){
@@ -678,7 +678,7 @@ function bloquesMarco(M){
   const adic=lines(cm.notas);
   if(adic.length) B.push({html:`<div class="band">${det.length?"D":"C"}. NOTAS ADICIONALES</div><ul>${adic.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`});
   const notas=[`Condición ${(cm.cond|0)+1}: ${t.cond[cm.cond|0]}.`, "Entregables en formato DWG y PDF.", ...(cl?[`Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.`]:[])];
-  B.push({html:`<div style="display:flex;gap:24px;align-items:flex-start;margin-top:4px"><div class="leg" style="text-align:left;flex:0 0 46%;margin-top:0;line-height:1.2;font-size:7pt;padding:3px 5px">${notas.map(esc).join("<br>")}</div><div class="firma" style="margin:${firmaOn()?"1.9cm":"0.9cm"} 0 0 auto;flex:0 0 auto;line-height:1.25;border-top:1px solid #555;padding-top:3px;min-width:6.5cm">${firmaImgHtml(1.7,"margin:-1.8cm 0 0.1cm 0.4cm")}${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div></div>`});
+  B.push({html:`<div style="display:flex;gap:24px;align-items:flex-start;margin-top:4px"><div class="leg" style="text-align:left;flex:0 0 46%;margin-top:0;line-height:1.2;font-size:7pt;padding:3px 5px">${notas.map(esc).join("<br>")}</div><div class="firma" style="position:relative;margin:${firmaOn()?"2.6cm":"0.9cm"} 0 0 auto;flex:0 0 auto;line-height:1.25;border-top:1px solid #555;padding-top:3px;min-width:6.5cm">${firmaImgHtml(-2.6,0.6)}${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div></div>`});
   return B;
 }
 
@@ -690,9 +690,11 @@ const vigencia=()=>`${S.validez} ${S.validezU||"días"}`;
 const numRev=()=>[S.numero,S.rev?"Rev. "+S.rev:""].filter(Boolean).join(" · ");
 const pie=()=>`<div class="ft"><div><span>ING ESTRUCTURAL — Proyectos Civiles e Industriales</span><span>${esc(numRev())}</span></div></div>`;
 // firma escaneada (opcional): imagen guardada en la cuenta POWER (cotizador_config/firma), nunca en el código
-const firmaOn=()=>!!(S.firmar&&FIRMA_IMG&&FIRMA_IMG.png);
-const firmaImgHtml=(alto,extra="")=>firmaOn()?`<img src="${FIRMA_IMG.png}" alt="" style="display:block;height:${alto}cm;width:auto;max-width:6cm;${extra}">`:"";
-const firma=()=>firmaOn()?`<div class="firma" style="margin-top:1cm">${firmaImgHtml(2,"margin:0 0 2px 0")}${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div>`:`<div class="firma">${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div>`;
+const firmaOn=()=>!!(S.firmar!==false&&FIRMA_IMG&&FIRMA_IMG.png);
+// la firma va encima del nombre, grande y cruzándolo, como se aplica a mano en el PDF (no mueve el texto)
+const firmaImgHtml=(top,left)=>firmaOn()?`<img src="${FIRMA_IMG.png}" alt="" style="position:absolute;top:${top}cm;left:${left}cm;height:${FIRMA_ALTO}cm;width:auto;max-width:6.5cm;pointer-events:none">`:"";
+const FIRMA_ALTO=3.3;
+const firma=()=>`<div class="firma" style="position:relative">${firmaImgHtml(-2.6,0.6)}${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div>`;
 function tablaDatos(){
   return `<table><tbody>
   <tr><td class="k">MANDANTE</td><td class="v" colspan="2">${val(S.mandante,"mandante")}</td></tr>
@@ -930,8 +932,11 @@ async function crearDocx(){
         new Paragraph({alignment:R,spacing:{after:60},children:[run(r2,{size:16,color:"595959"})]})]})]})]})]});
   const pieW=new Footer({children:[new Paragraph({border:{top:{style:BorderStyle.SINGLE,size:6,color:NAVY,space:4}},tabStops:[{type:TabStopType.RIGHT,position:W}],spacing:{after:0},
     children:[run("ING ESTRUCTURAL — Proyectos Civiles e Industriales",{size:16,bold:true,color:NAVY}),new TextRun({children:["\tPágina ",PageNumber.CURRENT," de ",PageNumber.TOTAL_PAGES],font:FONT,size:16,color:"595959"})]})]});
-  const fImg=(h)=>{ const w=Math.min(Math.round(h*FIRMA_IMG.w/FIRMA_IMG.h),227); return new ImageRun({type:"png",data:Uint8Array.from(atob(FIRMA_IMG.png.split(",")[1]),c=>c.charCodeAt(0)),transformation:{width:w,height:Math.round(w*FIRMA_IMG.h/FIRMA_IMG.w)}}); };
-  const firmaW=()=>[firmaOn()?new Paragraph({children:[fImg(76)],spacing:{before:560,after:40},keepNext:true}):P([],{after:1800,keepNext:true}),...FIRMA.map((t,i)=>P(run(t,{bold:i===0}),{align:L,after:0,keepNext:i<2}))];
+  // firma flotante sobre el nombre (no desplaza el texto), cruzando la línea como en el PDF firmado a mano
+  const EMU=360000, fImg=()=>{ let h=Math.round(FIRMA_ALTO*37.8), w=Math.round(h*FIRMA_IMG.w/FIRMA_IMG.h); if(w>246){ w=246; h=Math.round(w*FIRMA_IMG.h/FIRMA_IMG.w); }
+    return new ImageRun({type:"png",data:Uint8Array.from(atob(FIRMA_IMG.png.split(",")[1]),c=>c.charCodeAt(0)),transformation:{width:w,height:h},
+      floating:{horizontalPosition:{relative:d.HorizontalPositionRelativeFrom.CHARACTER,offset:Math.round(0.6*EMU)},verticalPosition:{relative:d.VerticalPositionRelativeFrom.LINE,offset:Math.round(-2.6*EMU)},allowOverlap:true,behindDocument:false,wrap:{type:d.TextWrappingType.NONE},zIndex:5}}); };
+  const firmaW=()=>[P([],{after:1800,keepNext:true}),...FIRMA.map((t,i)=>P(i===0&&firmaOn()?[fImg(),run(t,{bold:true})]:run(t,{bold:i===0}),{align:L,after:0,keepNext:i<2}))];
   const datos=()=>tabla([3400,1700,4820],[
     {cells:[C(run("MANDANTE")),C(txt(S.mandante,"mandante",{color:INK}),{fill:IN,span:2})]},
     {cells:[C(run("PROYECTO:")),C(txt(S.proyecto,"proyecto",{color:INK}),{fill:IN,span:2})]},
@@ -985,7 +990,7 @@ async function crearDocx(){
     K.push(new Table({width:{size:W,type:WidthType.DXA},columnWidths:[4700,5220],layout:TableLayoutType.FIXED,borders:{top:none,left:none,right:none,bottom:none,insideHorizontal:none,insideVertical:none},
       rows:[new TableRow({cantSplit:true,children:[
         new TableCell({width:{size:4700,type:WidthType.DXA},borders:nb,shading:{fill:BAND,type:ShadingType.CLEAR,color:"auto"},margins:{top:60,bottom:60,left:100,right:100},children:notas.map(x=>new Paragraph({spacing:{after:0},children:[run(x,{size:14})]}))}),
-        new TableCell({width:{size:5220,type:WidthType.DXA},borders:nb,margins:{left:1400},children:[...(firmaOn()?[new Paragraph({children:[fImg(64)],spacing:{before:300,after:0},indent:{left:220}})]:[]),new Paragraph({spacing:{before:firmaOn()?40:700,after:0},border:{top:{style:BorderStyle.SINGLE,size:6,color:"555555",space:2}},children:[run(FIRMA[0],{bold:true})]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[1])]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[2])]})]})]})]}));
+        new TableCell({width:{size:5220,type:WidthType.DXA},borders:nb,margins:{left:1400},children:[new Paragraph({spacing:{before:firmaOn()?1480:700,after:0},border:{top:{style:BorderStyle.SINGLE,size:6,color:"555555",space:2}},children:firmaOn()?[fImg(),run(FIRMA[0],{bold:true})]:[run(FIRMA[0],{bold:true})]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[1])]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[2])]})]})]})]}));
   } else if(S.tipo==="rapida"){
     r1="J. GERMÁN AGUILERA HAFNER"; r2="Ingeniero Civil · Ingeniería Estructural";
     K.push(P(run("COTIZACIÓN SERVICIOS DE INGENIERÍA",{bold:true,color:NAVY,size:28}),{align:CE,after:160,keepNext:true}),datos(),...cuadroW(),...firmaW());
@@ -1187,10 +1192,10 @@ $("expWord").addEventListener("click",exportarWord);
 $("expPdf").addEventListener("click",exportarPdf);
 $("verPdf").addEventListener("click",verPdf);
 /* ---------------- Firma: se carga una vez (PDF o imagen), se recorta y se guarda en la cuenta POWER ---------------- */
-FIRMA_IMG=LS.get("cot_firma"); renderFirma(); if(FIRMA_IMG&&S.firmar) renderDoc();
+FIRMA_IMG=LS.get("cot_firma"); renderFirma(); if(FIRMA_IMG) renderDoc();
 function firmaSync(){ const pw=PW.logged&&PW.data&&PW.data.config&&PW.data.config.firma; if(pw&&pw.png) { FIRMA_IMG=pw; LS.set("cot_firma",pw); } renderFirma(); }
 function renderFirma(){ const ok=!!(FIRMA_IMG&&FIRMA_IMG.png); $("fmImg").hidden=!ok; if(ok) $("fmImg").src=FIRMA_IMG.png; $("fmDel").hidden=!ok;
-  $("fmChk").checked=!!S.firmar; $("fmChk").disabled=!ok; $("fmLoad").textContent=ok?"Cambiar firma…":"Cargar firma (PDF o imagen)…"; }
+  $("fmChk").checked=S.firmar!==false; $("fmChk").disabled=!ok; $("fmLoad").textContent=ok?"Cambiar firma…":"Cargar firma (PDF o imagen)…"; }
 async function canvasDeArchivo(f){
   if(f.type==="application/pdf"||/\.pdf$/i.test(f.name)){ const lib=await loadScript("pdfjs.min.js","pdfjsLib"); lib.GlobalWorkerOptions.workerSrc="pdfjs.worker.min.js";
     const pdf=await lib.getDocument({data:await f.arrayBuffer()}).promise, pg=await pdf.getPage(1), vp=pg.getViewport({scale:4});
