@@ -681,7 +681,7 @@ function bloquesMarco(M){
   const adic=lines(cm.notas);
   if(adic.length) B.push({html:`<div class="band">${det.length?"D":"C"}. NOTAS ADICIONALES</div><ul>${adic.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`});
   const notas=[`Condición ${(cm.cond|0)+1}: ${t.cond[cm.cond|0]}.`, "Entregables en formato DWG y PDF.", ...(cl?[`Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.`]:[])];
-  B.push({html:`<div style="display:flex;gap:24px;align-items:flex-start;margin-top:4px"><div class="leg" style="text-align:left;flex:0 0 46%;margin-top:0;line-height:1.2;font-size:7pt;padding:3px 5px">${notas.map(esc).join("<br>")}</div><div class="firma" style="position:relative;margin:${firmaOn()?"3.0cm":"0.9cm"} 0 0 auto;flex:0 0 auto;line-height:1.25;border-top:1px solid #555;padding-top:3px;min-width:6.5cm">${firmaImgHtml(-3.0,0.5)}${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div></div>`});
+  B.push({html:`<div style="display:flex;gap:24px;align-items:flex-start;margin-top:4px"><div class="leg" style="text-align:left;flex:0 0 46%;margin-top:0;line-height:1.2;font-size:7pt;padding:3px 5px">${notas.map(esc).join("<br>")}</div><div class="firma" style="position:relative;margin:${firmaOn()?"2.6cm":"0.9cm"} 0 0 auto;flex:0 0 auto;line-height:1.25;border-top:1px solid #555;padding-top:3px;min-width:6.5cm">${firmaImgHtml(firmaGeo().top,firmaGeo().left)}${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div></div>`});
   return B;
 }
 
@@ -695,16 +695,19 @@ const pie=()=>`<div class="ft"><div><span>ING ESTRUCTURAL — Proyectos Civiles 
 // firma escaneada (opcional): imagen guardada en la cuenta POWER (cotizador_config/firma), nunca en el código
 const firmaOn=()=>!!(S.firmar===true&&FIRMA_IMG&&FIRMA_IMG.png);
 // la firma va encima del nombre, grande y cruzándolo, como se aplica a mano en el PDF (no mueve el texto)
-const FIRMA_ALTO=3.8, FIRMA_MAXW=7.5;
+// medidas tomadas de la firma que el usuario aplica en Acrobat (imagen de referencia 2026-11-10):
+// alto ≈ 0,87 del ancho del nombre, parte alta ≈ 2/3 sobre el nombre, el resto cruza el nombre; algo a la derecha del inicio del nombre
+const FIRMA_GEO={marco:{alto:4.0,top:-2.45,left:0.45}, otros:{alto:4.7,top:-3.05,left:0.5}}, FIRMA_MAXW=7.5;
+const firmaGeo=()=>FIRMA_GEO[S.tipo==="marco"?"marco":"otros"];
 // posición y tamaño ajustables (arrastrando en la vista): uno para Contrato marco y otro para Express/Formal/Flexible; se guardan con la firma
 const firmaPosK=()=>S.tipo==="marco"?"marco":"otros";
-const firmaPos=()=>Object.assign({dx:0,dy:0,k:1},((FIRMA_IMG&&FIRMA_IMG.pos)||{})[firmaPosK()]);
+const firmaPos=()=>Object.assign({dx:0,dy:0,k:1},((FIRMA_IMG&&FIRMA_IMG.ubic)||{})[firmaPosK()]);
 // tamaño de la firma en cm (alto 3,8 cm × escala, ancho máximo 7,5 cm × escala)
-const firmaCm=()=>{ const k=firmaPos().k, r=FIRMA_IMG.w/FIRMA_IMG.h; let h=FIRMA_ALTO*k, w=h*r; if(w>FIRMA_MAXW*k){ w=FIRMA_MAXW*k; h=w/r; } return {w,h}; };
+const firmaCm=()=>{ const k=firmaPos().k, r=FIRMA_IMG.w/FIRMA_IMG.h; let h=firmaGeo().alto*k, w=h*r; if(w>FIRMA_MAXW*k){ w=FIRMA_MAXW*k; h=w/r; } return {w,h}; };
 const firmaImgHtml=(top,left)=>{ if(!firmaOn()) return ""; const q=firmaPos(), z=firmaCm(), T=top+q.dy, Lf=left+q.dx;
   return `<img class="fimg" src="${FIRMA_IMG.png}" alt="" data-t="${top}" data-l="${left}" title="Arrastre para mover · esquina azul para cambiar el tamaño · doble clic para volver a la posición inicial" style="position:absolute;top:${T}cm;left:${Lf}cm;width:${z.w}cm;height:${z.h}cm;cursor:move;z-index:3">`+
     `<span class="fhandle" title="Arrastre para cambiar el tamaño" style="left:${Lf+z.w}cm;top:${T+z.h}cm"></span>`; };
-const firma=()=>`<div class="firma" style="position:relative">${firmaImgHtml(-3.0,0.5)}${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div>`;
+const firma=()=>`<div class="firma" style="position:relative">${firmaImgHtml(firmaGeo().top,firmaGeo().left)}${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div>`;
 function tablaDatos(){
   return `<table><tbody>
   <tr><td class="k">MANDANTE</td><td class="v" colspan="2">${val(S.mandante,"mandante")}</td></tr>
@@ -945,7 +948,7 @@ async function crearDocx(){
   // firma flotante sobre el nombre (no desplaza el texto), cruzando la línea como en el PDF firmado a mano
   const EMU=360000, fImg=()=>{ const z=firmaCm(), q=firmaPos(), w=Math.round(z.w*37.8), h=Math.round(z.h*37.8);
     return new ImageRun({type:"png",data:Uint8Array.from(atob(FIRMA_IMG.png.split(",")[1]),c=>c.charCodeAt(0)),transformation:{width:w,height:h},
-      floating:{horizontalPosition:{relative:d.HorizontalPositionRelativeFrom.CHARACTER,offset:Math.round((0.5+q.dx)*EMU)},verticalPosition:{relative:d.VerticalPositionRelativeFrom.LINE,offset:Math.round((-3.0+q.dy)*EMU)},allowOverlap:true,behindDocument:false,wrap:{type:d.TextWrappingType.NONE},zIndex:5}}); };
+      floating:{horizontalPosition:{relative:d.HorizontalPositionRelativeFrom.CHARACTER,offset:Math.round((firmaGeo().left+q.dx)*EMU)},verticalPosition:{relative:d.VerticalPositionRelativeFrom.LINE,offset:Math.round((firmaGeo().top+q.dy)*EMU)},allowOverlap:true,behindDocument:false,wrap:{type:d.TextWrappingType.NONE},zIndex:5}}); };
   const firmaW=()=>[P([],{after:1800,keepNext:true}),...FIRMA.map((t,i)=>P(i===0&&firmaOn()?[fImg(),run(t,{bold:true})]:run(t,{bold:i===0}),{align:L,after:0,keepNext:i<2}))];
   const datos=()=>tabla([3400,1700,4820],[
     {cells:[C(run("MANDANTE")),C(txt(S.mandante,"mandante",{color:INK}),{fill:IN,span:2})]},
@@ -1000,7 +1003,7 @@ async function crearDocx(){
     K.push(new Table({width:{size:W,type:WidthType.DXA},columnWidths:[4700,5220],layout:TableLayoutType.FIXED,borders:{top:none,left:none,right:none,bottom:none,insideHorizontal:none,insideVertical:none},
       rows:[new TableRow({cantSplit:true,children:[
         new TableCell({width:{size:4700,type:WidthType.DXA},borders:nb,shading:{fill:BAND,type:ShadingType.CLEAR,color:"auto"},margins:{top:60,bottom:60,left:100,right:100},children:notas.map(x=>new Paragraph({spacing:{after:0},children:[run(x,{size:14})]}))}),
-        new TableCell({width:{size:5220,type:WidthType.DXA},borders:nb,margins:{left:1400},children:[new Paragraph({spacing:{before:firmaOn()?1700:700,after:0},border:{top:{style:BorderStyle.SINGLE,size:6,color:"555555",space:2}},children:firmaOn()?[fImg(),run(FIRMA[0],{bold:true})]:[run(FIRMA[0],{bold:true})]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[1])]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[2])]})]})]})]}));
+        new TableCell({width:{size:5220,type:WidthType.DXA},borders:nb,margins:{left:1400},children:[new Paragraph({spacing:{before:firmaOn()?1480:700,after:0},border:{top:{style:BorderStyle.SINGLE,size:6,color:"555555",space:2}},children:firmaOn()?[fImg(),run(FIRMA[0],{bold:true})]:[run(FIRMA[0],{bold:true})]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[1])]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[2])]})]})]})]}));
   } else if(S.tipo==="rapida"){
     r1="J. GERMÁN AGUILERA HAFNER"; r2="Ingeniero Civil · Ingeniería Estructural";
     K.push(P(run("COTIZACIÓN SERVICIOS DE INGENIERÍA",{bold:true,color:NAVY,size:28}),{align:CE,after:160,keepNext:true}),datos(),...cuadroW(),...firmaW());
@@ -1239,7 +1242,7 @@ function recortarFirma(src){
   o.getContext("2d").drawImage(c,x0,y0,w,h,0,0,o.width,o.height); return {png:o.toDataURL("image/png"),w:o.width,h:o.height}; }
 const fmMsg=t=>{ $("fmHint").textContent=t; toast(t); };
 async function cargarFirma(f){ if(!f) return; fmMsg("Procesando firma…");
-  try{ const F=recortarFirma(await canvasDeArchivo(f)); if(FIRMA_IMG&&FIRMA_IMG.pos) F.pos=FIRMA_IMG.pos; FIRMA_IMG=F; LS.set("cot_firma",F); S.firmar=true; save(); renderFirma(); renderDoc();
+  try{ const F=recortarFirma(await canvasDeArchivo(f)); if(FIRMA_IMG&&FIRMA_IMG.ubic) F.ubic=FIRMA_IMG.ubic; FIRMA_IMG=F; LS.set("cot_firma",F); S.firmar=true; save(); renderFirma(); renderDoc();
     if(PW.logged&&!DEMO){ await PW.put("cotizador_config","firma",F); if(PW.data.config) PW.data.config.firma=F; fmMsg("Firma guardada en su cuenta de POWER."); }
     else fmMsg("Firma guardada en este computador. Conecte POWER para tenerla en todos sus equipos.");
     renderFirma(); renderDoc(); }
@@ -1259,12 +1262,12 @@ $("doc").addEventListener("pointermove",e=>{ if(!FDRAG) return; const D=FDRAG, d
   let q={...D.p0};
   if(D.mode==="mover"){ q.dx=D.p0.dx+dx; q.dy=D.p0.dy+dy; }
   else { const k=Math.max(0.4,Math.min(2.5,D.p0.k*Math.max((D.z0.w+dx)/D.z0.w,(D.z0.h+dy)/D.z0.h))); q.k=k; }
-  D.q=q; const r=FIRMA_IMG.w/FIRMA_IMG.h; let h=FIRMA_ALTO*q.k, w=h*r; if(w>FIRMA_MAXW*q.k){ w=FIRMA_MAXW*q.k; h=w/r; }
+  D.q=q; const r=FIRMA_IMG.w/FIRMA_IMG.h; let h=firmaGeo().alto*q.k, w=h*r; if(w>FIRMA_MAXW*q.k){ w=FIRMA_MAXW*q.k; h=w/r; }
   Object.assign(D.img.style,{top:(t0+q.dy)+"cm",left:(l0+q.dx)+"cm",width:w+"cm",height:h+"cm"}); Object.assign(D.h.style,{top:(t0+q.dy+h)+"cm",left:(l0+q.dx+w)+"cm"}); });
 const finDrag=()=>{ if(!FDRAG) return; const q=FDRAG.q; FDRAG=null; if(!q) return;
-  FIRMA_IMG.pos={...(FIRMA_IMG.pos||{}),[firmaPosK()]:{dx:+q.dx.toFixed(2),dy:+q.dy.toFixed(2),k:+q.k.toFixed(3)}}; firmaGuardarPos(); renderDoc(); };
+  FIRMA_IMG.ubic={...(FIRMA_IMG.ubic||{}),[firmaPosK()]:{dx:+q.dx.toFixed(2),dy:+q.dy.toFixed(2),k:+q.k.toFixed(3)}}; firmaGuardarPos(); renderDoc(); };
 $("doc").addEventListener("pointerup",finDrag); $("doc").addEventListener("pointercancel",finDrag);
-$("doc").addEventListener("dblclick",e=>{ if(!e.target.classList||!e.target.classList.contains("fimg")) return; if(FIRMA_IMG.pos) delete FIRMA_IMG.pos[firmaPosK()]; firmaGuardarPos(); renderDoc(); });
+$("doc").addEventListener("dblclick",e=>{ if(!e.target.classList||!e.target.classList.contains("fimg")) return; if(FIRMA_IMG.ubic) delete FIRMA_IMG.ubic[firmaPosK()]; firmaGuardarPos(); renderDoc(); });
 // botón «Firmar» de la barra: sin firma cargada pide el archivo; con firma, la pone o la quita
 $("btnFirmar").addEventListener("click",e=>{ if(e.altKey){ return $("fmFile").click(); } if(!(FIRMA_IMG&&FIRMA_IMG.png)){ toast("Elija el archivo de su firma (PDF o imagen)"); return $("fmFile").click(); }
   S.firmar=!firmaOn(); save(); renderFirma(); renderDoc(); });
