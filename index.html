@@ -102,6 +102,12 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 .pdfbox{position:fixed;inset:0;z-index:30;background:rgba(10,15,20,.55);display:flex;flex-direction:column;padding:calc(12px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));gap:8px}
 .pdfbar{display:flex;gap:8px;align-items:center;background:var(--panel);color:var(--fg);padding:8px 12px;border-radius:6px}
 .pdfbar .sp{flex:1}
+.mailbox{position:fixed;inset:0;z-index:30;background:rgba(10,15,20,.55);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 12px}
+.mailbox .mb{background:var(--panel);color:var(--fg);border-radius:8px;padding:16px 18px;width:min(640px,100%);display:grid;gap:10px;box-shadow:0 6px 30px rgba(0,0,0,.35)}
+.mailbox textarea{min-height:150px}
+.mailbox .chips{display:flex;flex-wrap:wrap;gap:6px}
+.mailbox .chips button{font-size:.8rem;padding:3px 8px;border-radius:12px;border:1px solid #c5cfdc;background:#eef3fa;color:#1f3864;cursor:pointer}
+.mailbox .chips button .x{margin-left:6px;color:#8a94a3}
 .pdfpages{flex:1;overflow:auto;display:flex;flex-direction:column;align-items:center;gap:12px;padding:8px 0}
 .pdfpages canvas{background:#fff;box-shadow:0 1px 8px rgba(0,0,0,.35);max-width:100%;height:auto}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:.9rem;z-index:20}
@@ -291,7 +297,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 
 <div class="pv">
   <div class="pvbar"><span>Vista de la cotización · tamaño carta · pase el mouse sobre un bloque para ajustar la hoja</span>
-    <span class="row"><button type="button" class="btn pri" id="expWord">Guardar Word</button><button type="button" class="btn x" id="layReset" title="Vuelve a la distribución automática de hojas">Restablecer diseño</button><button type="button" class="btn" id="verPdf">Ver PDF</button><button type="button" class="btn" id="expPdf">Guardar PDF</button></span></div>
+    <span class="row"><button type="button" class="btn pri" id="expWord">Guardar Word</button><button type="button" class="btn x" id="layReset" title="Vuelve a la distribución automática de hojas">Restablecer diseño</button><button type="button" class="btn" id="verPdf">Ver PDF</button><button type="button" class="btn" id="expPdf">Guardar PDF</button><button type="button" class="btn pri" id="btnMail">Enviar por correo</button></span></div>
   <div class="paperwrap" style="position:relative"><div id="doc"></div>
     <div class="laybar" id="laybar"><button type="button" data-lay="brk" title="Este bloque y lo que sigue pasan a la hoja siguiente">⤓ A hoja siguiente</button><button type="button" data-lay="mas" title="Más espacio antes del bloque">＋ espacio</button><button type="button" data-lay="menos" title="Menos espacio antes del bloque">− espacio</button></div></div>
 </div>
@@ -300,6 +306,18 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
   <div class="pdfbar"><b id="pdfTit">Vista del PDF</b><span class="sp"></span><button type="button" class="btn pri" id="pdfDl">Guardar PDF</button><button type="button" class="btn" id="pdfClose">Cerrar</button></div>
   <div class="pdfpages" id="pdfPages" aria-label="Hojas del PDF"></div>
 </div>
+<div class="mailbox" id="mailBox" hidden><div class="mb" role="dialog" aria-labelledby="mailTit">
+  <b id="mailTit" style="font-size:1.1rem">Enviar cotización por correo</b>
+  <div class="hint" id="mailHint"></div>
+  <label for="mailTo">Para (separe con ; )<input id="mailTo" type="text" autocomplete="off" list="mailList" placeholder="correo@empresa.cl"></label>
+  <div class="chips" id="mailChips"></div>
+  <label for="mailCc">CC<input id="mailCc" type="text" autocomplete="off" list="mailList"></label>
+  <datalist id="mailList"></datalist>
+  <label for="mailSubj">Asunto<input id="mailSubj" type="text"></label>
+  <label for="mailBody">Mensaje<textarea id="mailBody"></textarea></label>
+  <div class="hint">Se adjunta el PDF de la cotización tal como se ve en la vista. «Abrir en Outlook» descarga un correo listo (.eml): ábralo y Outlook lo muestra como mensaje nuevo, con el PDF adjunto; solo falta presionar Enviar.</div>
+  <div class="row"><button type="button" class="btn pri" id="mailGo">Abrir en Outlook</button><button type="button" class="btn" id="mailShare" hidden>Compartir…</button><span style="flex:1"></span><button type="button" class="btn" id="mailClose">Cancelar</button></div>
+</div></div>
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -1154,6 +1172,59 @@ $("pwState").addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e
 $("expWord").addEventListener("click",exportarWord);
 $("expPdf").addEventListener("click",exportarPdf);
 $("verPdf").addEventListener("click",verPdf);
+/* ---------------- Enviar por correo: correo .eml listo para Outlook, con el PDF adjunto; correos guardados por mandante ---------------- */
+const K_MAIL="cot_correos", MAIL_CC="ingestructural@ingestructural.cl";
+const mailStore=()=>Object.assign({},LS.get(K_MAIL)||{},(PW.logged&&PW.data&&PW.data.config&&PW.data.config.correos)||{});
+const mailKey=()=>S.tipo==="marco"&&S.cm?S.cm.cli:String(S.mandante||"").trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ");
+const mailNombre=k=>k==="AASA"?"Arauco":k==="CMPC"?"CMPC":(S.mandante||k);
+const mailsDe=t=>String(t||"").split(/[;,\s]+/).map(x=>x.trim()).filter(Boolean);
+const mailOk=x=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x);
+function mailChips(){ const k=mailKey(), st=mailStore(), e=(st[k]&&st[k].all)||[], now=mailsDe($("mailTo").value).map(x=>x.toLowerCase());
+  $("mailChips").innerHTML=e.length?e.map(x=>`<button type="button" data-mail="${esc(x)}" title="Agregar a Para">${now.includes(x.toLowerCase())?"✓ ":"＋ "}${esc(x)}<span class="x" data-mailx="${esc(x)}" title="Quitar de los guardados">✕</span></button>`).join(""):`<span class="hint">Aún no hay correos guardados para ${esc(mailNombre(k)||"este mandante")}. Los que escriba se guardan al enviar.</span>`;
+  const all=[...new Set(Object.values(st).flatMap(v=>(v&&v.all)||[]))]; $("mailList").innerHTML=all.map(x=>`<option value="${esc(x)}">`).join(""); }
+async function mailGuardar(st){ LS.set(K_MAIL,st); if(PW.logged&&!DEMO){ try{ await PW.put("cotizador_config","correos",st); if(PW.data.config) PW.data.config.correos=st; }catch(e){ toast("Los correos quedaron en este computador; no se pudieron guardar en POWER"); } } }
+function abrirMail(){ if(DEMO) return toast("Envío disponible en el sitio instalado");
+  const k=mailKey(), st=mailStore(), r=st[k]||{};
+  $("mailHint").textContent=`Mandante: ${mailNombre(k)||"(sin mandante)"} · ${numRev()||"sin N° de cotización"}`;
+  $("mailTo").value=r.to||"";
+  const cc=mailsDe(r.cc); if(!cc.some(x=>x.toLowerCase()===MAIL_CC)) cc.unshift(MAIL_CC); $("mailCc").value=cc.join("; ");   // copia siempre a ING Estructural
+  $("mailSubj").value=nombreArchivo("pdf").replace(/\.pdf$/,"");   // asunto = nombre del archivo de la cotización
+  $("mailBody").value=`${S.contacto?"Estimado(a) "+S.contacto:"Estimados"}:\n\nAdjunto cotización ${numRev()||nombreArchivo("pdf").replace(/\.pdf$/,"")} correspondiente a ${S.proyecto||"[descripción]"}.\n\nQuedo atento a sus comentarios.\n\nSaludos cordiales,\n\n${FIRMA.join("\n")}`;
+  $("mailShare").hidden=!(navigator.canShare&&navigator.canShare({files:[new File([""],"x.pdf",{type:"application/pdf"})]}));
+  mailChips(); $("mailBox").hidden=false; setTimeout(()=>$("mailTo").focus(),50); }
+const b64Lines=t=>t.replace(/.{1,76}/g,"$&\r\n");
+const b64Utf=t=>{const u=new TextEncoder().encode(t);let s="";u.forEach(c=>s+=String.fromCharCode(c));return btoa(s);};
+const hdrUtf=t=>/^[\x20-\x7e]*$/.test(t)?t:`=?UTF-8?B?${b64Utf(t)}?=`;
+function crearEml({to,cc,subj,body,pdfB64,nombre}){
+  const B="----=_cot_"+Date.now().toString(36);
+  return ["X-Unsent: 1","To: "+to.join(", "),...(cc.length?["Cc: "+cc.join(", ")]:[]),"Subject: "+hdrUtf(subj),"MIME-Version: 1.0",`Content-Type: multipart/mixed; boundary="${B}"`,"",
+    "--"+B,"Content-Type: text/plain; charset=UTF-8","Content-Transfer-Encoding: base64","",b64Lines(b64Utf(body)),
+    "--"+B,`Content-Type: application/pdf; name="${nombre}"`,`Content-Disposition: attachment; filename="${nombre}"`,"Content-Transfer-Encoding: base64","",b64Lines(pdfB64),
+    "--"+B+"--",""].join("\r\n");
+}
+async function mailEnviar(modo){
+  const to=mailsDe($("mailTo").value), cc=mailsDe($("mailCc").value), bad=[...to,...cc].filter(x=>!mailOk(x));
+  if(modo==="eml"&&!to.length) return toast("Indique al menos un correo en «Para»");
+  if(bad.length) return toast("Correo no válido: "+bad.join(", "));
+  const btn=$(modo==="eml"?"mailGo":"mailShare"); btn.disabled=true; toast("Generando PDF…");
+  try{ const [w]=await pdfWorker(), blob=await w.outputPdf("blob"), nombre=nombreArchivo("pdf");
+    if(modo==="eml"){ const eml=crearEml({to,cc,subj:$("mailSubj").value,body:$("mailBody").value,pdfB64:await blobB64(blob),nombre});
+      descargar(new Blob([eml],{type:"message/rfc822"}),nombre.replace(/\.pdf$/,".eml")); toast("Correo listo: abra el archivo .eml descargado y presione Enviar en Outlook"); }
+    else await navigator.share({files:[new File([blob],nombre,{type:"application/pdf"})],title:$("mailSubj").value,text:$("mailBody").value});
+    const k=mailKey(); if(k&&(to.length||cc.length)){ const st=mailStore(), r=st[k]||{all:[]}; const all=[...(r.all||[])]; [...to,...cc].forEach(x=>{ if(!all.some(y=>y.toLowerCase()===x.toLowerCase())) all.push(x); });
+      st[k]={all,to:to.join("; "),cc:cc.join("; ")}; await mailGuardar(st); }
+    $("mailBox").hidden=true; }
+  catch(e){ if(e.name!=="AbortError") toast("No se pudo preparar el correo: "+e.message); }
+  finally{ btn.disabled=false; } }
+$("btnMail").addEventListener("click",abrirMail);
+$("mailClose").addEventListener("click",()=>$("mailBox").hidden=true);
+$("mailBox").addEventListener("click",e=>{ if(e.target.id==="mailBox") $("mailBox").hidden=true; });
+$("mailGo").addEventListener("click",()=>mailEnviar("eml"));
+$("mailShare").addEventListener("click",()=>mailEnviar("share"));
+$("mailTo").addEventListener("input",mailChips);
+$("mailChips").addEventListener("click",async e=>{ const x=e.target.dataset.mailx; if(x){ e.stopPropagation(); const k=mailKey(), st=mailStore(); if(st[k]){ st[k].all=(st[k].all||[]).filter(y=>y!==x); await mailGuardar(st); } return mailChips(); }
+  const b=e.target.closest("[data-mail]"); if(!b) return; const m=b.dataset.mail, L=mailsDe($("mailTo").value), i=L.findIndex(y=>y.toLowerCase()===m.toLowerCase());
+  if(i>=0) L.splice(i,1); else L.push(m); $("mailTo").value=L.join("; "); mailChips(); });
 $("nuevaTop").addEventListener("click",e=>nuevaCot(e.currentTarget));
 $("pdfClose").addEventListener("click",()=>{ $("pdfBox").hidden=true; $("pdfPages").innerHTML=""; VISTA_REG=null; });
 $("pdfDl").addEventListener("click",()=>VISTA_REG?guardarBlobPdf(VISTA_REG.blob,VISTA_REG.nombre):exportarPdf());
