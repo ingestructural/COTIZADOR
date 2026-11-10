@@ -292,6 +292,15 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
     <button type="button" class="btn" id="usarPlantilla" data-only="flexible">Rellenar con textos de plantilla</button>
   </fieldset>
 
+  <fieldset>
+    <legend>Firma</legend>
+    <label class="chk"><input type="checkbox" id="fmChk"> Firmar la cotización con mi firma</label>
+    <div class="row" style="align-items:center"><img id="fmImg" alt="Firma guardada" style="max-height:60px;max-width:220px;background:#fff;border:1px solid #d5dbe3;border-radius:4px;padding:4px" hidden>
+      <button type="button" class="btn" id="fmLoad">Cargar firma (PDF o imagen)…</button><button type="button" class="btn x" id="fmDel" hidden>Quitar firma</button>
+      <input type="file" id="fmFile" accept="application/pdf,image/png,image/jpeg" hidden></div>
+    <div class="hint" id="fmHint">La firma se guarda en su cuenta de POWER (no en el código del sitio) y aparece sobre el nombre en la vista, el PDF y el Word.</div>
+  </fieldset>
+
   <div class="row"><button type="button" class="btn" id="nueva">Nueva cotización</button></div>
 </form>
 
@@ -344,6 +353,7 @@ const TPL = {
  noIncluye:["Estudio de mecánica de suelos, ensayos de laboratorio ni sondajes (se cotizan por terceros).","Tramitación de permisos municipales, DOM ni otros organismos.","Levantamiento topográfico."],
  otras:["Los honorarios no incluyen gastos notariales, permisos, derechos municipales ni ensayos de laboratorio, salvo indicación expresa.","Cualquier modificación al alcance definido en la sección 2 será cotizada como trabajo adicional.","Movilización, alojamiento y viáticos para visitas a terreno fuera del radio urbano de la oficina se cotizan por separado, salvo que se indique lo contrario."]
 };
+let FIRMA_IMG=null;   // firma escaneada: se lee de POWER / navegador más abajo
 const FIRMA = ["J. Germán Aguilera Hafner","Ingeniero Civil","ING Estructural"];   // la primera línea va en negrita
 const today = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10); };
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
@@ -352,7 +362,7 @@ function nueva(tipo){return {
  tipo:tipo||"rapida", proyId:"", numero:"", mandante:"", proyecto:"", contacto:"", fecha:today(), fechaIngreso:"", plazo:"", plazoU:"días",
  items:[{n:"",hi:"",hp:""}], tIng:1.22, tProy:0.75, cat:CAT0.map(c=>({...c})),
  validez:30, validezU:"días", antecedentes:TPL.antecedentes, incluye:"", noIncluye:TPL.noIncluye.join("\n"), ex2:[],
- valorUF:"", iva:19, documento:"F", conCLP:"no", cm:null, lay:{}, pagos:[], plazoTxt:"", otras:TPL.otras.join("\n"), ex5:[]
+ valorUF:"", iva:19, documento:"F", conCLP:"no", cm:null, lay:{}, firmar:false, pagos:[], plazoTxt:"", otras:TPL.otras.join("\n"), ex5:[]
 };}
 function ejemplo(){const s=nueva("rapida");Object.assign(s,{proyId:"ej1",mandante:EJEMPLOS[0].mandante,proyecto:EJEMPLOS[0].proyecto,contacto:EJEMPLOS[0].contacto,plazo:3,
  items:[{n:"Modelación 3D",hi:3,hp:2},{n:"Verificación Estructural",hi:5,hp:0},{n:"Elaboración memoria de cálculo",hi:3,hp:1}]});return s;}
@@ -462,7 +472,7 @@ async function refrescarPower(){
   finally{ $("refrescar").disabled=false; } }
 async function cargarPower(){
   try{ await PW.load(); { const rc=(PW.data.config||{}).catalogo; if(rc){ aplicarCatalogo(rc); LS.set(K_CAT,rc); } else guardarCatalogo(); fillFields(); renderItems(); renderCat(); updTotals(); renderDoc(); }
-    renderPwState(); renderGuardadas(); toast("Datos de POWER cargados"); abrirDesdeEnlace(); if(!num(S.valorUF)) traerUF(); }
+    renderPwState(); renderGuardadas(); firmaSync(); if(S.firmar) renderDoc(); toast("Datos de POWER cargados"); abrirDesdeEnlace(); if(!num(S.valorUF)) traerUF(); }
   catch(e){ if(e.code==="auth"){ $("loginBox").hidden=false; $("lgMsg").textContent=e.message==="Sin sesión"?"":e.message; renderPwState(); } else toast("No se pudo leer POWER: "+e.message); }
 }
 function aplicarProyecto(p){
@@ -668,7 +678,7 @@ function bloquesMarco(M){
   const adic=lines(cm.notas);
   if(adic.length) B.push({html:`<div class="band">${det.length?"D":"C"}. NOTAS ADICIONALES</div><ul>${adic.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`});
   const notas=[`Condición ${(cm.cond|0)+1}: ${t.cond[cm.cond|0]}.`, "Entregables en formato DWG y PDF.", ...(cl?[`Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.`]:[])];
-  B.push({html:`<div style="display:flex;gap:24px;align-items:flex-start;margin-top:4px"><div class="leg" style="text-align:left;flex:0 0 46%;margin-top:0;line-height:1.2;font-size:7pt;padding:3px 5px">${notas.map(esc).join("<br>")}</div><div class="firma" style="margin:0.9cm 0 0 auto;flex:0 0 auto;line-height:1.25;border-top:1px solid #555;padding-top:3px;min-width:6.5cm">${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div></div>`});
+  B.push({html:`<div style="display:flex;gap:24px;align-items:flex-start;margin-top:4px"><div class="leg" style="text-align:left;flex:0 0 46%;margin-top:0;line-height:1.2;font-size:7pt;padding:3px 5px">${notas.map(esc).join("<br>")}</div><div class="firma" style="margin:${firmaOn()?"1.9cm":"0.9cm"} 0 0 auto;flex:0 0 auto;line-height:1.25;border-top:1px solid #555;padding-top:3px;min-width:6.5cm">${firmaImgHtml(1.7,"margin:-1.8cm 0 0.1cm 0.4cm")}${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div></div>`});
   return B;
 }
 
@@ -679,7 +689,10 @@ const hdr=(r1,r2)=>`<div class="hd"><img src="${LOGO_SRC}" alt="ING Estructural"
 const vigencia=()=>`${S.validez} ${S.validezU||"días"}`;
 const numRev=()=>[S.numero,S.rev?"Rev. "+S.rev:""].filter(Boolean).join(" · ");
 const pie=()=>`<div class="ft"><div><span>ING ESTRUCTURAL — Proyectos Civiles e Industriales</span><span>${esc(numRev())}</span></div></div>`;
-const firma=()=>`<div class="firma">${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div>`;
+// firma escaneada (opcional): imagen guardada en la cuenta POWER (cotizador_config/firma), nunca en el código
+const firmaOn=()=>!!(S.firmar&&FIRMA_IMG&&FIRMA_IMG.png);
+const firmaImgHtml=(alto,extra="")=>firmaOn()?`<img src="${FIRMA_IMG.png}" alt="" style="display:block;height:${alto}cm;width:auto;max-width:6cm;${extra}">`:"";
+const firma=()=>firmaOn()?`<div class="firma" style="margin-top:1cm">${firmaImgHtml(2,"margin:0 0 2px 0")}${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div>`:`<div class="firma">${FIRMA[0]}<br><span>${FIRMA[1]}<br>${FIRMA[2]}</span></div>`;
 function tablaDatos(){
   return `<table><tbody>
   <tr><td class="k">MANDANTE</td><td class="v" colspan="2">${val(S.mandante,"mandante")}</td></tr>
@@ -877,7 +890,7 @@ function abrirDesdeEnlace(){
   if(!c) return toast("No se encontró esa cotización en POWER");
   const cat=S.cat; S=Object.assign(nueva(c.tipo),JSON.parse(JSON.stringify(c))); S.cat=cat; (c.items||[]).forEach(it=>agregarAlCatalogo(it.n)); all(); save(); toast("Cotización abierta desde POWER");
 }
-function all(){renderGuardadas();fillFields();renderTipo();renderItems();renderCat();renderPagos();renderExtras();updTotals();renderIngreso();renderPwState();renderDoc();}
+function all(){renderGuardadas();fillFields();renderTipo();renderItems();renderCat();renderPagos();renderExtras();updTotals();renderIngreso();renderPwState();renderFirma();renderDoc();}
 
 /* ---------------- Word (.docx) con docx.iife.js ---------------- */
 function loadScript(src, glob){ if(window[glob]) return Promise.resolve(window[glob]);
@@ -917,7 +930,8 @@ async function crearDocx(){
         new Paragraph({alignment:R,spacing:{after:60},children:[run(r2,{size:16,color:"595959"})]})]})]})]})]});
   const pieW=new Footer({children:[new Paragraph({border:{top:{style:BorderStyle.SINGLE,size:6,color:NAVY,space:4}},tabStops:[{type:TabStopType.RIGHT,position:W}],spacing:{after:0},
     children:[run("ING ESTRUCTURAL — Proyectos Civiles e Industriales",{size:16,bold:true,color:NAVY}),new TextRun({children:["\tPágina ",PageNumber.CURRENT," de ",PageNumber.TOTAL_PAGES],font:FONT,size:16,color:"595959"})]})]});
-  const firmaW=()=>[P([],{after:1800,keepNext:true}),...FIRMA.map((t,i)=>P(run(t,{bold:i===0}),{align:L,after:0,keepNext:i<2}))];
+  const fImg=(h)=>{ const w=Math.min(Math.round(h*FIRMA_IMG.w/FIRMA_IMG.h),227); return new ImageRun({type:"png",data:Uint8Array.from(atob(FIRMA_IMG.png.split(",")[1]),c=>c.charCodeAt(0)),transformation:{width:w,height:Math.round(w*FIRMA_IMG.h/FIRMA_IMG.w)}}); };
+  const firmaW=()=>[firmaOn()?new Paragraph({children:[fImg(76)],spacing:{before:560,after:40},keepNext:true}):P([],{after:1800,keepNext:true}),...FIRMA.map((t,i)=>P(run(t,{bold:i===0}),{align:L,after:0,keepNext:i<2}))];
   const datos=()=>tabla([3400,1700,4820],[
     {cells:[C(run("MANDANTE")),C(txt(S.mandante,"mandante",{color:INK}),{fill:IN,span:2})]},
     {cells:[C(run("PROYECTO:")),C(txt(S.proyecto,"proyecto",{color:INK}),{fill:IN,span:2})]},
@@ -950,7 +964,7 @@ async function crearDocx(){
     const der=[["Mandante",t.mandante||S.mandante,"mandante"],["RUT mandante",t.rutMand,"RUT mandante"],["Planta",cm.planta,"planta"],["N° licitación",cm.licit,""],["Fecha oferta",fdate(S.fecha),"fecha"],["Validez oferta",S.validez?vigencia():"","validez"],["N° cotización",numRev(),"N° cotización"]];
   const ej=S.plazo?`${S.plazo} ${S.plazoU==="semanas"?"semanas":"días hábiles"}`:""; der[4]=["Fecha / validez",[fdate(S.fecha),S.validez?"validez "+vigencia():""].filter(Boolean).join(" · "),"fecha"]; der[5]=["Ejecución",ej,"plazo"];
     const hd=x=>C(run(x,{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,align:CE});
-    K.push(tabla([1500,3260,1900,3260],[{head:true,cells:[C(run("ANTECEDENTES LICITACIÓN",{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,span:2,align:CE}),C(run("ANTECEDENTES EMPRESA DE SERVICIOS",{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,span:2,align:CE})]},
+    K.push(tabla([1750,3010,1900,3260],[{head:true,cells:[C(run("ANTECEDENTES LICITACIÓN",{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,span:2,align:CE}),C(run("ANTECEDENTES EMPRESA DE SERVICIOS",{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,span:2,align:CE})]},
       ...izq.map((a,i)=>({cells:[C(k(der[i][0])),C(v(der[i][1],der[i][2]),{fill:IN}),C(k(a[0])),C(v(a[1],a[2]),{fill:IN})]}))]));
     K.push(P(run("A. DESCRIPCIÓN DEL SERVICIO",{bold:true,color:NAVY}),{before:140,after:40,keepNext:true,align:L}));
     K.push(P([txt(S.proyecto,"proyecto",{bold:true,size:20})],{align:L,after:40}));
@@ -971,7 +985,7 @@ async function crearDocx(){
     K.push(new Table({width:{size:W,type:WidthType.DXA},columnWidths:[4700,5220],layout:TableLayoutType.FIXED,borders:{top:none,left:none,right:none,bottom:none,insideHorizontal:none,insideVertical:none},
       rows:[new TableRow({cantSplit:true,children:[
         new TableCell({width:{size:4700,type:WidthType.DXA},borders:nb,shading:{fill:BAND,type:ShadingType.CLEAR,color:"auto"},margins:{top:60,bottom:60,left:100,right:100},children:notas.map(x=>new Paragraph({spacing:{after:0},children:[run(x,{size:14})]}))}),
-        new TableCell({width:{size:5220,type:WidthType.DXA},borders:nb,margins:{left:1400},children:[new Paragraph({spacing:{before:700,after:0},border:{top:{style:BorderStyle.SINGLE,size:6,color:"555555",space:2}},children:[run(FIRMA[0],{bold:true})]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[1])]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[2])]})]})]})]}));
+        new TableCell({width:{size:5220,type:WidthType.DXA},borders:nb,margins:{left:1400},children:[...(firmaOn()?[new Paragraph({children:[fImg(64)],spacing:{before:300,after:0},indent:{left:220}})]:[]),new Paragraph({spacing:{before:firmaOn()?40:700,after:0},border:{top:{style:BorderStyle.SINGLE,size:6,color:"555555",space:2}},children:[run(FIRMA[0],{bold:true})]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[1])]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[2])]})]})]})]}));
   } else if(S.tipo==="rapida"){
     r1="J. GERMÁN AGUILERA HAFNER"; r2="Ingeniero Civil · Ingeniería Estructural";
     K.push(P(run("COTIZACIÓN SERVICIOS DE INGENIERÍA",{bold:true,color:NAVY,size:28}),{align:CE,after:160,keepNext:true}),datos(),...cuadroW(),...firmaW());
@@ -1065,7 +1079,7 @@ $("ed").addEventListener("input",e=>{
   if(el.id==="buscaProy"){ renderListaProy(); return; }
   if(el.id==="buscaCot"||el.id==="selCot"){ if(el.id==="buscaCot") renderGuardadas(); return; }
   if(el.id==="buscaReg"||el.id==="regSolo"||el.id==="selReg"){ if(el.id!=="selReg") renderRegistro(); return; }
-  if(el.id&&el.id.startsWith("lg")) return;
+  if(el.id&&(el.id.startsWith("lg")||el.id.startsWith("fm"))) return;
   if(d.cm!==undefined){ const v=el.value;
     if(d.cm==="cond"){ S.cm.cond=+v; renderMarco(); } else if(d.cm==="planta"){ S.cm.planta=v; renderMarco(); }
     else S.cm[d.cm]=v; updTotals(); renderDoc(); save(); return; }
@@ -1172,6 +1186,38 @@ $("pwState").addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e
 $("expWord").addEventListener("click",exportarWord);
 $("expPdf").addEventListener("click",exportarPdf);
 $("verPdf").addEventListener("click",verPdf);
+/* ---------------- Firma: se carga una vez (PDF o imagen), se recorta y se guarda en la cuenta POWER ---------------- */
+FIRMA_IMG=LS.get("cot_firma"); renderFirma(); if(FIRMA_IMG&&S.firmar) renderDoc();
+function firmaSync(){ const pw=PW.logged&&PW.data&&PW.data.config&&PW.data.config.firma; if(pw&&pw.png) { FIRMA_IMG=pw; LS.set("cot_firma",pw); } renderFirma(); }
+function renderFirma(){ const ok=!!(FIRMA_IMG&&FIRMA_IMG.png); $("fmImg").hidden=!ok; if(ok) $("fmImg").src=FIRMA_IMG.png; $("fmDel").hidden=!ok;
+  $("fmChk").checked=!!S.firmar; $("fmChk").disabled=!ok; $("fmLoad").textContent=ok?"Cambiar firma…":"Cargar firma (PDF o imagen)…"; }
+async function canvasDeArchivo(f){
+  if(f.type==="application/pdf"||/\.pdf$/i.test(f.name)){ const lib=await loadScript("pdfjs.min.js","pdfjsLib"); lib.GlobalWorkerOptions.workerSrc="pdfjs.worker.min.js";
+    const pdf=await lib.getDocument({data:await f.arrayBuffer()}).promise, pg=await pdf.getPage(1), vp=pg.getViewport({scale:4});
+    const c=document.createElement("canvas"); c.width=vp.width; c.height=vp.height; const x=c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height); await pg.render({canvasContext:x,viewport:vp}).promise; return c; }
+  const img=await new Promise((ok,ko)=>{const i=new Image(); i.onload=()=>ok(i); i.onerror=()=>ko(new Error("Imagen no válida")); i.src=URL.createObjectURL(f);});
+  const c=document.createElement("canvas"); c.width=img.naturalWidth; c.height=img.naturalHeight; const x=c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height); x.drawImage(img,0,0); return c; }
+// recorta el margen blanco y deja el fondo transparente (solo queda el trazo)
+function recortarFirma(c){ const x=c.getContext("2d"), {width:W,height:H}=c, d=x.getImageData(0,0,W,H), p=d.data; let x0=W,y0=H,x1=-1,y1=-1;
+  for(let y=0;y<H;y++) for(let i=0;i<W;i++){ const k=(y*W+i)*4, l=(p[k]+p[k+1]+p[k+2])/3; if(l<200){ if(i<x0)x0=i; if(i>x1)x1=i; if(y<y0)y0=y; if(y>y1)y1=y; } }
+  if(x1<0) throw new Error("No se encontró trazo de firma en el archivo");
+  const m=Math.round(Math.max(x1-x0,y1-y0)*0.03); x0=Math.max(0,x0-m); y0=Math.max(0,y0-m); x1=Math.min(W-1,x1+m); y1=Math.min(H-1,y1+m);
+  const w=x1-x0+1, h=y1-y0+1, esc=Math.min(1,700/w), o=document.createElement("canvas"); o.width=Math.round(w*esc); o.height=Math.round(h*esc);
+  const ox=o.getContext("2d"); ox.drawImage(c,x0,y0,w,h,0,0,o.width,o.height); const od=ox.getImageData(0,0,o.width,o.height), q=od.data;
+  for(let k=0;k<q.length;k+=4){ const l=(q[k]+q[k+1]+q[k+2])/3; q[k+3]=l>=235?0:l>170?Math.round(255*(235-l)/65):255; }
+  ox.putImageData(od,0,0); return {png:o.toDataURL("image/png"),w:o.width,h:o.height}; }
+async function cargarFirma(f){ if(!f) return; $("fmHint").textContent="Procesando firma…";
+  try{ const F=recortarFirma(await canvasDeArchivo(f)); FIRMA_IMG=F; LS.set("cot_firma",F); S.firmar=true; save();
+    if(PW.logged&&!DEMO){ await PW.put("cotizador_config","firma",F); if(PW.data.config) PW.data.config.firma=F; $("fmHint").textContent="Firma guardada en su cuenta de POWER."; }
+    else $("fmHint").textContent="Firma guardada en este computador. Conecte POWER para tenerla en todos sus equipos.";
+    renderFirma(); renderDoc(); }
+  catch(e){ $("fmHint").textContent="No se pudo cargar la firma: "+e.message; } }
+$("fmLoad").addEventListener("click",()=>$("fmFile").click());
+$("fmFile").addEventListener("change",e=>{ cargarFirma(e.target.files[0]); e.target.value=""; });
+$("fmChk").addEventListener("change",e=>{ S.firmar=e.target.checked; save(); renderDoc(); });
+$("fmDel").addEventListener("click",async()=>{ if(!confirm("¿Quitar la firma guardada?")) return; FIRMA_IMG=null; LS.set("cot_firma",null); S.firmar=false; save();
+  if(PW.logged&&!DEMO){ try{ await PW.del("cotizador_config","firma"); if(PW.data.config) delete PW.data.config.firma; }catch(e){ toast("No se pudo quitar de POWER: "+e.message); } }
+  renderFirma(); renderDoc(); });
 /* ---------------- Enviar por correo: correo .eml listo para Outlook, con el PDF adjunto; correos guardados por mandante ---------------- */
 const K_MAIL="cot_correos", MAIL_CC="ingestructural@ingestructural.cl";
 const mailStore=()=>Object.assign({},LS.get(K_MAIL)||{},(PW.logged&&PW.data&&PW.data.config&&PW.data.config.correos)||{});
