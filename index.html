@@ -631,11 +631,11 @@ const COLS_CM=`<colgroup><col style="width:52%"><col style="width:9%"><col style
 function cmDesc(ln){ return ln.n===OTRO?(ln.d||""):ln.n; }
 function bloquesMarco(M){
   const cm=S.cm||cmNuevo("CMPC"), t=T(), R=marcoCalc(), of={...t.of}, bol=S.documento==="B";
-  const kv=(k,v,phT)=>`<td class="k" style="width:16%">${k}</td><td class="v" style="width:34%">${phT?val(v,phT):esc(v||"")}</td>`;
+  const kv=(k,v,phT)=>`<td class="k">${k}</td><td class="v">${phT?val(v,phT):esc(v||"")}</td>`;
   const izq=[["Código SAP",of.sap,"código SAP"],["RUT empresa",of.rut,"RUT"],["Razón social",of.razon,"razón social"],["Representante legal",of.rep,"representante"],["RUT rep. legal",of.rutRep,"RUT"],["Contacto",of.contacto,""],["Teléfono / e-mail",[of.fono,of.mail].filter(Boolean).join(" · "),""]];
   const der=[["Mandante",t.mandante||S.mandante,"mandante"],["RUT mandante",t.rutMand,"RUT mandante"],["Planta",cm.planta,"planta"],["N° licitación",cm.licit,""],["Fecha oferta",fdate(S.fecha),"fecha"],["Validez oferta",S.validez?vigencia():"","validez"],["N° cotización",numRev(),"N° cotización"]];
   const ej=S.plazo?`${S.plazo} ${S.plazoU==="semanas"?"semanas":"días hábiles"}`:""; der[4]=["Fecha / validez",[fdate(S.fecha),S.validez?"validez "+vigencia():""].filter(Boolean).join(" · "),"fecha"]; der[5]=["Ejecución",ej,"plazo"];
-  const ante=`<table class="tc cmt"><colgroup><col style="width:19%"><col style="width:31%"><col style="width:16%"><col style="width:34%"></colgroup><thead><tr><th colspan="2">ANTECEDENTES EMPRESA DE SERVICIOS</th><th colspan="2">ANTECEDENTES LICITACIÓN</th></tr></thead><tbody>${izq.map((a,i)=>`<tr>${kv(a[0],a[1],a[2],1)}${kv(der[i][0],der[i][1],der[i][2])}</tr>`).join("")}</tbody></table>`;
+  const ante=`<table class="tc cmt"><colgroup><col style="width:16%"><col style="width:34%"><col style="width:19%"><col style="width:31%"></colgroup><thead><tr><th colspan="2">ANTECEDENTES LICITACIÓN</th><th colspan="2">ANTECEDENTES EMPRESA DE SERVICIOS</th></tr></thead><tbody>${izq.map((a,i)=>`<tr>${kv(der[i][0],der[i][1],der[i][2])}${kv(a[0],a[1],a[2],1)}</tr>`).join("")}</tbody></table>`;
   const desc=`<div class="band">A. DESCRIPCIÓN DEL SERVICIO</div><p style="margin:6px 8px"><b>${val(S.proyecto,"proyecto")}</b></p>${lines(cm.alc).length?`<ul>${lines(cm.alc).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}`;
   const cl=M.clp&&M.vuf;
   const resRows=[...SECC.map(([k,,n],i)=>`<tr><td>0${i+1}. ${n}</td><td class="tot">${f2(R.secs[k].sub)}</td>${cl?`<td class="tot">${clp(R.secs[k].sub*M.vuf)}</td>`:""}</tr>`),
@@ -696,7 +696,7 @@ function seccion(tit,items,phT,tag="h3"){ const L=items.length?items:[null];
 const HDR_MARCO=()=>hdr(T().titulo,"Contrato marco "+esc(T().nombre)+((S.cm&&S.cm.of.contrato)?" · "+esc(S.cm.of.contrato):""));
 const HDR_RAPIDA=()=>hdr("J. GERMÁN AGUILERA HAFNER","Ingeniero Civil · Ingeniería Estructural");
 const HDR_FORMAL=()=>hdr("COTIZACIÓN DE SERVICIOS DE INGENIERÍA",val(S.proyecto,"proyecto"));
-function bloquesRapida(M){ return [{html:tablaDatos()}, ...cuadroBloques(M), {html:firma()}]; }
+function bloquesRapida(M){ return [{html:`<div style="text-align:center;font-weight:700;font-size:1.15em;color:#1f3864;letter-spacing:.02em;margin:0 0 10px">COTIZACIÓN SERVICIOS DE INGENIERÍA</div>`+tablaDatos()}, ...cuadroBloques(M), {html:firma()}]; }
 // valor y plazo de la portada: salen del panel (cuadro de ítems y plazo de ejecución)
 function valorTxt(M){ return M.t.neto?`${f2(M.t.neto)} UF ${M.bol?"(bruto, boleta de honorarios)":"neto"}`:""; }
 function plazoTxt(){ return S.plazo?`${S.plazo} ${S.plazoU||"días"}`:""; }
@@ -932,8 +932,8 @@ async function crearDocx(){
     const der=[["Mandante",t.mandante||S.mandante,"mandante"],["RUT mandante",t.rutMand,"RUT mandante"],["Planta",cm.planta,"planta"],["N° licitación",cm.licit,""],["Fecha oferta",fdate(S.fecha),"fecha"],["Validez oferta",S.validez?vigencia():"","validez"],["N° cotización",numRev(),"N° cotización"]];
   const ej=S.plazo?`${S.plazo} ${S.plazoU==="semanas"?"semanas":"días hábiles"}`:""; der[4]=["Fecha / validez",[fdate(S.fecha),S.validez?"validez "+vigencia():""].filter(Boolean).join(" · "),"fecha"]; der[5]=["Ejecución",ej,"plazo"];
     const hd=x=>C(run(x,{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,align:CE});
-    K.push(tabla([1900,3260,1500,3260],[{head:true,cells:[C(run("ANTECEDENTES EMPRESA DE SERVICIOS",{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,span:2,align:CE}),C(run("ANTECEDENTES LICITACIÓN",{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,span:2,align:CE})]},
-      ...izq.map((a,i)=>({cells:[C(k(a[0])),C(v(a[1],a[2]),{fill:IN}),C(k(der[i][0])),C(v(der[i][1],der[i][2]),{fill:IN})]}))]));
+    K.push(tabla([1500,3260,1900,3260],[{head:true,cells:[C(run("ANTECEDENTES LICITACIÓN",{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,span:2,align:CE}),C(run("ANTECEDENTES EMPRESA DE SERVICIOS",{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,span:2,align:CE})]},
+      ...izq.map((a,i)=>({cells:[C(k(der[i][0])),C(v(der[i][1],der[i][2]),{fill:IN}),C(k(a[0])),C(v(a[1],a[2]),{fill:IN})]}))]));
     K.push(P(run("A. DESCRIPCIÓN DEL SERVICIO",{bold:true,color:NAVY}),{before:140,after:40,keepNext:true,align:L}));
     K.push(P([txt(S.proyecto,"proyecto",{bold:true,size:20})],{align:L,after:40}));
     lines(cm.alc).forEach(x=>K.push(P(run(x,{size:20}),{bullet:true,after:0})));
@@ -956,7 +956,7 @@ async function crearDocx(){
         new TableCell({width:{size:5220,type:WidthType.DXA},borders:nb,margins:{left:1400},children:[new Paragraph({spacing:{before:700,after:0},border:{top:{style:BorderStyle.SINGLE,size:6,color:"555555",space:2}},children:[run(FIRMA[0],{bold:true})]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[1])]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[2])]})]})]})]}));
   } else if(S.tipo==="rapida"){
     r1="J. GERMÁN AGUILERA HAFNER"; r2="Ingeniero Civil · Ingeniería Estructural";
-    K.push(datos(),...cuadroW(),...firmaW());
+    K.push(P(run("COTIZACIÓN SERVICIOS DE INGENIERÍA",{bold:true,color:NAVY,size:28}),{align:CE,after:160,keepNext:true}),datos(),...cuadroW(),...firmaW());
   } else {
     r1="COTIZACIÓN DE SERVICIOS DE INGENIERÍA"; r2=S.proyecto||"";
     K.push(P([],{after:480}));
