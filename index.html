@@ -255,7 +255,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
     <div class="row" style="gap:6px;align-items:flex-end"><label for="validez" style="flex:1">Validez de la oferta<input id="validez" type="number" min="0" step="1"></label>
       <label for="validezU" style="width:110px">Unidad<select id="validezU"><option>días</option><option>semanas</option></select></label></div>
     <div class="grid2">
-      <label for="valorUF">Valor UF (se toma de POWER)<input id="valorUF" type="number" step="0.01" min="0"></label>
+      <label for="valorUF">Valor UF (UF del día de POWER)<input id="valorUF" type="number" step="0.01" min="0" readonly title="Se toma de POWER; use «Actualizar UF» para recargarla"></label>
       <label for="iva">IVA (%)<input id="iva" type="number" step="0.1" min="0"></label>
       <label for="conCLP">Monto en pesos en el resumen (punto 4)<select id="conCLP"><option value="no">No incluir (solo UF)</option><option value="si">Incluir columna en pesos</option></select></label>
       <label for="documento">Documento de cobro<select id="documento"><option value="F">Factura ING Estructural (+ IVA)</option><option value="B">Boleta de honorarios G. Aguilera (sin IVA)</option></select></label>
@@ -849,7 +849,7 @@ function nuevaCot(b){
     setTimeout(()=>{ if(nuevaPend===b){ nuevaPend=null; b.textContent=t; } },5000); return; }
   nuevaPend=null; b.textContent=b.id==="nuevaTop"?"+ Nueva cotización":"Nueva cotización";
   const keep={tIng:S.tIng,tProy:S.tProy,cat:S.cat}; S=Object.assign(nueva(S.tipo),keep); all(); save();
-  $("buscaProy").focus(); toast("Nueva cotización: elija el proyecto en POWER");
+  $("buscaProy").focus(); toast("Nueva cotización: elija el proyecto en POWER"); traerUF();
 }
 // Enlace desde POWER: cotizador-ing.netlify.app/#abrir=<id>
 function abrirDesdeEnlace(){
@@ -1133,16 +1133,18 @@ $("lgPass").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault(
 async function login(){ $("lgMsg").textContent="Entrando…";
   try{ await PW.login($("lgMail").value.trim(),$("lgPass").value); $("lgPass").value=""; $("loginBox").hidden=true; $("lgMsg").textContent=""; await cargarPower(); }
   catch(e){ $("lgMsg").textContent=e.message; } }
-/* Valor UF igual que en POWER: el valor UF propio del proyecto; si no tiene, la UF del día (mindicador.cl, la misma fuente de POWER);
-   sin conexión, la UF de referencia de Parámetros de POWER. Se completa sola, sin preguntar. */
+/* Una sola UF: la UF del día guardada en POWER (Parámetros: ufRef + ufFecha). Se recarga POWER para tener la última.
+   Si POWER aún no guarda la de hoy (no se ha abierto hoy), se consulta mindicador.cl, la misma fuente que usa POWER. */
+const hoyCL=()=>new Date().toLocaleDateString("sv-SE",{timeZone:"America/Santiago"});
 async function traerUF(){ if(DEMO){$("ufMsg").textContent="Disponible en el sitio instalado.";return;}
-  const p=(PW.data.proyectos||[]).find(x=>x.id===S.proyId), par=(PW.data.params||{});
   const fija=(v,txt)=>{ S.valorUF=v; $("valorUF").value=v; $("ufMsg").textContent=txt; renderDoc(); save(); };
-  if(p&&+p.valorUF>0) return fija(+p.valorUF,`UF del proyecto en POWER: ${f2(+p.valorUF)}`);
-  $("ufMsg").textContent="Consultando UF…";
-  try{ const r=await fetch("https://mindicador.cl/api/uf"); const j=await r.json(); const s=j.serie&&j.serie[0]; if(!s) throw new Error("sin datos");
-    fija(s.valor,`UF del día ${fdate(s.fecha.slice(0,10))} (como en POWER): ${f2(s.valor)}`); }
-  catch(e){ if(+par.ufRef>0) fija(+par.ufRef,`UF de referencia de POWER: ${f2(+par.ufRef)}`); else $("ufMsg").textContent="No se pudo obtener la UF."; } }
+  $("ufMsg").textContent="Consultando UF de POWER…";
+  if(PW.logged&&(PW.data.params||{}).ufFecha!==hoyCL()){ try{ await PW.load(); }catch(e){} }   // recarga POWER solo si la UF guardada no es la de hoy
+  const par=(PW.data.params||{});
+  if(+par.ufRef>0&&par.ufFecha===hoyCL()) return fija(+par.ufRef,`UF del día de POWER ${fdate(par.ufFecha)}: ${f2(+par.ufRef)}`);
+  try{ const r=await fetch("https://mindicador.cl/api/uf",{cache:"no-store"}); const j=await r.json(); const s=j.serie&&j.serie[0]; if(!s) throw new Error("sin datos");
+    fija(+s.valor,`UF del día ${fdate(s.fecha.slice(0,10))} (mindicador.cl, la misma fuente de POWER): ${f2(+s.valor)}`); }
+  catch(e){ if(+par.ufRef>0) fija(+par.ufRef,`UF guardada en POWER${par.ufFecha?" al "+fdate(par.ufFecha):""}: ${f2(+par.ufRef)} (sin conexión a mindicador.cl)`); else $("ufMsg").textContent="No se pudo obtener la UF."; } }
 const abrirPower=()=>{ if(PW.logged) cargarPower(); else { $("loginBox").hidden=false; $("loginBox").scrollIntoView({block:"start",behavior:"smooth"}); $("lgMail").focus(); } };
 $("btnPower").addEventListener("click",abrirPower);
 // la etiqueta de estado (amarilla) también conecta: en el teléfono se toca por error en vez del botón
