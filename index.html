@@ -154,6 +154,12 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 .page .cover td{font-size:14pt;padding:6px 8px}
 .page .firma{margin-top:3.2cm;text-align:left;font-weight:700;line-height:1.35}
 .page .firma span{font-weight:400}
+.catpop{position:fixed;z-index:25;background:#fff;color:#1d2533;border:1px solid #c5cfdc;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.18);max-height:280px;overflow:auto;min-width:240px}
+.catpop .cp{display:flex;align-items:center;gap:8px;padding:5px 6px 5px 10px;cursor:pointer;font-size:.92rem}
+.catpop .cp:hover,.catpop .cp.on{background:#e8f0fb}
+.catpop .cp span{flex:1}
+.catpop .cp button{border:0;background:none;color:#8a94a3;cursor:pointer;font-size:.95rem;padding:2px 6px;border-radius:4px}
+.catpop .cp button:hover{background:#fde2e2;color:#b3261e}
 .page .fhandle{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;background:#1f6feb;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1px #1f6feb;cursor:nwse-resize;z-index:4}
 .page .fimg{user-select:none;-webkit-user-drag:none;touch-action:none}
 .page .fimg:hover{outline:1px dashed #1f6feb}
@@ -330,6 +336,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
   <div class="hint">Se adjunta el PDF de la cotización tal como se ve en la vista. «Abrir en Outlook» descarga un correo listo (.eml): ábralo y Outlook lo muestra como mensaje nuevo, con el PDF adjunto; solo falta presionar Enviar.</div>
   <div class="row"><button type="button" class="btn pri" id="mailGo">Abrir en Outlook</button><button type="button" class="btn" id="mailShare" hidden>Compartir…</button><span style="flex:1"></span><button type="button" class="btn" id="mailClose">Cancelar</button></div>
 </div></div>
+<div class="catpop" id="catPop" hidden role="listbox" aria-label="Ítems del catálogo"></div>
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -519,7 +526,7 @@ function renderItems(){
   $("dlCat").innerHTML=S.cat.map(c=>`<option value="${esc(c.n)}">`).join("");
   if(selIt>=S.items.length) selIt=S.items.length-1;
   $("tItems").tBodies[0].innerHTML=S.items.map((it,i)=>`<tr${i===selIt?' class="sel"':''}>
-    <td><input list="dlCat" id="it-n-${i}" data-i="${i}" data-k="n" value="${esc(it.n)}" aria-label="Ítem ${i+1}"></td>
+    <td><input autocomplete="off" id="it-n-${i}" data-i="${i}" data-k="n" value="${esc(it.n)}" aria-label="Ítem ${i+1}"></td>
     <td class="n" style="width:64px"><input id="it-hi-${i}" data-i="${i}" data-k="hi" inputmode="decimal" value="${esc(it.hi)}" aria-label="HH ingeniero ítem ${i+1}"></td>
     <td class="n" style="width:64px"><input id="it-hp-${i}" data-i="${i}" data-k="hp" inputmode="decimal" value="${esc(it.hp)}" aria-label="HH proyectista ítem ${i+1}"></td>
     <td class="t" id="it-t-${i}">${f2(itemUF(it))}</td>
@@ -1171,6 +1178,28 @@ $("cmBox").addEventListener("keydown",e=>{ const el=e.target; if(e.key!=="Enter"
 $("tItems").addEventListener("focusin",e=>{ const el=e.target; if(el.dataset&&el.dataset.i!==undefined) marcarItem(+el.dataset.i); if(el.dataset&&(el.dataset.k==="hi"||el.dataset.k==="hp")) { try{el.select();}catch(_){} } });
 $("tItems").addEventListener("pointerdown",e=>{ const el=e.target; if(el.dataset&&(el.dataset.k==="hi"||el.dataset.k==="hp")&&document.activeElement!==el){ e.preventDefault(); el.focus(); el.select(); } });
 $("tItems").addEventListener("change",e=>{ const d=e.target.dataset; if(d&&d.k==="n"&&d.i!==undefined) agregarAlCatalogo(e.target.value); });
+/* lista de ítems al escribir en el cuadro (reemplaza la lista del navegador): cada ítem tiene una ✕ para borrarlo del catálogo */
+let CP={el:null,on:-1,L:[]};
+const nzt=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
+function catPop(el){ const box=$("catPop"); CP.el=el; const q=nzt(el.value);
+  CP.L=S.cat.map(c=>String(c.n||"").trim()).filter(n=>n&&(!q||nzt(n).includes(q))&&nzt(n)!==q).slice(0,40);
+  if(!CP.L.length){ box.hidden=true; return; } if(CP.on>=CP.L.length) CP.on=-1;
+  box.innerHTML=CP.L.map((n,i)=>`<div class="cp${i===CP.on?" on":""}" data-cp="${i}" role="option"><span>${esc(n)}</span><button type="button" data-cpdel="${i}" title="Borrar «${esc(n)}» del catálogo" aria-label="Borrar del catálogo">✕</button></div>`).join("");
+  const r=el.getBoundingClientRect(); Object.assign(box.style,{left:r.left+"px",top:(r.bottom+2)+"px",width:Math.max(r.width,260)+"px"}); box.hidden=false; }
+const catPopOff=()=>{ $("catPop").hidden=true; CP.el=null; CP.on=-1; };
+function catPopElegir(i){ const el=CP.el; if(!el) return; el.value=CP.L[i]; el.dispatchEvent(new Event("input",{bubbles:true})); catPopOff(); const nx=$(`it-hi-${el.dataset.i}`); if(nx){ nx.focus(); nx.select(); } }
+$("tItems").addEventListener("focusin",e=>{ if(e.target.dataset&&e.target.dataset.k==="n"&&e.target.dataset.i!==undefined){ CP.on=-1; catPop(e.target); } });
+$("tItems").addEventListener("input",e=>{ if(e.target===CP.el||(e.target.dataset&&e.target.dataset.k==="n"&&e.target.dataset.i!==undefined)){ CP.on=-1; catPop(e.target); } });
+$("tItems").addEventListener("focusout",e=>{ if(e.target===CP.el) setTimeout(()=>{ if(document.activeElement!==CP.el) catPopOff(); },150); });
+$("catPop").addEventListener("mousedown",e=>{ e.preventDefault(); const del=e.target.closest("[data-cpdel]");
+  if(del){ const n=CP.L[+del.dataset.cpdel], el=CP.el; if(!confirm(`¿Borrar «${n}» de la lista de ítems?`)){ if(el){ el.focus(); catPop(el); } return; }
+    S.cat=S.cat.filter(c=>String(c.n||"").trim()!==n); renderCat(); guardarCatalogo(); save(); toast(`«${n}» se borró del catálogo`); if(el){ el.focus(); catPop(el); } return; }
+  const row=e.target.closest("[data-cp]"); if(row) catPopElegir(+row.dataset.cp); });
+window.addEventListener("resize",catPopOff); document.addEventListener("scroll",e=>{ if(CP.el&&!$("catPop").contains(e.target)) catPop(CP.el); },true);
+$("tItems").addEventListener("keydown",e=>{ if(!CP.el||$("catPop").hidden||e.target!==CP.el) return;
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){ e.preventDefault(); const n=CP.L.length; CP.on=e.key==="ArrowDown"?(CP.on+1)%n:(CP.on<=0?n-1:CP.on-1); catPop(CP.el); $("catPop").querySelector(".cp.on")?.scrollIntoView({block:"nearest"}); }
+  else if(e.key==="Enter"&&CP.on>=0){ e.preventDefault(); e.stopImmediatePropagation(); catPopElegir(CP.on); }
+  else if(e.key==="Escape") catPopOff(); });
 $("tItems").addEventListener("keydown",e=>{
   const el=e.target, d=el.dataset; if(e.key!=="Enter"||d.i===undefined) return;
   e.preventDefault(); const i=+d.i, orden=["n","hi","hp"], k=orden.indexOf(d.k);
