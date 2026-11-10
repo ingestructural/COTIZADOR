@@ -306,7 +306,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 
 <div class="pv">
   <div class="pvbar"><span>Vista de la cotización · tamaño carta · pase el mouse sobre un bloque para ajustar la hoja</span>
-    <span class="row"><button type="button" class="btn pri" id="expWord">Guardar Word</button><button type="button" class="btn x" id="layReset" title="Vuelve a la distribución automática de hojas">Restablecer diseño</button><button type="button" class="btn" id="verPdf">Ver PDF</button><button type="button" class="btn" id="expPdf">Guardar PDF</button><button type="button" class="btn pri" id="btnMail">Enviar por correo</button></span></div>
+    <span class="row"><button type="button" class="btn pri" id="expWord">Guardar Word</button><button type="button" class="btn x" id="layReset" title="Vuelve a la distribución automática de hojas">Restablecer diseño</button><button type="button" class="btn" id="verPdf">Ver PDF</button><button type="button" class="btn" id="expPdf">Guardar PDF</button><button type="button" class="btn pri" id="btnMail">Enviar por correo</button><button type="button" class="btn" id="btnFirmar" aria-pressed="false" title="Pone su firma (fondo transparente) sobre el nombre">Firmar</button></span></div>
   <div class="paperwrap" style="position:relative"><div id="doc"></div>
     <div class="laybar" id="laybar"><button type="button" data-lay="brk" title="Este bloque y lo que sigue pasan a la hoja siguiente">⤓ A hoja siguiente</button><button type="button" data-lay="mas" title="Más espacio antes del bloque">＋ espacio</button><button type="button" data-lay="menos" title="Menos espacio antes del bloque">− espacio</button></div></div>
 </div>
@@ -362,7 +362,7 @@ function nueva(tipo){return {
  tipo:tipo||"rapida", proyId:"", numero:"", mandante:"", proyecto:"", contacto:"", fecha:today(), fechaIngreso:"", plazo:"", plazoU:"días",
  items:[{n:"",hi:"",hp:""}], tIng:1.22, tProy:0.75, cat:CAT0.map(c=>({...c})),
  validez:30, validezU:"días", antecedentes:TPL.antecedentes, incluye:"", noIncluye:TPL.noIncluye.join("\n"), ex2:[],
- valorUF:"", iva:19, documento:"F", conCLP:"no", cm:null, lay:{}, firmar:true, pagos:[], plazoTxt:"", otras:TPL.otras.join("\n"), ex5:[]
+ valorUF:"", iva:19, documento:"F", conCLP:"no", cm:null, lay:{}, firmar:false, pagos:[], plazoTxt:"", otras:TPL.otras.join("\n"), ex5:[]
 };}
 function ejemplo(){const s=nueva("rapida");Object.assign(s,{proyId:"ej1",mandante:EJEMPLOS[0].mandante,proyecto:EJEMPLOS[0].proyecto,contacto:EJEMPLOS[0].contacto,plazo:3,
  items:[{n:"Modelación 3D",hi:3,hp:2},{n:"Verificación Estructural",hi:5,hp:0},{n:"Elaboración memoria de cálculo",hi:3,hp:1}]});return s;}
@@ -690,7 +690,7 @@ const vigencia=()=>`${S.validez} ${S.validezU||"días"}`;
 const numRev=()=>[S.numero,S.rev?"Rev. "+S.rev:""].filter(Boolean).join(" · ");
 const pie=()=>`<div class="ft"><div><span>ING ESTRUCTURAL — Proyectos Civiles e Industriales</span><span>${esc(numRev())}</span></div></div>`;
 // firma escaneada (opcional): imagen guardada en la cuenta POWER (cotizador_config/firma), nunca en el código
-const firmaOn=()=>!!(S.firmar!==false&&FIRMA_IMG&&FIRMA_IMG.png);
+const firmaOn=()=>!!(S.firmar===true&&FIRMA_IMG&&FIRMA_IMG.png);
 // la firma va encima del nombre, grande y cruzándolo, como se aplica a mano en el PDF (no mueve el texto)
 const firmaImgHtml=(top,left)=>firmaOn()?`<img src="${FIRMA_IMG.png}" alt="" style="position:absolute;top:${top}cm;left:${left}cm;height:${FIRMA_ALTO}cm;width:auto;max-width:6.5cm;pointer-events:none">`:"";
 const FIRMA_ALTO=3.3;
@@ -1195,7 +1195,7 @@ $("verPdf").addEventListener("click",verPdf);
 FIRMA_IMG=LS.get("cot_firma"); renderFirma(); if(FIRMA_IMG) renderDoc();
 function firmaSync(){ const pw=PW.logged&&PW.data&&PW.data.config&&PW.data.config.firma; if(pw&&pw.png) { FIRMA_IMG=pw; LS.set("cot_firma",pw); } renderFirma(); }
 function renderFirma(){ const ok=!!(FIRMA_IMG&&FIRMA_IMG.png); $("fmImg").hidden=!ok; if(ok) $("fmImg").src=FIRMA_IMG.png; $("fmDel").hidden=!ok;
-  $("fmChk").checked=S.firmar!==false; $("fmChk").disabled=!ok; $("fmLoad").textContent=ok?"Cambiar firma…":"Cargar firma (PDF o imagen)…"; }
+  $("fmChk").checked=S.firmar===true; const fb=$("btnFirmar"); fb.setAttribute("aria-pressed",String(firmaOn())); fb.textContent=firmaOn()?"✓ Firmada":"Firmar"; fb.classList.toggle("pri",firmaOn()); $("fmChk").disabled=!ok; $("fmLoad").textContent=ok?"Cambiar firma…":"Cargar firma (PDF o imagen)…"; }
 async function canvasDeArchivo(f){
   if(f.type==="application/pdf"||/\.pdf$/i.test(f.name)){ const lib=await loadScript("pdfjs.min.js","pdfjsLib"); lib.GlobalWorkerOptions.workerSrc="pdfjs.worker.min.js";
     const pdf=await lib.getDocument({data:await f.arrayBuffer()}).promise, pg=await pdf.getPage(1), vp=pg.getViewport({scale:4});
@@ -1203,23 +1203,42 @@ async function canvasDeArchivo(f){
   const img=await new Promise((ok,ko)=>{const i=new Image(); i.onload=()=>ok(i); i.onerror=()=>ko(new Error("Imagen no válida")); i.src=URL.createObjectURL(f);});
   const c=document.createElement("canvas"); c.width=img.naturalWidth; c.height=img.naturalHeight; const x=c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height); x.drawImage(img,0,0); return c; }
 // recorta el margen blanco y deja el fondo transparente (solo queda el trazo)
-function recortarFirma(c){ const x=c.getContext("2d"), {width:W,height:H}=c, d=x.getImageData(0,0,W,H), p=d.data; let x0=W,y0=H,x1=-1,y1=-1;
-  for(let y=0;y<H;y++) for(let i=0;i<W;i++){ const k=(y*W+i)*4, l=(p[k]+p[k+1]+p[k+2])/3; if(l<200){ if(i<x0)x0=i; if(i>x1)x1=i; if(y<y0)y0=y; if(y>y1)y1=y; } }
+// separa el trazo del papel: estima el fondo por zonas (sirve para fotos con luz despareja o papel gris),
+// deja transparente todo lo que no es tinta, recorta al trazo y oscurece la tinta
+function recortarFirma(src){
+  const k0=Math.min(1,1600/Math.max(src.width,src.height)), W=Math.max(1,Math.round(src.width*k0)), H=Math.max(1,Math.round(src.height*k0));
+  const c=document.createElement("canvas"); c.width=W; c.height=H; const x=c.getContext("2d"); x.drawImage(src,0,0,W,H);
+  const d=x.getImageData(0,0,W,H), p=d.data, L=new Float32Array(W*H);
+  for(let i=0;i<W*H;i++) L[i]=0.299*p[i*4]+0.587*p[i*4+1]+0.114*p[i*4+2];
+  // fondo por zonas: percentil 90 de la luminosidad de cada zona, interpolado entre zonas
+  const T=Math.max(16,Math.round(Math.min(W,H)/12)), gx=Math.ceil(W/T), gy=Math.ceil(H/T), G=new Float32Array(gx*gy), hist=new Uint32Array(256);
+  for(let ty=0;ty<gy;ty++) for(let tx=0;tx<gx;tx++){ hist.fill(0); let n=0;
+    for(let y=ty*T;y<Math.min(H,(ty+1)*T);y++) for(let i=tx*T;i<Math.min(W,(tx+1)*T);i++){ hist[L[y*W+i]|0]++; n++; }
+    let acc=0,v=255; for(let j=0;j<256;j++){ acc+=hist[j]; if(acc>=n*0.9){ v=j; break; } } G[ty*gx+tx]=v; }
+  const bgAt=(i,y)=>{ const fx=Math.min(gx-1,Math.max(0,i/T-0.5)), fy=Math.min(gy-1,Math.max(0,y/T-0.5)), x0=fx|0, y0=fy|0, x1=Math.min(gx-1,x0+1), y1=Math.min(gy-1,y0+1), ax=fx-x0, ay=fy-y0;
+    return (G[y0*gx+x0]*(1-ax)+G[y0*gx+x1]*ax)*(1-ay)+(G[y1*gx+x0]*(1-ax)+G[y1*gx+x1]*ax)*ay; };
+  const A=new Uint8ClampedArray(W*H); let x0=W,y0=H,x1=-1,y1=-1;
+  for(let y=0;y<H;y++) for(let i=0;i<W;i++){ const j=y*W+i, bg=bgAt(i,y), thr=Math.max(28,bg*0.22), dd=bg-L[j];
+    const a=Math.max(0,Math.min(1,(dd-thr*0.6)/(thr*0.9))); A[j]=Math.round(a*255);
+    if(dd>thr){ if(i<x0)x0=i; if(i>x1)x1=i; if(y<y0)y0=y; if(y>y1)y1=y; } }
   if(x1<0) throw new Error("No se encontró trazo de firma en el archivo");
+  for(let j=0;j<W*H;j++){ p[j*4+3]=A[j]; p[j*4]=p[j*4]*0.55; p[j*4+1]=p[j*4+1]*0.55; p[j*4+2]=p[j*4+2]*0.55; }
+  x.putImageData(d,0,0);
   const m=Math.round(Math.max(x1-x0,y1-y0)*0.03); x0=Math.max(0,x0-m); y0=Math.max(0,y0-m); x1=Math.min(W-1,x1+m); y1=Math.min(H-1,y1+m);
-  const w=x1-x0+1, h=y1-y0+1, esc=Math.min(1,700/w), o=document.createElement("canvas"); o.width=Math.round(w*esc); o.height=Math.round(h*esc);
-  const ox=o.getContext("2d"); ox.drawImage(c,x0,y0,w,h,0,0,o.width,o.height); const od=ox.getImageData(0,0,o.width,o.height), q=od.data;
-  for(let k=0;k<q.length;k+=4){ const l=(q[k]+q[k+1]+q[k+2])/3; q[k+3]=l>=235?0:l>170?Math.round(255*(235-l)/65):255; }
-  ox.putImageData(od,0,0); return {png:o.toDataURL("image/png"),w:o.width,h:o.height}; }
+  const w=x1-x0+1, h=y1-y0+1, e=Math.min(1,700/w), o=document.createElement("canvas"); o.width=Math.round(w*e); o.height=Math.round(h*e);
+  o.getContext("2d").drawImage(c,x0,y0,w,h,0,0,o.width,o.height); return {png:o.toDataURL("image/png"),w:o.width,h:o.height}; }
 async function cargarFirma(f){ if(!f) return; $("fmHint").textContent="Procesando firma…";
-  try{ const F=recortarFirma(await canvasDeArchivo(f)); FIRMA_IMG=F; LS.set("cot_firma",F); S.firmar=true; save();
+  try{ const F=recortarFirma(await canvasDeArchivo(f)); FIRMA_IMG=F; LS.set("cot_firma",F); S.firmar=true; save(); renderFirma(); renderDoc();
     if(PW.logged&&!DEMO){ await PW.put("cotizador_config","firma",F); if(PW.data.config) PW.data.config.firma=F; $("fmHint").textContent="Firma guardada en su cuenta de POWER."; }
     else $("fmHint").textContent="Firma guardada en este computador. Conecte POWER para tenerla en todos sus equipos.";
     renderFirma(); renderDoc(); }
   catch(e){ $("fmHint").textContent="No se pudo cargar la firma: "+e.message; } }
 $("fmLoad").addEventListener("click",()=>$("fmFile").click());
 $("fmFile").addEventListener("change",e=>{ cargarFirma(e.target.files[0]); e.target.value=""; });
-$("fmChk").addEventListener("change",e=>{ S.firmar=e.target.checked; save(); renderDoc(); });
+$("fmChk").addEventListener("change",e=>{ S.firmar=e.target.checked; save(); renderFirma(); renderDoc(); });
+// botón «Firmar» de la barra: sin firma cargada pide el archivo; con firma, la pone o la quita
+$("btnFirmar").addEventListener("click",()=>{ if(!(FIRMA_IMG&&FIRMA_IMG.png)){ toast("Elija el archivo de su firma (PDF o imagen)"); return $("fmFile").click(); }
+  S.firmar=!firmaOn(); save(); renderFirma(); renderDoc(); });
 $("fmDel").addEventListener("click",async()=>{ if(!confirm("¿Quitar la firma guardada?")) return; FIRMA_IMG=null; LS.set("cot_firma",null); S.firmar=false; save();
   if(PW.logged&&!DEMO){ try{ await PW.del("cotizador_config","firma"); if(PW.data.config) delete PW.data.config.firma; }catch(e){ toast("No se pudo quitar de POWER: "+e.message); } }
   renderFirma(); renderDoc(); });
