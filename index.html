@@ -219,6 +219,8 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
   <fieldset>
     <legend>Datos de la cotización <span class="src">POWER</span></legend>
     <div class="hint" data-only="marco" id="cmHint" style="font-weight:600"></div>
+    <label for="filCli" data-only="rapida formal flexible">Cliente
+      <select id="filCli" aria-label="Mostrar solo los proyectos de un cliente"><option value="">Todos los clientes</option></select></label>
     <label for="buscaProy">Proyecto en POWER (código, mandante o nombre)
       <input id="buscaProy" type="search" placeholder="Escriba para filtrar…"></label>
     <select id="selProy" size="9" aria-label="Proyectos de POWER"></select>
@@ -512,7 +514,11 @@ function fillFields(){FIELDS.forEach(k=>{$(k).value=S[k]??""}); renderListaProy(
 function renderListaProy(){
   const q=$("buscaProy").value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   const norm=t=>t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-  const L=proyectosLista().filter(p=>!q||norm(proyLabel(p)).includes(q)).slice(0,300);
+  // filtro por cliente (mandante), pedido del usuario 2026-11-12; en contrato marco ya viene filtrado por CMPC/AASA
+  const T0=proyectosLista(), fc=$("filCli"), cs=[...new Set(T0.map(p=>String(p.mandante||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"es"));
+  let cli=LS.get("cot_filcli")||""; if(S.tipo==="marco"||!cs.includes(cli)) cli="";
+  fc.innerHTML=`<option value="">Todos los clientes (${cs.length})</option>`+cs.map(c=>`<option${c===cli?" selected":""}>${esc(c)}</option>`).join("");
+  const L=T0.filter(p=>(!cli||String(p.mandante||"").trim()===cli)&&(!q||norm(proyLabel(p)).includes(q))).slice(0,300);
   $("selProy").innerHTML=L.length?L.map(p=>`<option value="${esc(p.id)}" title="${esc(proyLabel(p))}"${p.id===S.proyId?" selected":""}>${esc(proyLabel(p))}</option>`).join(""):`<option disabled>Sin resultados</option>`;
 }
 function renderTipo(){
@@ -1246,6 +1252,7 @@ $("tItems").addEventListener("keydown",e=>{
   if(i===S.items.length-1){ S.items.push({n:"",hi:"",hp:""}); renderItems(); save(); }
   $(`it-n-${i+1}`).focus();
 });
+$("filCli").addEventListener("change",e=>{ LS.set("cot_filcli",e.target.value); renderListaProy(); });
 $("selProy").addEventListener("change",e=>{ const p=proyectosLista().find(p=>p.id===e.target.value); if(p) aplicarProyecto(p); });
 $("lgPass").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();login();}});
 async function login(){ $("lgMsg").textContent="Entrando…";
