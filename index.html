@@ -204,10 +204,10 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
       <label for="estado">Estado<select id="estado"><option>Borrador</option><option>Emitida</option><option>Aceptada</option><option>Rechazada</option></select></label>
       <label for="rev">Revisión<select id="rev"><option value="">—</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option></select></label>
     </div>
-    <div class="row"><button type="button" class="btn pri" id="guardar">Guardar en POWER</button><button type="button" class="btn" id="duplicar">Duplicar como nueva</button><button type="button" class="btn" id="refrescar" title="Vuelve a leer POWER y recarga mandante, proyecto, contacto, código, documento y UF del proyecto elegido">Recargar POWER</button><span class="hint" id="guardMsg"></span></div>
+    <div class="row"><button type="button" class="btn" id="duplicar">Duplicar como nueva</button><button type="button" class="btn" id="refrescar" title="Vuelve a leer POWER y recarga mandante, proyecto, contacto, código, documento y UF del proyecto elegido">Recargar POWER</button><span class="hint" id="guardMsg"></span></div>
     <label for="buscaCot">Abrir una cotización guardada<input id="buscaCot" type="search" placeholder="Filtrar por N°, mandante, proyecto o estado…"></label>
     <select id="selCot" size="6" aria-label="Cotizaciones guardadas"></select>
-    <div class="row"><button type="button" class="btn" id="abrirCot">Abrir</button><button type="button" class="btn x" id="borrarCot" style="color:var(--warn)">Eliminar</button><button type="button" class="btn" id="verRegistro" title="PDF archivados automáticamente cada vez que se guarda en POWER">Registro PDF</button></div>
+    <div class="row"><button type="button" class="btn" id="abrirCot">Abrir</button><button type="button" class="btn x" id="borrarCot" style="color:var(--warn)">Eliminar</button><button type="button" class="btn" id="verRegistro" title="PDF archivados al Guardar PDF, Guardar Word o Enviar por correo, y los de Archivo ING">Registro PDF</button></div>
     <div id="boxRegistro" hidden>
       <label for="buscaReg">Registro de PDF emitidos (uno por cada guardado)<input id="buscaReg" type="search" placeholder="Filtrar por N°, mandante, proyecto…"></label>
       <label class="chk"><input type="checkbox" id="regSolo"> Solo la cotización abierta</label>
@@ -870,20 +870,13 @@ function renderGuardadas(){
   const q=norm($("buscaCot").value.trim()), L=(PW.data.cotizaciones||[]).slice().sort((a,b)=>String(b.guardado||"").localeCompare(String(a.guardado||"")));
   const F=L.filter(c=>!q||norm(cotLabel(c)).includes(q)), A=archivadas().filter(r=>!q||norm(archLabel(r)).includes(q));
   $("selCot").innerHTML=F.length||A.length?F.map(c=>`<option value="${esc(c.id)}"${c.id===S.id?" selected":""}>${esc(cotLabel(c))}</option>`).join("")+A.map(r=>`<option value="arch:${esc(r.id)}">${esc(archLabel(r))}</option>`).join(""):`<option disabled>${PW.logged?(L.length?"Sin resultados":"Aún no hay cotizaciones guardadas"):"Conecte POWER para ver sus cotizaciones"}</option>`;
-  $("guardar").disabled=$("duplicar").disabled=false;
+  $("duplicar").disabled=false;
   $("guardMsg").textContent=S.guardado?`Guardada ${new Date(S.guardado).toLocaleString("es-CL")}`:"Sin guardar en POWER";
   renderRegistro();
 }
-async function guardarCot(){
-  if(!PW.logged){ $("loginBox").hidden=false; $("lgMail").focus(); return toast("Conecte POWER para guardar"); }
-  $("guardar").disabled=true; $("guardMsg").textContent="Guardando…";
-  try{ const data={...S, netoUF:Math.round(totales().neto*100)/100, guardado:new Date().toISOString()}; delete data.id; await PW.put("cotizaciones",S.id,data); S.guardado=data.guardado; save(); toast("Cotización guardada en POWER"); renderGuardadas(); await archivarPdf(data.guardado); }
-  catch(e){ if(e.code==="auth"){ $("loginBox").hidden=false; } toast("No se pudo guardar: "+e.message); }
-  finally{ renderGuardadas(); }
-}
 /* ---------------- Guardado automático en POWER (pedido del usuario 2026-11-11) ----------------
    - Los datos de la cotización se guardan solos 4 s después del último cambio, si hay sesión POWER y la cotización tiene proyecto o N°.
-   - El PDF se archiva en el registro (y Archivo ING) solo al emitir: Guardar PDF, Guardar Word o Enviar por correo, o con el botón Guardar en POWER. */
+   - El PDF se archiva en el registro (y Archivo ING) solo al emitir: Guardar PDF, Guardar Word o Enviar por correo. */
 let autoT=null, autoBusy=false;
 const cotSinMeta=o=>{ const {id,guardado,netoUF,...r}=o||{}; return JSON.stringify(r); };
 function autoGuardar(){ if(DEMO||!PW.logged||!S.id) return; if(!(S.proyId||String(S.numero||"").trim())) return;
@@ -1182,11 +1175,10 @@ $("ed").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)re
   else if(b.id==="ufHoy"){traerUF();return;}
   else if(b.id==="refrescar"){refrescarPower();return;}
   else if(b.id==="nueva"){nuevaCot(b);return;}
-  else if(b.id==="guardar"){guardarCot();return;}
   else if(b.id==="verRegistro"){verRegistro();return;}
   else if(b.id==="regAbrir"){pdfRegistro("ver");return;}
   else if(b.id==="regGuardar"){pdfRegistro("guardar");return;}
-  else if(b.id==="duplicar"){S={...JSON.parse(JSON.stringify(S)),id:uid(),estado:"Borrador",guardado:""};all();save();toast("Copia creada; guárdela para registrarla");return;}
+  else if(b.id==="duplicar"){S={...JSON.parse(JSON.stringify(S)),id:uid(),estado:"Borrador",guardado:""};all();save();toast("Copia creada; se guarda sola en POWER");return;}
   else if(b.id==="abrirCot"&&$("selCot").value.startsWith("arch:")){abrirArchivada($("selCot").value.slice(5));return;}
   else if(b.id==="abrirCot"){const c=(PW.data.cotizaciones||[]).find(c=>c.id===$("selCot").value); if(!c) return toast("Elija una cotización de la lista");
     const cat=S.cat; S=Object.assign(nueva(c.tipo),JSON.parse(JSON.stringify(c))); S.cat=cat; (c.items||[]).forEach(it=>agregarAlCatalogo(it.n)); all(); save(); toast("Cotización abierta"); return;}
