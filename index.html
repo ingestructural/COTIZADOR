@@ -382,7 +382,7 @@ const LS = { get:k=>{try{return JSON.parse(localStorage.getItem(k)||"null")}catc
 const KEY="cot_ing_borrador_v2";
 let S = LS.get(KEY); if(!S||!S.items) S = ejemplo();
 if(catalogoLocal()) aplicarCatalogo(catalogoLocal()); S.documento = S.documento||"F"; S.conCLP = S.conCLP||"no"; S.plazoU = S.plazoU||"días"; S.validezU = S.validezU||"días"; if(!S._v30){ if(S.validez===""||S.validez==null) S.validez=30; S._v30=true; } S.id = S.id||uid(); S.estado = S.estado||"Borrador"; S.rev = S.rev??""; S.ex2 = S.ex2||[]; S.ex5 = S.ex5||[]; S.pagos = S.pagos||[];
-const save=()=>LS.set(KEY,S);
+const save=()=>{ LS.set(KEY,S); autoGuardar(); };   // copia local siempre; en POWER, guardado automático unos segundos después
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const num=v=>{const x=parseFloat(String(v??"").replace(",","."));return isFinite(x)?x:0};
@@ -834,7 +834,7 @@ function paginar(H,bloques){
   nueva(); m.remove();
   return hojas.map(bs=>hoja(H,bs.map(h=>`<div class="blk">${h}</div>`).join(""))).join("");
 }
-function renderDoc(){ const M=modelo(); if($("guardMsg")&&S.guardado) $("guardMsg").textContent=`Guardada ${new Date(S.guardado).toLocaleString("es-CL")} · cambios sin guardar`;
+function renderDoc(){ const M=modelo(); if($("guardMsg")&&S.guardado) $("guardMsg").textContent=`Guardada ${new Date(S.guardado).toLocaleString("es-CL")}${PW.logged&&(S.proyId||S.numero)?" · guardando cambios…":" · cambios sin guardar"}`;
   $("doc").className = S.tipo==="marco"?"marco":"";
   $("doc").innerHTML = S.tipo==="marco" ? paginar(HDR_MARCO(),bloquesMarco(M)) : S.tipo==="rapida" ? paginar(HDR_RAPIDA(),bloquesRapida(M)) : hoja(HDR_FORMAL(),portadaFormal())+paginar(HDR_FORMAL(),bloquesFormal(M)); }
 const cotLabel=c=>[c.numero||"(sin N°)", c.rev?"Rev. "+c.rev:"", c.mandante, c.proyecto, {rapida:"Express",formal:"Formal",flexible:"Flexible",marco:"Contrato marco"}[c.tipo]||"", c.estado, fdate(c.fecha)].filter(Boolean).join(" · ");
@@ -855,13 +855,30 @@ async function guardarCot(){
   catch(e){ if(e.code==="auth"){ $("loginBox").hidden=false; } toast("No se pudo guardar: "+e.message); }
   finally{ renderGuardadas(); }
 }
+/* ---------------- Guardado automático en POWER (pedido del usuario 2026-11-11) ----------------
+   - Los datos de la cotización se guardan solos 4 s después del último cambio, si hay sesión POWER y la cotización tiene proyecto o N°.
+   - El PDF se archiva en el registro (y Archivo ING) solo al emitir: Guardar PDF, Guardar Word o Enviar por correo, o con el botón Guardar en POWER. */
+let autoT=null, autoBusy=false;
+const cotSinMeta=o=>{ const {id,guardado,netoUF,...r}=o||{}; return JSON.stringify(r); };
+function autoGuardar(){ if(DEMO||!PW.logged||!S.id) return; if(!(S.proyId||String(S.numero||"").trim())) return;
+  clearTimeout(autoT); autoT=setTimeout(()=>guardarAuto(false),4000); }
+async function guardarAuto(forzar){
+  if(DEMO||!PW.logged||autoBusy) return false; clearTimeout(autoT);
+  const prev=(PW.data.cotizaciones||[]).find(c=>c.id===S.id); if(!forzar&&prev&&cotSinMeta(prev)===cotSinMeta(S)){ if(S.guardado) $("guardMsg").textContent=`Guardada ${new Date(S.guardado).toLocaleString("es-CL")}`; return true; }
+  autoBusy=true;
+  try{ const data={...S, netoUF:Math.round(totales().neto*100)/100, guardado:new Date().toISOString()}; delete data.id; await PW.put("cotizaciones",S.id,data); S.guardado=data.guardado; LS.set(KEY,S); renderGuardadas();
+    $("guardMsg").textContent=`Guardada automáticamente en POWER · ${new Date(S.guardado).toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}`; return true; }
+  catch(e){ $("guardMsg").textContent="No se pudo guardar en POWER: "+e.message+" (se reintenta con el próximo cambio)"; if(e.code==="auth") $("loginBox").hidden=false; return false; }
+  finally{ autoBusy=false; } }
+// al emitir (PDF, Word o correo): guarda la cotización y archiva el PDF en el registro
+async function emitida(blob){ if(DEMO||!PW.logged) return; if(await guardarAuto(true)) await archivarPdf(S.guardado,blob); }
 /* ---------------- Registro de PDF (se archiva al guardar en POWER) ---------------- */
 let REG=null;
 const blobB64=b=>new Promise((ok,ko)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(",")[1]);r.onerror=()=>ko(r.error);r.readAsDataURL(b);});
 const b64Blob=t=>{const bin=atob(t),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:"application/pdf"});};
-async function archivarPdf(ts){
+async function archivarPdf(ts,blob0){
   $("guardMsg").textContent="Guardada; archivando PDF…";
-  try{ const [w]=await pdfWorker(); const blob=await w.outputPdf("blob"); const M=modelo();
+  try{ const blob=blob0||await (await pdfWorker())[0].outputPdf("blob"); const M=modelo();
     const meta={cot:S.id,numero:S.numero,rev:S.rev,estado:S.estado,tipo:S.tipo,mandante:S.mandante,proyecto:S.proyecto,fecha:S.fecha,guardado:ts,neto:M.t.neto,documento:S.documento,archivo:nombreArchivo("pdf"),kb:Math.round(blob.size/1024)};
     await PW.putPdf(ts.replace(/[^0-9]/g,"").slice(0,17)+"_"+S.id,{meta,b64:await blobB64(blob)});
     if(REG) REG.unshift({id:ts.replace(/[^0-9]/g,"").slice(0,17)+"_"+S.id,...meta}); renderRegistro(); toast("Cotización guardada y PDF archivado en el registro"); }
@@ -1068,7 +1085,7 @@ async function pedirArchivo(ext,desc,mime){
 async function escribirArchivo(fh,blob){ const ws=await fh.createWritable(); await ws.write(blob); await ws.close(); toast("Guardado: "+fh.name); }
 async function exportarWord(){ if(DEMO) return toast("Descarga disponible en el sitio instalado");
   const fh=await pedirArchivo("docx","Documento Word","application/vnd.openxmlformats-officedocument.wordprocessingml.document"); if(fh===false) return;
-  $("expWord").disabled=true; try{ const blob=await crearDocx(); if(fh) await escribirArchivo(fh,blob); else descargar(blob,nombreArchivo("docx")); }catch(e){ toast("No se pudo generar el Word: "+e.message); } finally{ $("expWord").disabled=false; } }
+  $("expWord").disabled=true; try{ const blob=await crearDocx(); if(fh) await escribirArchivo(fh,blob); else descargar(blob,nombreArchivo("docx")); emitida(); }catch(e){ toast("No se pudo generar el Word: "+e.message); } finally{ $("expWord").disabled=false; } }
 async function pdfWorker(){
   const h2p=await loadScript("html2pdf.bundle.min.js","html2pdf");
   const el=$("doc").cloneNode(true); el.removeAttribute("id"); el.querySelectorAll(".brk").forEach(x=>x.classList.remove("brk")); el.querySelectorAll(".fhandle").forEach(x=>x.remove()); el.querySelectorAll(".fimg").forEach(x=>{x.style.outline="none";x.removeAttribute("title");}); el.querySelectorAll(".page").forEach(p=>{p.style.boxShadow="none";p.style.margin="0";});
@@ -1080,8 +1097,9 @@ async function exportarPdf(){ if(DEMO) return toast("Descarga disponible en el s
   const fh=await pedirArchivo("pdf","Documento PDF","application/pdf"); if(fh===false) return;
   $("expPdf").disabled=true; $("pdfDl").disabled=true; toast("Generando PDF…");
   try{ const [w]=await pdfWorker();
-    if(fh) await escribirArchivo(fh,await w.outputPdf("blob"));
-    else await w.save(); }
+    const blob=await w.outputPdf("blob");
+    if(fh) await escribirArchivo(fh,blob); else descargar(blob,nombreArchivo("pdf"));
+    emitida(blob); }
   catch(e){ toast("No se pudo generar el PDF: "+e.message); } finally{ $("expPdf").disabled=false; $("pdfDl").disabled=false; } }
 // Vista del PDF: se dibuja cada hoja con PDF.js (algunos Chrome no muestran PDF dentro de la página)
 async function verPdf(){ if(DEMO) return toast("Vista del PDF disponible en el sitio instalado");
@@ -1346,7 +1364,7 @@ async function mailEnviar(modo){
     else await navigator.share({files:[new File([blob],nombre,{type:"application/pdf"})],title:$("mailSubj").value,text:$("mailBody").value});
     const k=mailKey(); if(k&&(to.length||cc.length)){ const st=mailStore(), r=st[k]||{all:[]}; const all=[...(r.all||[])]; [...to,...cc].forEach(x=>{ if(!all.some(y=>y.toLowerCase()===x.toLowerCase())) all.push(x); });
       st[k]={all,to:to.join("; "),cc:cc.join("; ")}; await mailGuardar(st); }
-    $("mailBox").hidden=true; }
+    $("mailBox").hidden=true; emitida(blob); }
   catch(e){ if(e.name!=="AbortError") toast("No se pudo preparar el correo: "+e.message); }
   finally{ btn.disabled=false; } }
 $("btnMail").addEventListener("click",abrirMail);
