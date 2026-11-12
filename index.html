@@ -61,7 +61,7 @@ label.chk input{width:18px;height:18px;flex:0 0 auto;margin:0}
 input,select,textarea{font:inherit;font-size:.92rem;color:var(--fg);background:var(--input);border:1px solid var(--line);border-radius:4px;padding:6px 8px;width:100%;box-sizing:border-box;min-width:0}
 textarea{min-height:64px;resize:vertical}
 select[size]{background:var(--panel);padding:2px}
-select[size] option{padding:4px 6px}
+select[size] option{padding:2px 6px}
 input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .hint{font-size:.78rem;color:var(--muted)}
 .hint.w{color:var(--warn)}
@@ -86,6 +86,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 .ed legend{font-size:1.45rem}
 .ed label{font-size:1rem}
 .ed input,.ed select,.ed textarea{font-size:1.15rem}
+.ed select[size]{font-size:.8rem;line-height:1.3}   /* listas de proyectos, cotizaciones y registro: letra chica para ver la descripción completa */
 .ed .hint{font-size:.95rem}
 .ed .it{font-size:1.1rem}
 .ed .it th{font-size:.85rem}
@@ -205,7 +206,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
     </div>
     <div class="row"><button type="button" class="btn pri" id="guardar">Guardar en POWER</button><button type="button" class="btn" id="duplicar">Duplicar como nueva</button><button type="button" class="btn" id="refrescar" title="Vuelve a leer POWER y recarga mandante, proyecto, contacto, código, documento y UF del proyecto elegido">Recargar POWER</button><span class="hint" id="guardMsg"></span></div>
     <label for="buscaCot">Abrir una cotización guardada<input id="buscaCot" type="search" placeholder="Filtrar por N°, mandante, proyecto o estado…"></label>
-    <select id="selCot" size="5" aria-label="Cotizaciones guardadas"></select>
+    <select id="selCot" size="6" aria-label="Cotizaciones guardadas"></select>
     <div class="row"><button type="button" class="btn" id="abrirCot">Abrir</button><button type="button" class="btn x" id="borrarCot" style="color:var(--warn)">Eliminar</button><button type="button" class="btn" id="verRegistro" title="PDF archivados automáticamente cada vez que se guarda en POWER">Registro PDF</button></div>
     <div id="boxRegistro" hidden>
       <label for="buscaReg">Registro de PDF emitidos (uno por cada guardado)<input id="buscaReg" type="search" placeholder="Filtrar por N°, mandante, proyecto…"></label>
@@ -220,7 +221,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
     <div class="hint" data-only="marco" id="cmHint" style="font-weight:600"></div>
     <label for="buscaProy">Proyecto en POWER (código, mandante o nombre)
       <input id="buscaProy" type="search" placeholder="Escriba para filtrar…"></label>
-    <select id="selProy" size="7" aria-label="Proyectos de POWER"></select>
+    <select id="selProy" size="9" aria-label="Proyectos de POWER"></select>
     <div class="hint" id="proyHint"></div>
     <div class="grid2">
       <label class="full" for="mandante">Mandante<input id="mandante"></label>
@@ -512,7 +513,7 @@ function renderListaProy(){
   const q=$("buscaProy").value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   const norm=t=>t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   const L=proyectosLista().filter(p=>!q||norm(proyLabel(p)).includes(q)).slice(0,300);
-  $("selProy").innerHTML=L.length?L.map(p=>`<option value="${esc(p.id)}"${p.id===S.proyId?" selected":""}>${esc(proyLabel(p))}</option>`).join(""):`<option disabled>Sin resultados</option>`;
+  $("selProy").innerHTML=L.length?L.map(p=>`<option value="${esc(p.id)}" title="${esc(proyLabel(p))}"${p.id===S.proyId?" selected":""}>${esc(proyLabel(p))}</option>`).join(""):`<option disabled>Sin resultados</option>`;
 }
 function renderTipo(){
   document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.t===S.tipo)));
