@@ -600,7 +600,7 @@ const TAR={
  AASA:{nombre:"ARAUCO (AASA)", titulo:"COTIZACIÓN SERVICIOS DE INGENIERÍA", doc:"B", rutMand:"96.510.970-6", mandante:"MADERAS ARAUCO S.A.",
   cond:["Nuevo documento: levantamientos y diseños generados por EPS","Nuevo documento: ARAUCO S.A. entrega levantamiento y diseño en borrador (papel)","Modificación de documento: ARAUCO S.A. entrega documento a modificar en formato DWG","Digitalización de documento: ARAUCO S.A. entrega documento en papel"],
   pl:[["Plano Formato A0",[9,4.5,2.5,4.5]],["Plano Formato A1",[8.2,4.1,1.75,4.1]],["Plano Formato A2",[4,2,1.5,2]],["Plano Formato A3",[3,1.5,1,1.5]],["Plano Formato A4",[1.8,1,6,1]]],
-  dc:[["Memoria de Cálculo Simple",6],["Memoria de Cálculo Específica",8],["Plano 3D",12],["Especificaciones Técnicas para licitación de servicios",3],["Listado de Materiales",1.2],["Informe Topográfico",6],["Lista A para licitación",4]],
+  dc:[["Memoria de Cálculo Simple",6],["Memoria de Cálculo Específica",8],["Modelo 3D",12],["Especificaciones Técnicas para licitación de servicios",3],["Listado de Materiales",1.2],["Informe Topográfico",6],["Lista A para licitación",4]],
   sv:(()=>{const N=["Ingeniero Senior","Ingeniero de Especialidad","Ingeniero de Proyecto","Ingeniero Ayudante","Inspector Técnico de Obra, clase A","Inspector Técnico de Obra, clase B","Ingeniero Comisionamiento, clase A","Ingeniero Comisionamiento, clase B","Proyectista de Especialidad","Proyectista Ayudante","Dibujante de Especialidad","Dibujante Ayudante"],
      HH=[1.1,0.9,0.7,0.62,0.92,0.79,0.66,0.6,0.62,0.35,0.4,0.25], DH=[11.16,8.64,6.48,4.68,10.08,7.92,5.76,4.68,5.04,2.52,2.88,1.8], MH=[223.2,172.8,129.6,93.6,201.3,158.4,115.2,93.6,100.8,50.4,57.6,36];
      return [...N.map((n,i)=>[n,"hh",HH[i]]),...N.map((n,i)=>[n+" (día hombre)","dh",DH[i]]),...N.map((n,i)=>[n+" (mes hombre)","mh",MH[i]])];})(),
@@ -626,6 +626,7 @@ function cmPU(sec,ln){
 function cmUnid(sec,ln){ if(sec==="sv"){ const r=T().sv.find(x=>x[0]===ln.n); return r?r[1]:"hh"; } return "c/u"; }
 function cmOpciones(sec){ const t=T(); return sec==="og"?t.ogN:(t[sec]||[]).map(x=>x[0]); }
 function marcoCalc(){
+  if(S.cm&&S.cm.L&&S.cm.L.dc) S.cm.L.dc.forEach(ln=>{ if(ln.n==="Plano 3D") ln.n="Modelo 3D"; });   // nombre anterior (cotizaciones ya guardadas)
   const out={secs:{},neto:0};
   SECC.forEach(([k])=>{ const L=((S.cm&&S.cm.L[k])||[]).map(ln=>({...ln,u:cmUnid(k,ln),pu:cmPU(k,ln),c:num(ln.c)})).map(ln=>({...ln,tot:ln.pu*ln.c}));
     const sub=L.reduce((a,x)=>a+x.tot,0); out.secs[k]={L,sub,usadas:L.filter(x=>x.c&&String(x.n===OTRO?x.d:x.n||"").trim())}; out.neto+=sub; });
