@@ -1114,8 +1114,11 @@ function descargar(blob,nombre){const a=document.createElement("a");a.href=URL.c
 // id propio por tipo + startIn documentos (2026-11-18): el diálogo ya no parte en la carpeta recordada antigua (una carpeta de Dropbox que ya no existe).
 // Chrome/Edge 157 (actualización del 11-11-2026) cancelan sin aviso (AbortError) cuando se elige una carpeta de Dropbox: antes se volvía en silencio
 // y el archivo no quedaba guardado; ahora se avisa y se ofrece descargarlo.
+// 2026-11-18: probado en DELLMAN (Chrome 157): la descarga normal con «Preguntar dónde guardar cada archivo» abre el «Guardar como»
+// clásico de Windows y SÍ guarda en carpetas de Dropbox; showSaveFilePicker no. Por eso Guardar PDF/Word van por descarga.
+const GUARDAR_DESCARGA=true;
 async function pedirArchivo(ext,desc,mime,nombre){
-  if(!window.showSaveFilePicker) return null;
+  if(GUARDAR_DESCARGA||!window.showSaveFilePicker) return null;
   const op={suggestedName:nombre||nombreArchivo(ext),types:[{description:desc,accept:{[mime]:["."+ext]}}]};
   try{ return await showSaveFilePicker({...op,id:"cotGuardar_"+ext,startIn:"documents"}); }
   catch(e){ if(e.name==="AbortError") return false;
