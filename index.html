@@ -39,13 +39,61 @@ img{max-width:100%}
 .top .sub{color:var(--muted);font-size:.85rem}
 .top .sp{flex:1}
 .top .btn{align-self:center}
-#nuevaTop{font-size:inherit;padding:7px 14px;border-radius:6px}
+#irInicio{font-size:inherit;padding:7px 14px;border-radius:6px}
 .seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
 .seg button{font:inherit;font-weight:600;padding:7px 14px;border:0;background:var(--panel);color:var(--fg);cursor:pointer;border-right:1px solid var(--line)}
 .seg button:last-child{border-right:0}
 .seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
 .pill{font-family:var(--f-mono);font-size:.72rem;padding:3px 8px;border:1px solid currentColor;border-radius:99px}
 .pill.ok{color:var(--ok)} .pill.off{color:var(--warn)}
+/* Vistas: Inicio / Cotizaciones por cliente / Editor (reestructuración 2026-11-25) */
+body:not([data-view="editor"]) .main{display:none}
+body:not([data-view="editor"]) .v-ed{display:none!important}
+body[data-view="inicio"] .v-nohome{display:none!important}
+body:not([data-view="inicio"]) #vInicio{display:none}
+body:not([data-view="clientes"]) #vClientes{display:none}
+#hHome{cursor:pointer}
+.edtit{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.edtit select{width:auto;font:inherit;font-weight:700;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--fg)}
+.edtit b{font-family:var(--f-display);font-size:1.35rem}
+#guardMsg{font-size:.85rem;color:var(--ok);max-width:340px}
+.view{padding-block:22px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));font-size:17px}
+.view h2{font-family:var(--f-display);font-size:1.9rem;margin:0 0 12px;line-height:1.05}
+.view h3{font-family:var(--f-display);font-size:1.4rem;margin:0 0 8px}
+.vin{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:28px;align-items:start}
+.vin .login{grid-column:1/-1}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tile{font:inherit;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;color:var(--fg);cursor:pointer;display:flex;flex-direction:column;gap:6px}
+.tile:hover{border-color:var(--accent)}
+.tile b{font-family:var(--f-display);font-size:1.5rem;line-height:1}
+.tile span{font-size:.92rem;color:var(--muted)}
+.tile.cm{cursor:default;border-color:var(--accent)}
+.tile .row .btn{font-size:1rem;padding:6px 16px}
+.view input[type=search]{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--input);color:var(--fg)}
+.lst{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:6px;background:var(--panel);overflow:hidden;margin-top:8px}
+.li{font:inherit;font-size:.95rem;text-align:left;border:0;border-top:1px solid var(--line);background:transparent;color:var(--fg);padding:8px 10px;cursor:pointer;display:flex;justify-content:space-between;gap:10px}
+.li:first-child{border-top:0}
+.li:hover{background:var(--accent-soft)}
+.li.on{background:var(--accent-soft);font-weight:700;box-shadow:inset 3px 0 0 var(--accent)}
+.li em{font-style:normal;color:var(--muted);white-space:nowrap;font-weight:400}
+.li .t{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.lst .vacio{padding:10px;color:var(--muted);font-size:.92rem}
+#irClientes{margin-top:12px;font-size:1.05rem;padding:9px 16px}
+#seguirBox{margin-bottom:12px}
+.cli3{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr) minmax(0,1.3fr);gap:18px;align-items:start}
+.cli3 .lst{max-height:68vh;overflow-y:auto}
+.ficha{background:var(--panel);border:1px solid var(--accent);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.ficha dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;margin:0;font-size:.95rem}
+.ficha dt{color:var(--muted)}
+.ficha dd{margin:0}
+.ficha select{font:inherit;padding:3px 6px;border:1px solid var(--line);border-radius:4px;background:var(--input);color:var(--fg)}
+.ficha .acc{display:flex;gap:8px;flex-wrap:wrap}
+.ficha .acc .btn{font-size:1rem;padding:7px 14px}
+.ficha .pdfs{font-size:.9rem}
+.ficha .pdfs div{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:4px 0;border-top:1px solid var(--line)}
+.ficha .revq{background:var(--accent-soft);border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.ficha details summary{cursor:pointer;color:var(--muted);font-size:.9rem}
+@media (max-width:900px){.vin,.cli3{grid-template-columns:minmax(0,1fr)}.tiles{grid-template-columns:minmax(0,1fr)}}
 #pwState{cursor:pointer}
 .main{display:grid;grid-template-columns:minmax(0,clamp(460px,40vw,700px)) minmax(0,1fr);gap:20px;padding-block:18px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));align-items:start}
 @media (max-width:1100px){.main{grid-template-columns:minmax(0,1fr)}}
@@ -143,8 +191,6 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 .page tr.sum td{background:var(--doc-blue2);font-weight:700;padding:6px}
 .marco .pc{font-size:10pt}.marco .pc .band{margin-top:6px;padding:2px 8px}.marco .pc ul{margin:4px 0}.marco .pc p{margin:4px 8px}.marco .pc td,.marco .pc th{padding:1px 6px}.page table.cmt{font-size:9.5pt}.page table.cmt td,.page table.cmt th{padding:1px 5px}
 .cmsec{font-weight:800;font-size:1.12rem;color:var(--accent);margin:18px 0 6px;padding-bottom:3px;border-bottom:2px solid var(--accent);letter-spacing:.03em}
-#selCot,#selReg{color:var(--muted);opacity:.75}
-#selCot option:checked,#selReg option:checked{color:var(--fg)}
 .page tr.sec td{background:var(--doc-band);color:var(--doc-navy)}
 .page .leg{background:var(--doc-band);font-size:9pt;color:#333;text-align:center;padding:4px;margin-top:6px}
 .page h2{font-size:14pt;margin:16px 0 6px;font-weight:700;color:var(--doc-navy)}
@@ -173,52 +219,58 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 .page .mini{width:100%}
 </style>
 </head>
-<body>
+<body data-view="inicio">
 
 <div class="top">
-  <div><h1><img src="cot-192.png?v=2" alt="" width="40" height="40">Cotizador ING Estructural</h1><div class="sub" id="tdesc"></div></div>
-  <div class="seg" role="group" aria-label="Tipo de cotización">
-    <button type="button" data-t="rapida">Express</button>
-    <button type="button" data-t="formal">Formal</button>
-    <button type="button" data-t="flexible">Flexible</button>
-    <button type="button" data-t="marco">Contrato marco</button>
-  </div>
-  <div class="seg" id="cmSeg" data-only="marco" role="group" aria-label="Contrato marco"><button type="button" data-cmcli="CMPC">CMPC</button><button type="button" data-cmcli="AASA">Arauco</button></div>
-  <button type="button" class="btn pri" id="nuevaTop">+ Nueva cotización</button>
+  <div><h1 id="hHome" role="button" tabindex="0" title="Ir a Inicio"><img src="cot-192.png?v=2" alt="" width="40" height="40">Cotizador ING Estructural</h1><div class="sub v-ed" id="tdesc"></div></div>
+  <button type="button" class="btn v-nohome" id="irInicio">← Inicio</button>
+  <div class="edtit v-ed"><select id="tipoSel" aria-label="Tipo de cotización" title="Cambiar el tipo de esta cotización"><option value="rapida">Express</option><option value="formal">Formal</option><option value="flexible">Flexible</option><option value="marco">Contrato marco</option></select><b id="edNum"></b></div>
+  <div class="seg v-ed" id="cmSeg" data-only="marco" role="group" aria-label="Contrato marco"><button type="button" data-cmcli="CMPC">CMPC</button><button type="button" data-cmcli="AASA">Arauco</button></div>
+  <span class="v-ed" id="guardMsg"></span>
   <span class="sp"></span>
   <span class="pill off" id="pwState" role="button" tabindex="0" title="Conectar POWER">POWER: sin conectar</span>
-  <button type="button" class="btn" id="btnPower">Conectar POWER</button>
 </div>
 
-<div class="main">
-<form class="ed" id="ed" autocomplete="off">
+<div class="view" id="vInicio">
+ <div class="vin">
   <fieldset class="login" id="loginBox" hidden>
     <legend>Iniciar sesión en POWER</legend>
     <label for="lgMail">Correo<input id="lgMail" type="email" autocomplete="username"></label>
     <label for="lgPass">Contraseña<input id="lgPass" type="password" autocomplete="current-password"></label>
     <div class="row"><button type="button" class="btn pri" id="lgGo">Entrar</button><button type="button" class="btn x" id="lgCancel">Cancelar</button></div>
     <div class="msg" id="lgMsg"></div>
-    <div class="hint">Use la misma cuenta de POWER. El cotizador solo lee clientes y proyectos; no modifica POWER.</div>
+    <div class="hint">Use la misma cuenta de POWER. Ahí quedan guardadas sus cotizaciones y los PDF emitidos.</div>
   </fieldset>
-
-  <fieldset id="boxGuardadas">
-    <legend>Cotizaciones guardadas <span class="src">POWER</span></legend>
-    <div class="grid2">
-      <label for="estado">Estado<select id="estado"><option>Borrador</option><option>Emitida</option><option>Aceptada</option><option>Rechazada</option></select></label>
-      <label for="rev">Revisión<select id="rev"><option value="">—</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option></select></label>
+  <section>
+    <h2>Nueva cotización</h2>
+    <div class="tiles">
+      <button type="button" class="tile" data-nt="rapida"><b>Express</b><span>Formato propio con cuadro de ítems HH</span></button>
+      <button type="button" class="tile" data-nt="formal"><b>Formal</b><span>Portada, alcances, exclusiones, montos y condiciones</span></button>
+      <button type="button" class="tile" data-nt="flexible"><b>Flexible</b><span>Estructura de la formal con texto libre</span></button>
+      <div class="tile cm"><b>Contrato marco</b><span>Formato de licitación con tarifas del contrato</span>
+        <div class="row"><button type="button" class="btn pri" data-nt="marco" data-cli="CMPC">CMPC</button><button type="button" class="btn pri" data-nt="marco" data-cli="AASA">Arauco</button></div></div>
     </div>
-    <div class="row"><button type="button" class="btn" id="duplicar">Duplicar como nueva</button><button type="button" class="btn" id="refrescar" title="Vuelve a leer POWER y recarga mandante, proyecto, contacto, código, documento y UF del proyecto elegido">Recargar POWER</button><span class="hint" id="guardMsg"></span></div>
-    <label for="buscaCot">Abrir una cotización guardada<input id="buscaCot" type="search" placeholder="Filtrar por N°, mandante, proyecto o estado…"></label>
-    <select id="selCot" size="6" aria-label="Cotizaciones guardadas"></select>
-    <div class="row"><button type="button" class="btn" id="abrirCot">Abrir</button><button type="button" class="btn x" id="borrarCot" style="color:var(--warn)">Eliminar</button><button type="button" class="btn" id="verRegistro" title="PDF archivados al Guardar PDF, Guardar Word o Enviar por correo, y los de Archivo ING">Registro PDF</button></div>
-    <div id="boxRegistro" hidden>
-      <label for="buscaReg">Registro de PDF emitidos (uno por cada guardado)<input id="buscaReg" type="search" placeholder="Filtrar por N°, mandante, proyecto…"></label>
-      <label class="chk"><input type="checkbox" id="regSolo"> Solo la cotización abierta</label>
-      <select id="selReg" size="6" aria-label="Registro de PDF"></select>
-      <div class="row"><button type="button" class="btn" id="regAbrir">Ver PDF</button><button type="button" class="btn" id="regGuardar">Guardar PDF…</button></div>
-    </div>
-  </fieldset>
+  </section>
+  <section>
+    <h2>Trabajar una existente</h2>
+    <div id="seguirBox" hidden><button type="button" class="btn" id="seguir"></button></div>
+    <input id="buscaIni" type="search" placeholder="Buscar por N°, cliente o proyecto…" aria-label="Buscar cotización">
+    <div class="lst" id="iniLista"></div>
+    <button type="button" class="btn pri" id="irClientes">Ver cotizaciones por cliente</button>
+  </section>
+ </div>
+</div>
 
+<div class="view" id="vClientes">
+ <div class="cli3">
+  <div><h3>Clientes</h3><input id="buscaCli" type="search" placeholder="Filtrar clientes…" aria-label="Filtrar clientes"><div class="lst" id="lstCli"></div></div>
+  <div><h3 id="titCots">Cotizaciones</h3><div class="lst" id="lstCot"></div></div>
+  <div id="ficha"></div>
+ </div>
+</div>
+
+<div class="main">
+<form class="ed" id="ed" autocomplete="off">
   <fieldset>
     <legend>Datos de la cotización <span class="src">POWER</span></legend>
     <div class="hint" data-only="marco" id="cmHint" style="font-weight:600"></div>
@@ -227,7 +279,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
     <label for="buscaProy">Proyecto en POWER (código, mandante o nombre)
       <input id="buscaProy" type="search" placeholder="Escriba para filtrar…"></label>
     <select id="selProy" size="9" aria-label="Proyectos de POWER"></select>
-    <div class="hint" id="proyHint"></div>
+    <div class="row"><span class="hint" id="proyHint" style="flex:1"></span><button type="button" class="btn x" id="refrescar" style="color:var(--accent)" title="Vuelve a leer POWER y recarga mandante, proyecto, contacto, código, documento y UF del proyecto elegido">⟳ Recargar POWER</button></div>
     <div class="grid2">
       <label class="full" for="mandante">Mandante<input id="mandante"></label>
       <label class="full" for="proyecto">Proyecto<input id="proyecto"></label>
@@ -236,6 +288,8 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
       <label for="numero">N° de cotización (código POWER)<input id="numero"></label>
       <div class="row" style="gap:6px;align-items:flex-end"><label for="plazo" style="flex:1">Plazo de ejecución<input id="plazo" type="number" min="0" step="1"></label>
         <label for="plazoU" style="width:110px">Unidad<select id="plazoU"><option>días</option><option>semanas</option></select></label></div>
+      <label for="estado">Estado<select id="estado"><option>Borrador</option><option>Emitida</option><option>Aceptada</option><option>Rechazada</option></select></label>
+      <label for="rev">Revisión<select id="rev"><option value="">—</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option></select></label>
     </div>
     <div class="row" id="fechaIngRow" hidden><button type="button" class="btn x" id="usarIngreso" style="color:var(--accent)"></button></div>
   </fieldset>
@@ -316,12 +370,11 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
     <div class="hint" id="fmHint">La firma se guarda en su cuenta de POWER (no en el código del sitio) y aparece sobre el nombre en la vista, el PDF y el Word.</div>
   </fieldset>
 
-  <div class="row"><button type="button" class="btn" id="nueva">Nueva cotización</button></div>
 </form>
 
 <div class="pv">
-  <div class="pvbar"><span>Vista de la cotización · tamaño carta · pase el mouse sobre un bloque para ajustar la hoja</span>
-    <span class="row"><button type="button" class="btn pri" id="expWord">Guardar Word</button><button type="button" class="btn x" id="layReset" title="Vuelve a la distribución automática de hojas">Restablecer diseño</button><button type="button" class="btn" id="verPdf">Ver PDF</button><button type="button" class="btn" id="expPdf">Guardar PDF</button><button type="button" class="btn pri" id="btnMail">Enviar por correo</button><button type="button" class="btn" id="btnFirmar" aria-pressed="false" title="Pone o quita su firma sobre el nombre · Alt+clic: cambiar el archivo de la firma">Firmar</button></span></div>
+  <div class="pvbar"><span>Vista de la cotización · tamaño carta · pase el mouse sobre un bloque para ajustar la hoja <button type="button" class="btn x" id="layReset" hidden title="Vuelve a la distribución automática de hojas">Restablecer diseño</button></span>
+    <span class="row"><button type="button" class="btn" id="verPdf">Ver PDF</button><button type="button" class="btn pri" id="expPdf" title="Guarda el PDF en la carpeta que elija y archiva una copia en los PDF emitidos de ING">Guardar PDF</button><button type="button" class="btn" id="btnFirmar" aria-pressed="false" title="Pone o quita su firma sobre el nombre · Alt+clic: cambiar el archivo de la firma">Firmar</button><button type="button" class="btn pri" id="btnMail" hidden>Enviar por correo</button></span></div>
   <div class="paperwrap" style="position:relative"><div id="doc"></div>
     <div class="laybar" id="laybar"><button type="button" data-lay="brk" title="Este bloque y lo que sigue pasan a la hoja siguiente">⤓ A hoja siguiente</button><button type="button" data-lay="mas" title="Más espacio antes del bloque">＋ espacio</button><button type="button" data-lay="menos" title="Menos espacio antes del bloque">− espacio</button></div></div>
 </div>
@@ -455,10 +508,9 @@ function proyectosLista(){
 const proyLabel=p=>[p.codigo,p.mandante,p.proyecto].filter(Boolean).join(" · ");
 function renderPwState(){
   const n=(PW.data.proyectos||[]).length, el=$("pwState");
-  if(PW.logged&&n){el.textContent=`POWER: ${n} proyectos`;el.className="pill ok";$("btnPower").textContent="Actualizar";}
-  else if(PW.logged){el.textContent="POWER: conectado";el.className="pill ok";$("btnPower").textContent="Actualizar";}
-  else {el.textContent=DEMO?"POWER: vista previa con ejemplos":"POWER: sin conectar";el.className="pill off";$("btnPower").textContent="Conectar POWER";}
-  $("btnPower").hidden=DEMO;
+  if(PW.logged&&n){el.textContent=`POWER: ${n} proyectos`;el.className="pill ok";el.title="Volver a leer POWER";}
+  else if(PW.logged){el.textContent="POWER: conectado";el.className="pill ok";el.title="Volver a leer POWER";}
+  else {el.textContent=DEMO?"POWER: vista previa con ejemplos":"POWER: sin conectar";el.className="pill off";el.title="Conectar POWER";}
   renderListaProy();
   $("proyHint").textContent = PW.logged ? `${proyectosLista().length} proyectos. Al elegir uno se copian mandante, proyecto, contacto y código.` : (DEMO ? "Vista previa: la lista trae dos ejemplos. En el sitio se cargan los proyectos de POWER." : "Conecte POWER para buscar sus proyectos. Mientras tanto la lista trae dos ejemplos.");
 }
@@ -481,7 +533,7 @@ function agregarAlCatalogo(nombre){
 // relee POWER y vuelve a aplicar los datos del proyecto de esta cotización (lo que pudo cambiar allá)
 async function refrescarPower(){
   if(DEMO) return toast("Disponible en el sitio instalado");
-  if(!PW.logged){ $("loginBox").hidden=false; $("lgMail").focus(); return toast("Inicie sesión en POWER"); }
+  if(!PW.logged) return pedirLogin();
   $("refrescar").disabled=true;
   // el proyecto se busca por su id y, si no aparece (cotización antigua o código reasignado), por el N° de cotización = código del proyecto
   try{ await cargarPower(); const L=PW.data.proyectos||[], p=L.find(x=>x.id===S.proyId)||(S.numero&&L.find(x=>x.codigo===S.numero));
@@ -527,7 +579,7 @@ function renderListaProy(){
   $("selProy").innerHTML=L.length?L.map(p=>`<option value="${esc(p.id)}" title="${esc(proyLabel(p))}"${p.id===S.proyId?" selected":""}>${esc(proyLabel(p))}</option>`).join(""):`<option disabled>Sin resultados</option>`;
 }
 function renderTipo(){
-  document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.t===S.tipo)));
+  $("tipoSel").value=S.tipo;
   document.querySelectorAll("[data-only]").forEach(el=>el.hidden=!el.dataset.only.split(" ").includes(S.tipo));
   $("tdesc").textContent=TDESC[S.tipo]; if(S.tipo==="marco"){ if(!S.cm) S.cm=cmNuevo(cliDeMandante(S.mandante)||"CMPC"); renderMarco(); } renderListaProy();
   $("contHint").textContent=S.tipo==="formal"?"Textos precargados desde su formato Word. Complete o ajuste cada sección.":"Ingrese el contenido a mano. El botón al final rellena con los textos de plantilla si los necesita.";
@@ -846,7 +898,7 @@ function paginar(H,bloques){
   nueva(); m.remove();
   return hojas.map(bs=>hoja(H,bs.map(h=>`<div class="blk">${h}</div>`).join(""))).join("");
 }
-function renderDoc(){ const M=modelo(); if($("guardMsg")&&S.guardado) $("guardMsg").textContent=`Guardada ${new Date(S.guardado).toLocaleString("es-CL")}${PW.logged&&(S.proyId||S.numero)?" · guardando cambios…":" · cambios sin guardar"}`;
+function renderDoc(){ const M=modelo(); $("edNum").textContent=numRev()||"(sin N°)"; $("layReset").hidden=!(S.lay&&Object.keys(S.lay).length); if($("guardMsg")&&S.guardado) $("guardMsg").textContent=`Guardada ${new Date(S.guardado).toLocaleString("es-CL")}${PW.logged&&(S.proyId||S.numero)?" · guardando cambios…":" · cambios sin guardar"}`;
   $("doc").className = S.tipo==="marco"?"marco":"";
   $("doc").innerHTML = S.tipo==="marco" ? paginar(HDR_MARCO(),bloquesMarco(M)) : S.tipo==="rapida" ? paginar(HDR_RAPIDA(),bloquesRapida(M)) : hoja(HDR_FORMAL(),portadaFormal())+paginar(HDR_FORMAL(),bloquesFormal(M)); }
 const cotLabel=c=>[c.numero||"(sin N°)", c.rev?"Rev. "+c.rev:"", c.mandante, c.proyecto, {rapida:"Express",formal:"Formal",flexible:"Flexible",marco:"Contrato marco"}[c.tipo]||"", c.estado, fdate(c.fecha)].filter(Boolean).join(" · ");
@@ -870,22 +922,13 @@ async function abrirArchivada(id){
   if(p) aplicarProyecto(p);
   Object.assign(S,{arch:r.id, numero:cod||S.numero, rev:r.rev||"", estado:r.estado||S.estado, mandante:r.mandante||S.mandante, proyecto:r.proyecto||S.proyecto, fecha:iso(r.fecha)||S.fecha});
   if(r.documento==="B"||r.documento==="F") S.documento=r.documento;
-  all(); LS.set(KEY,S);
+  all(); LS.set(KEY,S); ir("editor");
   const ok=await guardarAuto(true);
   toast(ok?"Cotización de Archivo ING ingresada al Cotizador (los ítems no se recuperan del PDF; el original queda en el registro)":"Abierta; guárdela en POWER para registrarla");
   if(/\.pdf$/i.test(r.archivo||"")||!r.mime||r.mime==="application/pdf"){
     try{ const blob=b64Blob(await PW.getPdf(r.id)); await mostrarPdf(await blob.arrayBuffer(),{blob,nombre:regNombre(r),titulo:archLabel(r)}); }catch(e){} }
 }
-function renderGuardadas(){
-  const box=$("boxGuardadas"); box.hidden=DEMO; if(DEMO) return;
-  const norm=t=>String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-  const q=norm($("buscaCot").value.trim()), L=(PW.data.cotizaciones||[]).slice().sort((a,b)=>String(b.guardado||"").localeCompare(String(a.guardado||"")));
-  const F=L.filter(c=>!q||norm(cotLabel(c)).includes(q)), A=archivadas().filter(r=>!q||norm(archLabel(r)).includes(q));
-  $("selCot").innerHTML=F.length||A.length?F.map(c=>`<option value="${esc(c.id)}"${c.id===S.id?" selected":""}>${esc(cotLabel(c))}</option>`).join("")+A.map(r=>`<option value="arch:${esc(r.id)}">${esc(archLabel(r))}</option>`).join(""):`<option disabled>${PW.logged?(L.length?"Sin resultados":"Aún no hay cotizaciones guardadas"):"Conecte POWER para ver sus cotizaciones"}</option>`;
-  $("duplicar").disabled=false;
-  $("guardMsg").textContent=S.guardado?`Guardada ${new Date(S.guardado).toLocaleString("es-CL")}`:"Sin guardar en POWER";
-  renderRegistro();
-}
+function renderGuardadas(){ const v=document.body.dataset.view; if(v==="inicio") renderInicio(); else if(v==="clientes") renderClientes(); }
 /* ---------------- Guardado automático en POWER (pedido del usuario 2026-11-11) ----------------
    - Los datos de la cotización se guardan solos 4 s después del último cambio, si hay sesión POWER y la cotización tiene proyecto o N°.
    - El PDF se archiva en el registro (y Archivo ING) solo al emitir: Guardar PDF, Guardar Word o Enviar por correo. */
@@ -902,7 +945,8 @@ async function guardarAuto(forzar){
   catch(e){ $("guardMsg").textContent="No se pudo guardar en POWER: "+e.message+" (se reintenta con el próximo cambio)"; if(e.code==="auth") $("loginBox").hidden=false; return false; }
   finally{ autoBusy=false; } }
 // al emitir (PDF, Word o correo): guarda la cotización y archiva el PDF en el registro
-async function emitida(blob){ if(DEMO||!PW.logged) return; if(await guardarAuto(true)) await archivarPdf(S.guardado,blob); }
+async function emitida(blob){ if(DEMO||!PW.logged) return; if(S.estado==="Borrador"){ S.estado="Emitida"; $("estado").value="Emitida"; LS.set(KEY,S); }
+  if(await guardarAuto(true)) await archivarPdf(S.guardado,blob); }
 /* ---------------- Registro de PDF (se archiva al guardar en POWER) ---------------- */
 let REG=null;
 const blobB64=b=>new Promise((ok,ko)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(",")[1]);r.onerror=()=>ko(r.error);r.readAsDataURL(b);});
@@ -912,201 +956,116 @@ async function archivarPdf(ts,blob0){
   try{ const blob=blob0||await (await pdfWorker())[0].outputPdf("blob"); const M=modelo();
     const meta={cot:S.id,numero:S.numero,rev:S.rev,estado:S.estado,tipo:S.tipo,mandante:S.mandante,proyecto:S.proyecto,fecha:S.fecha,guardado:ts,neto:M.t.neto,documento:S.documento,archivo:nombreArchivo("pdf"),kb:Math.round(blob.size/1024)};
     await PW.putPdf(ts.replace(/[^0-9]/g,"").slice(0,17)+"_"+S.id,{meta,b64:await blobB64(blob)});
-    if(REG) REG.unshift({id:ts.replace(/[^0-9]/g,"").slice(0,17)+"_"+S.id,...meta}); renderRegistro(); toast("Cotización guardada y PDF archivado en el registro"); }
+    if(REG) REG.unshift({id:ts.replace(/[^0-9]/g,"").slice(0,17)+"_"+S.id,...meta}); toast("Cotización guardada y PDF archivado en el registro"); }
   catch(e){ toast("Guardada, pero no se pudo archivar el PDF: "+e.message); }
   finally{ renderGuardadas(); }
 }
 const regLabel=r=>[new Date(r.guardado).toLocaleString("es-CL",{dateStyle:"short",timeStyle:"short"}),r.numero||"(sin N°)",r.rev?"Rev. "+r.rev:"",r.mandante,r.proyecto,r.estado,(r.neto!=null?f2(r.neto)+" UF":"")].filter(Boolean).join(" · ");
-function renderRegistro(){ if(!REG) return;
-  const norm=t=>String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-  const q=norm($("buscaReg").value.trim()), solo=$("regSolo").checked;
-  const F=REG.filter(r=>(!solo||r.cot===S.id)&&(!q||norm(regLabel(r)).includes(q)));
-  $("selReg").innerHTML=F.length?F.map(r=>`<option value="${esc(r.id)}">${esc(regLabel(r))}</option>`).join(""):`<option disabled>${REG.length?"Sin resultados":"Aún no hay PDF archivados"}</option>`;
-}
-async function verRegistro(){
-  if(!PW.logged){ $("loginBox").hidden=false; return toast("Conecte POWER para ver el registro"); }
-  const box=$("boxRegistro"); if(!box.hidden&&REG){ box.hidden=true; return; }
-  box.hidden=false; $("selReg").innerHTML="<option disabled>Cargando…</option>";
-  try{ REG=await PW.listPdf(); REG.sort((a,b)=>String(b.guardado||"").localeCompare(String(a.guardado||""))); renderGuardadas(); }
-  catch(e){ $("selReg").innerHTML=""; toast("No se pudo leer el registro: "+e.message); }
-}
 const pedirPdf=nombre=>pedirArchivo("pdf","Documento PDF","application/pdf",nombre);
 async function guardarBlobPdf(blob,nombre){ const fh=await pedirPdf(nombre); if(fh===false) return noGuardado({nombre,ext:"pdf",blob:async()=>blob,reintentar:()=>guardarBlobPdf(blob,nombre)}); if(fh) await escribirArchivo(fh,blob,nombre); else descargar(blob,nombre); }
 const regNombre=r=>(r.archivo||"Cotizacion.pdf").replace(/\.pdf$/i,"")+(r.rev?"_Rev"+r.rev:"")+"_"+String(r.guardado||"").slice(0,10)+".pdf";
-async function pdfRegistro(modo){
-  const id=$("selReg").value, r=(REG||[]).find(x=>x.id===id); if(!r) return toast("Elija un PDF del registro");
-  const nombre=regNombre(r); let fh=null; if(modo==="guardar"){ fh=await pedirPdf(nombre); if(fh===false) return noGuardado({nombre,ext:"pdf",blob:async()=>b64Blob(await PW.getPdf(id)),reintentar:()=>pdfRegistro("guardar")}); }
-  $("regAbrir").disabled=$("regGuardar").disabled=true;
-  try{ toast("Descargando PDF del registro…"); const blob=b64Blob(await PW.getPdf(id));
+async function pdfRegistro(id,modo){
+  const r=(REG||[]).find(x=>x.id===id); if(!r) return toast("PDF no encontrado en el registro");
+  const nombre=regNombre(r); let fh=null; if(modo==="guardar"){ fh=await pedirPdf(nombre); if(fh===false) return noGuardado({nombre,ext:"pdf",blob:async()=>b64Blob(await PW.getPdf(id)),reintentar:()=>pdfRegistro(id,"guardar")}); }
+  try{ toast("Descargando PDF archivado…"); const blob=b64Blob(await PW.getPdf(id));
     if(modo==="ver") await mostrarPdf(await blob.arrayBuffer(),{blob,nombre,titulo:regLabel(r)});
     else if(fh) await escribirArchivo(fh,blob,nombre); else descargar(blob,nombre); }
   catch(e){ toast("No se pudo obtener el PDF: "+e.message); }
-  finally{ $("regAbrir").disabled=$("regGuardar").disabled=false; }
 }
-let borrarPend=null, nuevaPend=null;
-// Nueva cotización: conserva tipo, tarifas y catálogo. Si el borrador no está guardado en POWER pide un segundo clic.
-function nuevaCot(b){
-  const conDatos=S.items.some(it=>String(it.n||"").trim()||num(it.hi)||num(it.hp))||String(S.mandante||"").trim();
-  const sinGuardar=conDatos&&(!S.guardado||$("guardMsg").textContent.includes("sin guardar"));
-  if(sinGuardar&&nuevaPend!==b){ nuevaPend=b; const t=b.textContent; b.textContent="Clic otra vez: se descarta el borrador sin guardar";
-    setTimeout(()=>{ if(nuevaPend===b){ nuevaPend=null; b.textContent=t; } },5000); return; }
-  nuevaPend=null; b.textContent=b.id==="nuevaTop"?"+ Nueva cotización":"Nueva cotización";
-  const keep={tIng:S.tIng,tProy:S.tProy,cat:S.cat}; S=Object.assign(nueva(S.tipo),keep); all(); save();
-  $("buscaProy").focus(); toast("Nueva cotización: elija el proyecto en POWER"); traerUF();
+/* ---------------- Vistas: Inicio / Cotizaciones por cliente / Editor (2026-11-25) ---------------- */
+function ir(v){ if(document.body.dataset.view==="editor"&&v!=="editor"&&autoT) guardarAuto(false);
+  document.body.dataset.view=v; if(v==="editor") renderDoc(); else renderGuardadas(); window.scrollTo(0,0); }
+function pedirLogin(){ ir("inicio"); $("loginBox").hidden=false; $("loginBox").scrollIntoView({block:"start",behavior:"smooth"}); $("lgMail").focus(); toast("Inicie sesión en POWER"); }
+const conDatos=()=>S.items.some(it=>String(it.n||"").trim()||num(it.hi)||num(it.hp))||!!String(S.mandante||"").trim()||!!(S.cm&&Object.values(S.cm.L||{}).some(L=>L.length));
+// Nueva cotización desde Inicio: conserva tarifas y catálogo. Si la abierta no quedó en POWER (sin proyecto ni N°) pide confirmar.
+function nuevaDe(tipo,cli){
+  if(conDatos()&&!S.guardado&&!confirm("La cotización abierta no está guardada en POWER (no tiene proyecto ni N°). ¿Descartarla y empezar una nueva?")) return;
+  const keep={tIng:S.tIng,tProy:S.tProy,cat:S.cat}; S=Object.assign(nueva(tipo),keep);
+  if(tipo==="marco"){ S.cm=cmNuevo(cli); S.documento=TAR[cli].doc; }
+  all(); save(); ir("editor"); $("buscaProy").focus(); toast(tipo==="marco"?"Planilla "+TAR[cli].nombre+": elija el proyecto en POWER":"Nueva cotización: elija el proyecto en POWER"); traerUF();
 }
+const TIPO_N={rapida:"Express",formal:"Formal",flexible:"Flexible",marco:"Contrato marco"};
+const nzc=t=>String(t||"").toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[.,]/g,"").replace(/\s+/g," ").trim();
+// cliente: CMPC y Arauco/AASA se agrupan como en contrato marco; el resto por mandante de POWER
+const cliK=m=>{ const c=cliDeMandante(m); return c||nzc(m)||"(SIN CLIENTE)"; };
+const cliNom=(k,m)=>k==="CMPC"?"CMPC":k==="AASA"?"Arauco":(String(m||"").trim()||"(sin cliente)");
+const fechaTxt=f=>/^\d{4}-/.test(f||"")?fdate(f):String(f||"");
+function entradas(){
+  const C=(PW.data.cotizaciones||[]).map(c=>({k:"c",id:c.id,c,cli:cliK(c.mandante),cliN:cliNom(cliK(c.mandante),c.mandante),num:c.numero||"(sin N°)",rev:c.rev||"",proy:c.proyecto||"",estado:c.estado||"Borrador",tipo:c.tipo,fecha:c.fecha,guardado:c.guardado||"",neto:c.netoUF}));
+  const A=archivadas().map(r=>({k:"a",id:"arch:"+r.id,r,cli:cliK(r.mandante),cliN:cliNom(cliK(r.mandante),r.mandante),num:r.numero||r.codigo||"(sin N°)",rev:r.rev||"",proy:r.proyecto||r.titulo||"",estado:"solo PDF",tipo:r.tipo,fecha:r.fecha,guardado:r.guardado||"",neto:r.neto}));
+  return [...C,...A].sort((a,b)=>String(b.guardado).localeCompare(String(a.guardado)));
+}
+const entLabel=e=>[e.num,e.rev?"Rev. "+e.rev:"",e.cliN,e.proy].filter(Boolean).join(" · ");
+const normQ=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+let SELCLI=null, SELCOT=null, borrarPend=null, revPend=null;
+const liCot=(e,on)=>`<button type="button" class="li${on?" on":""}" data-cot="${esc(e.id)}" data-cli="${esc(e.cli)}"><span class="t">${esc(entLabel(e))}</span><em>${esc(e.estado)}</em></button>`;
+function renderInicio(){
+  const sinPw=!PW.logged&&!DEMO; $("loginBox").hidden=!sinPw&&$("loginBox").hidden;
+  $("seguirBox").hidden=!conDatos(); $("seguir").textContent="Seguir con la cotización abierta: "+([TIPO_N[S.tipo],numRev(),S.proyecto].filter(Boolean).join(" · ")||"borrador");
+  const q=normQ($("buscaIni").value.trim()), E=entradas(), F=q?E.filter(e=>normQ(entLabel(e)+" "+e.estado).includes(q)).slice(0,12):E.slice(0,6);
+  $("iniLista").innerHTML=F.length?(q?"":'<div class="vacio">Últimas guardadas</div>')+F.map(e=>liCot(e,false)).join(""):`<div class="vacio">${sinPw?"Conecte POWER para ver sus cotizaciones":q?"Sin resultados":"Aún no hay cotizaciones guardadas"}</div>`;
+}
+function renderClientes(){
+  const E=entradas(), G=new Map();
+  E.forEach(e=>{ if(!G.has(e.cli)) G.set(e.cli,{k:e.cli,n:e.cliN,L:[]}); G.get(e.cli).L.push(e); });
+  const q=normQ($("buscaCli").value.trim()), Gs=[...G.values()].filter(g=>!q||normQ(g.n).includes(q)).sort((a,b)=>a.n.localeCompare(b.n,"es"));
+  if(!SELCLI||!G.has(SELCLI)) SELCLI=Gs[0]?Gs[0].k:null;
+  $("lstCli").innerHTML=Gs.length?Gs.map(g=>`<button type="button" class="li${g.k===SELCLI?" on":""}" data-selcli="${esc(g.k)}"><span class="t">${esc(g.n)}</span><em>${g.L.length}</em></button>`).join(""):`<div class="vacio">${PW.logged?"Sin clientes":"Conecte POWER para ver sus cotizaciones"}</div>`;
+  const g=G.get(SELCLI), L=g?g.L:[];
+  $("titCots").textContent=g?"Cotizaciones de "+g.n:"Cotizaciones";
+  if(!L.some(e=>e.id===SELCOT)) SELCOT=L[0]?L[0].id:null;
+  $("lstCot").innerHTML=L.length?L.map(e=>`<button type="button" class="li${e.id===SELCOT?" on":""}" data-cot="${esc(e.id)}" data-cli="${esc(e.cli)}"><span class="t">${esc([e.num,e.rev?"Rev. "+e.rev:"",e.proy].filter(Boolean).join(" · "))}</span><em>${esc(e.estado)}</em></button>`).join(""):'<div class="vacio">Elija un cliente</div>';
+  renderFicha(L.find(e=>e.id===SELCOT));
+}
+const sigRev=r=>{ const A="ABCDEFGH", i=A.indexOf(r||""); return !r?"A":(i>=0&&i<A.length-1?A[i+1]:""); };
+const pdfsDe=e=>e.k==="a"?[e.r]:(REG||[]).filter(r=>r.cot===e.id);
+const emitidaYa=e=>pdfsDe(e).length>0||["Emitida","Aceptada","Rechazada"].includes(e.estado);
+function renderFicha(e){
+  const F=$("ficha"); if(!e){ F.innerHTML=""; return; }
+  const P=pdfsDe(e), sel=["Borrador","Emitida","Aceptada","Rechazada"].map(x=>`<option${x===e.estado?" selected":""}>${x}</option>`).join("");
+  F.innerHTML=`<div class="ficha"><h3>${esc(e.num)}${e.rev?" · Rev. "+esc(e.rev):""}</h3>
+   <dl><dt>Cliente</dt><dd>${esc(e.k==="c"?(e.c.mandante||e.cliN):(e.r.mandante||e.cliN))}</dd><dt>Proyecto</dt><dd>${esc(e.proy)||"—"}</dd>
+   <dt>Tipo</dt><dd>${esc(TIPO_N[e.tipo]||"—")}${e.k==="c"&&e.tipo==="marco"&&e.c.cm?" "+esc(e.c.cm.cli==="AASA"?"Arauco":e.c.cm.cli):""}</dd>
+   <dt>Estado</dt><dd>${e.k==="c"?`<select id="fEstado" aria-label="Estado">${sel}</select>`:"Solo PDF (Archivo ING)"}</dd>
+   <dt>Fecha</dt><dd>${esc(fechaTxt(e.fecha))||"—"}</dd>${e.neto!=null&&e.neto!==""?`<dt>Neto</dt><dd>${f2(num(e.neto))} UF</dd>`:""}
+   ${e.guardado?`<dt>Guardada</dt><dd>${esc(new Date(e.guardado).toLocaleString("es-CL",{dateStyle:"short",timeStyle:"short"}))}</dd>`:""}</dl>
+   <div class="acc"><button type="button" class="btn" data-fa="ver"${P.length?"":" disabled title=\"Aún no se emite un PDF. Use Modificar y luego Ver PDF\""}>Ver PDF</button><button type="button" class="btn pri" data-fa="mod">Modificar</button>${e.k==="c"?'<button type="button" class="btn" data-fa="base">Usar como base</button>':""}</div>
+   ${revPend===e.id?`<div class="revq"><b>Esta cotización ya fue emitida.</b><span>El PDF emitido queda archivado en ambos casos.</span><div class="acc"><button type="button" class="btn" data-fa="corr">Corregir ${e.rev?"Rev. "+esc(e.rev):"esta versión"}</button>${sigRev(e.rev)?`<button type="button" class="btn pri" data-fa="nrev">Crear Rev. ${sigRev(e.rev)}</button>`:""}</div></div>`:""}
+   <div class="pdfs"><b>PDF emitidos${REG?"":" (cargando…)"}</b>${P.length?P.map(r=>`<div><span>${esc(r.guardado?new Date(r.guardado).toLocaleString("es-CL",{dateStyle:"short",timeStyle:"short"}):fechaTxt(r.fecha))}${r.rev?" · Rev. "+esc(r.rev):""}${r.neto!=null?" · "+f2(num(r.neto))+" UF":""}</span><span class="row"><button type="button" class="btn x" data-pv="${esc(r.id)}" style="color:var(--accent)">Ver</button><button type="button" class="btn x" data-pg="${esc(r.id)}" style="color:var(--accent)">Guardar…</button></span></div>`).join(""):'<div><span class="hint">Ninguno todavía. Se archiva uno cada vez que usa Guardar PDF.</span></div>'}</div>
+   ${e.k==="c"?`<details><summary>Más opciones</summary><div class="row" style="margin-top:8px"><button type="button" class="btn x" data-fa="del" style="color:var(--warn)">${borrarPend===e.id?"Clic otra vez para eliminar":"Eliminar cotización"}</button></div></details>`:""}</div>`;
+}
+function cargarCot(c){ const cat=S.cat; S=Object.assign(nueva(c.tipo),JSON.parse(JSON.stringify(c))); S.cat=cat; (c.items||[]).forEach(it=>agregarAlCatalogo(it.n)); }
+function accionFicha(a){
+  const e=entradas().find(x=>x.id===SELCOT); if(!e) return;
+  if(a==="ver"){ const r=pdfsDe(e)[0]; if(r) pdfRegistro(r.id,"ver"); return; }
+  if(e.k==="a"&&a==="mod"){ abrirArchivada(e.r.id); return; }
+  const c=e.c;
+  if(a==="mod"){ if(emitidaYa(e)){ revPend=e.id; return renderFicha(e); } a="corr"; }
+  if(a==="corr"||a==="nrev"){ revPend=null; cargarCot(c);
+    if(a==="nrev"){ S.rev=sigRev(c.rev); S.estado="Borrador"; }
+    all(); if(a==="nrev") save(); else LS.set(KEY,S); ir("editor"); toast(a==="nrev"?`Rev. ${S.rev} creada; se guarda sola en POWER`:"Cotización abierta"); return; }
+  if(a==="base"){ cargarCot(c); Object.assign(S,{id:uid(),estado:"Borrador",rev:"",guardado:"",proyId:"",numero:"",mandante:"",proyecto:"",contacto:"",fecha:today(),fechaIngreso:""}); delete S.arch;
+    all(); LS.set(KEY,S); ir("editor"); $("buscaProy").focus(); toast("Copia lista con los mismos ítems y textos: elija el proyecto en POWER"); return; }
+  if(a==="del"){ if(borrarPend!==e.id){ borrarPend=e.id; renderFicha(e); setTimeout(()=>{ if(borrarPend===e.id){ borrarPend=null; if(SELCOT===e.id) renderFicha(e); } },5000); return; }
+    borrarPend=null; PW.del("cotizaciones",e.id).then(()=>{ if(S.id===e.id){S.guardado="";LS.set(KEY,S);} SELCOT=null; renderClientes(); toast("Cotización eliminada (sus PDF emitidos siguen archivados)"); }).catch(x=>toast("No se pudo eliminar: "+x.message)); }
+}
+async function cambiarEstado(v){
+  const e=entradas().find(x=>x.id===SELCOT); if(!e||e.k!=="c") return; const {id,...data}=e.c; data.estado=v;
+  try{ await PW.put("cotizaciones",id,data); if(S.id===id){ S.estado=v; $("estado").value=v; LS.set(KEY,S); } renderClientes(); toast("Estado actualizado: "+v); }
+  catch(x){ toast("No se pudo cambiar el estado: "+x.message); } }
 // Enlace desde POWER: cotizador-ing.netlify.app/#abrir=<id>
 function abrirDesdeEnlace(){
   const m=location.hash.match(/^#abrir=(.+)$/); if(!m) return;
   const id=decodeURIComponent(m[1]), c=(PW.data.cotizaciones||[]).find(c=>c.id===id);
   history.replaceState(null,"",location.pathname);
   if(!c) return toast("No se encontró esa cotización en POWER");
-  const cat=S.cat; S=Object.assign(nueva(c.tipo),JSON.parse(JSON.stringify(c))); S.cat=cat; (c.items||[]).forEach(it=>agregarAlCatalogo(it.n)); all(); save(); toast("Cotización abierta desde POWER");
+  cargarCot(c); all(); save(); ir("editor"); toast("Cotización abierta desde POWER");
 }
 function all(){renderGuardadas();fillFields();renderTipo();renderItems();renderCat();renderPagos();renderExtras();updTotals();renderIngreso();renderPwState();renderFirma();renderDoc();}
 
-/* ---------------- Word (.docx) con docx.iife.js ---------------- */
+/* ---------------- carga de librerías (PDF) ---------------- */
 function loadScript(src, glob){ if(window[glob]) return Promise.resolve(window[glob]);
   return new Promise((ok,fail)=>{const s=document.createElement("script");s.src=src;s.onload=()=>window[glob]?ok(window[glob]):fail(new Error("librería no disponible"));s.onerror=()=>fail(new Error("no se pudo cargar "+src));document.head.appendChild(s);}); }
-async function logoBytes(){ const r=await fetch(LOGO_SRC); return new Uint8Array(await r.arrayBuffer()); }
-async function isoBytes(){ const r=await fetch(ISO_SRC); if(!r.ok) throw new Error("sin isotipo"); return new Uint8Array(await r.arrayBuffer()); }
-async function crearDocx(){
-  const d = await loadScript("docx.iife.js","docx");
-  const {Document,Packer,Paragraph,TextRun,ImageRun,Table,TableRow,TableCell,Header,Footer,AlignmentType,WidthType,BorderStyle,ShadingType,PageNumber,PageBreak,TabStopType,VerticalAlign,LevelFormat,TableLayoutType} = d;
-  const M=modelo(), FONT="Arial", NAVY="1F3864", BLUE="4472C4", BLUE2="9DC3E6", BAND="D9E1F2", IN="EEF0F3", INK="1F3FBF", W=9920;
-  // saltos y espacios que fijó el usuario en la vista previa: se ubican por el texto inicial de cada bloque
-  const TXT=new WeakMap(), PRE=new Map(), nz=t=>String(t||"").replace(/\s+/g," ").trim();
-  const LAYW=Object.entries(S.lay||{}).filter(([k,v])=>v&&(v.brk||v.esp)).map(([k,v])=>({sig:k.replace(/#\d+$/,""),n:+k.split("#").pop()||1,seen:0,...v}));
-  const layDe=t=>{ const x=nz(t); if(x.length<4) return null; for(const f of LAYW){ if(f.done) continue; const m=x.slice(0,Math.min(x.length,f.sig.length));
-      if(m.length>=4&&f.sig.startsWith(m)){ f.seen++; if(f.seen===f.n){ f.done=true; return f; } } } return null; };
-  const run=(t,o={})=>{ const r=new TextRun({text:String(t??""),font:FONT,size:o.size||24,bold:o.bold,italics:o.italics,color:o.color,underline:o.underline,highlight:o.hl,break:o.break}); TXT.set(r,String(t??"")); return r; };
-  const txt=(v,phT,o={})=>String(v??"").trim()?run(v,o):run(`[${phT}]`,{...o,hl:"yellow"});
-  const P=(children,o={})=>{ const ch=Array.isArray(children)?children:[children], f=layDe(ch.map(c=>TXT.get(c)||"").join(""));
-    return new Paragraph({children:ch,alignment:o.align||AlignmentType.JUSTIFIED,spacing:{before:(o.before??0)+(f&&f.esp?f.esp*180:0),after:o.after??120},pageBreakBefore:!!(f&&f.brk),keepNext:o.keepNext,numbering:o.bullet?{reference:"vin",level:0}:undefined}); };
-  const bd={style:BorderStyle.SINGLE,size:4,color:"BFBFBF"}, borders={top:bd,bottom:bd,left:bd,right:bd}, none={style:BorderStyle.NONE,size:0,color:"FFFFFF"};
-  const cell=(children,w,o={})=>new TableCell({width:{size:w,type:WidthType.DXA},borders,columnSpan:o.span,verticalAlign:VerticalAlign.CENTER,
-    shading:o.fill?{fill:o.fill,type:ShadingType.CLEAR,color:"auto"}:undefined,margins:{top:40,bottom:40,left:80,right:80},
-    children:[new Paragraph({alignment:o.align||AlignmentType.LEFT,spacing:{after:0},keepNext:o.keep,children:Array.isArray(children)?children:[children]})]});
-  const tabla=(widths,rows)=>{const sc=W/widths.reduce((a,b)=>a+b,0);const ws=widths.map(w=>Math.round(w*sc));ws[ws.length-1]+=W-ws.reduce((a,b)=>a+b,0);
-    const c0=rows[0]&&rows[0].cells[0], f=c0?layDe((Array.isArray(c0.r)?c0.r:[c0.r]).map(c=>TXT.get(c)||"").join("")):null;
-    const T=new Table({width:{size:W,type:WidthType.DXA},columnWidths:ws,layout:TableLayoutType.FIXED,rows:rows.map((r,ri)=>new TableRow({cantSplit:true,tableHeader:!!r.head,children:r.cells.map((c,i)=>{
-      // keepNext en todas las filas menos la última: ninguna fila se corta y el total nunca queda solo en una hoja
-      const w=c.span?ws.slice(i,i+c.span).reduce((a,b)=>a+b,0):ws[i]; return cell(c.r,w,{...c,keep:ri<rows.length-1});})}))});
-    if(f) PRE.set(T,new Paragraph({pageBreakBefore:!!f.brk,spacing:{before:f.esp?f.esp*180:0,after:0},children:[]})); return T;};
-  const C=(r,o={})=>({r,...o}), L=AlignmentType.LEFT, CE=AlignmentType.CENTER, R=AlignmentType.RIGHT;
-  const logo=await logoBytes().catch(()=>null), iso=await isoBytes().catch(()=>null);
-  // pie de firma: isotipo ING en línea antes de "ING Estructural" (alto ≈ 4,8 mm para texto de 12 pt)
-  const isoW=()=>iso?[new ImageRun({type:"png",data:iso,transformation:{width:19,height:18}}),run("\u00A0")]:[];
-  const enc=(r1,r2)=>new Header({children:[new Table({width:{size:W,type:WidthType.DXA},columnWidths:[4600,5320],layout:TableLayoutType.FIXED,
-    borders:{top:none,left:none,right:none,bottom:none,insideHorizontal:none,insideVertical:none},
-    rows:[new TableRow({children:[
-      new TableCell({width:{size:4600,type:WidthType.DXA},borders:{top:none,left:none,right:none,bottom:{style:BorderStyle.SINGLE,size:8,color:NAVY}},children:[new Paragraph({spacing:{after:60},children:logo?[new ImageRun({type:"png",data:logo,transformation:{width:288,height:93}})]:[]})]}),
-      new TableCell({width:{size:5320,type:WidthType.DXA},verticalAlign:VerticalAlign.BOTTOM,borders:{top:none,left:none,right:none,bottom:{style:BorderStyle.SINGLE,size:8,color:NAVY}},children:[
-        new Paragraph({alignment:R,spacing:{after:0},children:[run(r1,{size:18,bold:true,color:NAVY})]}),
-        new Paragraph({alignment:R,spacing:{after:60},children:[run(r2,{size:16,color:"595959"})]})]})]})]})]});
-  const pieW=new Footer({children:[new Paragraph({border:{top:{style:BorderStyle.SINGLE,size:6,color:NAVY,space:4}},tabStops:[{type:TabStopType.RIGHT,position:W}],spacing:{after:0},
-    children:[run("ING ESTRUCTURAL — Proyectos Civiles e Industriales",{size:16,bold:true,color:NAVY}),new TextRun({children:["\tPágina ",PageNumber.CURRENT," de ",PageNumber.TOTAL_PAGES],font:FONT,size:16,color:"595959"})]})]});
-  // firma flotante sobre el nombre (no desplaza el texto), cruzando la línea como en el PDF firmado a mano
-  const EMU=360000, fImg=()=>{ const z=firmaCm(), q=firmaPos(), w=Math.round(z.w*37.8), h=Math.round(z.h*37.8);
-    return new ImageRun({type:"png",data:Uint8Array.from(atob(FIRMA_IMG.png.split(",")[1]),c=>c.charCodeAt(0)),transformation:{width:w,height:h},
-      floating:{horizontalPosition:{relative:d.HorizontalPositionRelativeFrom.CHARACTER,offset:Math.round((firmaGeo().left+q.dx)*EMU)},verticalPosition:{relative:d.VerticalPositionRelativeFrom.LINE,offset:Math.round((firmaGeo().top+q.dy)*EMU)},allowOverlap:true,behindDocument:false,wrap:{type:d.TextWrappingType.NONE},zIndex:5}}); };
-  const firmaW=()=>[P([],{after:1800,keepNext:true}),...FIRMA.map((t,i)=>P(i===0&&firmaOn()?[fImg(),run(t,{bold:true})]:i===2?[...isoW(),run(t)]:run(t,{bold:i===0}),{align:L,after:0,keepNext:i<2}))];
-  const datos=()=>tabla([3400,1700,4820],[
-    {cells:[C(run("MANDANTE")),C(txt(S.mandante,"mandante",{color:INK}),{fill:IN,span:2})]},
-    {cells:[C(run("PROYECTO:")),C(txt(S.proyecto,"proyecto",{color:INK}),{fill:IN,span:2})]},
-    {cells:[C(run("FECHA:")),C(txt(fdate(S.fecha),"fecha",{color:INK}),{fill:IN,span:2})]},
-    {cells:[C(run("REF:")),C(txt(S.contacto,"contacto",{color:INK}),{fill:IN,span:2})]},
-    {cells:[C(run("PLAZO EJECUCIÓN:")),C(txt(S.plazo,"plazo",{color:INK}),{fill:IN,align:CE}),C(run(S.plazoU||"días"))]},
-    ...(S.tipo==="rapida"&&S.numero?[{cells:[C(run("N° COTIZACIÓN:")),C(run(numRev(),{color:INK}),{fill:IN,span:2})]}]:[])]);
-  const cuadroW=()=>{
-    const head=t=>C(run(t,{bold:true,color:"FFFFFF"}),{fill:BLUE,align:CE});
-    return [P(run("A. COTIZACIÓN",{bold:true,color:NAVY}),{before:200,after:60,keepNext:true}),
-      tabla([4960,1500,1500,1960],[{head:true,cells:["ITEM","hh/ing.","hh/proy.","TOTAL (UF)"].map(head)},
-        ...M.rows.map(it=>({cells:[C(run(it.n,{color:INK}),{fill:IN}),C(run(num(it.hi)||"",{color:INK}),{fill:IN,align:CE}),C(run(num(it.hp)||"",{color:INK}),{fill:IN,align:CE}),C(run(f2(itemUF(it))),{align:R})]})),
-        {cells:[C(run(M.bol?"TOTAL HONORARIOS (BRUTO)":"TOTAL NETO",{bold:true}),{fill:BLUE2}),C(run(""),{fill:BLUE2}),C(run(""),{fill:BLUE2}),C(run(f2(M.t.neto),{bold:true}),{fill:BLUE2,align:R})]}]),
-      P([],{after:120}),
-      tabla([4960,1500,1800,1660],[{head:true,cells:[head("B. ENTREGABLES"),head("PLANOS A1"),C([run("MDC",{bold:true,color:"FFFFFF"}),run("INFORME",{bold:true,color:"FFFFFF",break:1})],{fill:BLUE,align:CE}),head("EETT")]},
-        {cells:[C(run("Documentos")),C(run("—"),{align:CE}),C(run(M.t.ent.m,{bold:true}),{align:CE}),C(run(M.t.ent.e,{bold:true}),{align:CE})]},
-        {cells:[C(run("Planos")),C(run(M.t.ent.p,{bold:true}),{align:CE}),C(run("—"),{align:CE}),C(run("—"),{align:CE})]}]),
-      P(run("PLANO A1: DIGITAL FORMATO A1 · MDC/INF.: MEMORIA DE CÁLCULO/INFORME · EETT: ESPECIFICACIONES TÉCNICAS",{size:16}),{align:CE,before:60})];
-  };
-  const H2=t=>P(run(t,{size:28,bold:true,color:NAVY}),{before:280,after:120,keepNext:true,align:L});
-  const H3=t=>P(run(t,{bold:true}),{before:160,after:80,keepNext:true,align:L});
-  const bullets=(l,phT)=>(l.length?l:[null]).map(x=>P(x==null?txt("",phT):run(x),{bullet:true,after:60}));
-  const K=[];
-  let r1,r2;
-  if(S.tipo==="marco"){
-    const cm=S.cm||cmNuevo("CMPC"), t=T(), Rm=marcoCalc(), of={...t.of}, bol=S.documento==="B", cl=M.clp&&M.vuf;
-    r1=t.titulo; r2="Contrato marco "+t.nombre+(of.contrato?" · "+of.contrato:"");
-    const v=(x,phT)=>phT?txt(x,phT,{size:20,color:INK}):run(x||"",{size:20,color:INK}), k=x=>run(x,{size:20});
-    const izq=[["Código SAP",of.sap,"código SAP"],["RUT empresa",of.rut,"RUT"],["Razón social",of.razon,"razón social"],["Representante legal",of.rep,"representante"],["RUT rep. legal",of.rutRep,"RUT"],["Contacto",of.contacto,""],["Teléfono / e-mail",[of.fono,of.mail].filter(Boolean).join(" · "),""]];
-    const der=[["Mandante",t.mandante||S.mandante,"mandante"],["RUT mandante",t.rutMand,"RUT mandante"],["Planta",cm.planta,"planta"],["N° licitación",cm.licit,""],["Fecha oferta",fdate(S.fecha),"fecha"],["Validez oferta",S.validez?vigencia():"","validez"],["N° cotización",numRev(),"N° cotización"]];
-  const ej=S.plazo?`${S.plazo} ${S.plazoU==="semanas"?"semanas":"días hábiles"}`:""; der[4]=["Fecha / validez",[fdate(S.fecha),S.validez?"validez "+vigencia():""].filter(Boolean).join(" · "),"fecha"]; der[5]=["Ejecución",ej,"plazo"];
-    const hd=x=>C(run(x,{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,align:CE});
-    K.push(tabla([1750,3010,1900,3260],[{head:true,cells:[C(run("ANTECEDENTES LICITACIÓN",{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,span:2,align:CE}),C(run("ANTECEDENTES EMPRESA DE SERVICIOS",{bold:true,color:"FFFFFF",size:20}),{fill:BLUE,span:2,align:CE})]},
-      ...izq.map((a,i)=>({cells:[C(k(der[i][0])),C(v(der[i][1],der[i][2]),{fill:IN}),C(k(a[0])),C(v(a[1],a[2]),{fill:IN})]}))]));
-    K.push(P(run("A. DESCRIPCIÓN DEL SERVICIO",{bold:true,color:NAVY}),{before:140,after:40,keepNext:true,align:L}));
-    K.push(P([txt(S.proyecto,"proyecto",{bold:true,size:20})],{align:L,after:40}));
-    lines(cm.alc).forEach(x=>K.push(P(run(x,{size:20}),{bullet:true,after:0})));
-    K.push(P(run("B. OFERTA ECONÓMICA (UF)",{bold:true,color:NAVY}),{before:140,after:40,keepNext:true,align:L}));
-    const fila=(a,b,c,o={})=>(o={size:20,...o},{cells:[C(run(a,o),o.fill?{fill:o.fill}:{}),C(run(b,o),{align:R,...(o.fill?{fill:o.fill}:{})}),...(cl?[C(run(c,o),{align:R,...(o.fill?{fill:o.fill}:{})})]:[])]});
-    K.push(tabla(cl?[5560,2000,2360]:[7440,2480],[{head:true,cells:["PARTIDA","UF",...(cl?["CLP"]:[])].map(hd)},
-      ...SECC.map(([kk,,n],i)=>fila(`0${i+1}. ${n}`,f2(Rm.secs[kk].sub),cl?clp(Rm.secs[kk].sub*M.vuf):"")),
-      fila(`VALOR TOTAL OFERTA (${bol?"BRUTO, BOLETA DE HONORARIOS":"VALOR NETO"})`,f2(Rm.neto),cl?clp(Rm.neto*M.vuf):"",{bold:true,fill:BLUE2})]));
-    const det=[]; SECC.forEach(([kk,tit])=>{ const U=Rm.secs[kk].usadas; if(!U.length) return;
-      det.push({cells:[C(run(tit,{bold:true,color:NAVY,size:20}),{fill:BAND,span:5})]}, ...U.map(ln=>({cells:[C(run(cmDesc(ln),{size:20})),C(run(ln.u,{size:20}),{align:CE}),C(run(String(ln.c).replace(".",","),{size:20}),{align:CE}),C(run(f2(ln.pu),{size:20}),{align:R}),C(run(f2(ln.tot),{size:20}),{align:R})]}))); });
-    if(det.length){ K.push(P(run("C. DETALLE DE LA OFERTA",{bold:true,color:NAVY}),{before:140,after:40,keepNext:true,align:L}));
-      K.push(tabla([5160,900,1000,1380,1480],[{head:true,cells:["DESCRIPCIÓN","UNID.","CANT.","P.U. (UF)","TOTAL (UF)"].map(hd)},...det])); }
-    if(lines(cm.notas).length){ K.push(P(run((det.length?"D":"C")+". NOTAS ADICIONALES",{bold:true,color:NAVY}),{before:140,after:40,keepNext:true,align:L})); lines(cm.notas).forEach(x=>K.push(P(run(x,{size:20}),{bullet:true,after:0}))); }
-    const notas=[`Condición ${(cm.cond|0)+1}: ${t.cond[cm.cond|0]}.`,"Entregables en formato DWG y PDF.",...(cl?[`Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.`]:[])];
-    const nb={top:none,bottom:none,left:none,right:none};
-    K.push(P([],{after:0,keepNext:true}));
-    K.push(new Table({width:{size:W,type:WidthType.DXA},columnWidths:[4700,5220],layout:TableLayoutType.FIXED,borders:{top:none,left:none,right:none,bottom:none,insideHorizontal:none,insideVertical:none},
-      rows:[new TableRow({cantSplit:true,children:[
-        new TableCell({width:{size:4700,type:WidthType.DXA},borders:nb,shading:{fill:BAND,type:ShadingType.CLEAR,color:"auto"},margins:{top:60,bottom:60,left:100,right:100},children:notas.map(x=>new Paragraph({spacing:{after:0},children:[run(x,{size:14})]}))}),
-        new TableCell({width:{size:5220,type:WidthType.DXA},borders:nb,margins:{left:1400},children:[new Paragraph({spacing:{before:firmaOn()?1480:700,after:0},border:{top:{style:BorderStyle.SINGLE,size:6,color:"555555",space:2}},children:firmaOn()?[fImg(),run(FIRMA[0],{bold:true})]:[run(FIRMA[0],{bold:true})]}),new Paragraph({spacing:{after:0},children:[run(FIRMA[1])]}),new Paragraph({spacing:{after:0},children:[...isoW(),run(FIRMA[2])]})]})]})]}));
-  } else if(S.tipo==="rapida"){
-    r1="J. GERMÁN AGUILERA HAFNER"; r2="Ingeniero Civil · Ingeniería Estructural";
-    K.push(P(run("COTIZACIÓN SERVICIOS DE INGENIERÍA",{bold:true,color:NAVY,size:28}),{align:CE,after:160,keepNext:true}),datos(),...cuadroW(),...firmaW());
-  } else {
-    r1="COTIZACIÓN DE SERVICIOS DE INGENIERÍA"; r2=S.proyecto||"";
-    K.push(P([],{after:480}));
-    K.push(P(run("COTIZACIÓN",{size:44,bold:true,color:NAVY,underline:{}}),{align:CE,after:160}));
-    K.push(P(run("SERVICIOS DE INGENIERÍA",{size:40,bold:true,color:NAVY,underline:{}}),{align:CE,after:160}));
-    K.push(P(txt(S.proyecto,"proyecto",{size:40,bold:true,color:NAVY,underline:{}}),{align:CE,after:560}));
-    const kv=(k,v)=>({cells:[C(run(k,{size:28,bold:true})),C(v)]}), s28={size:28};
-    K.push(tabla([3400,6520],[
-      kv("N° de Cotización",txt(numRev(),"código de proyecto en POWER",s28)), kv("Cliente / Mandante",txt(S.mandante,"mandante",s28)),
-      kv("Contacto cliente",txt(S.contacto,"contacto",s28)), kv("Fecha de emisión",txt(fdate(S.fecha),"dd-mm-aaaa",s28)),
-      kv("Plazo de ejecución",txt(plazoTxt(),"plazo de ejecución",s28)), kv("Valor de la cotización",txt(valorTxt(M),"ítems del cuadro",s28)),
-      kv("Validez de la oferta",S.validez?run(vigencia(),s28):txt("","validez",s28)),
-      kv("Preparado por",run("J. Germán Aguilera Hafner, Ingeniero Civil",s28)), kv("Contacto oficina",run("ingestructural@ingestructural.cl",s28))]));
-    K.push(...firmaW());
-    K.push(new Paragraph({children:[new PageBreak()]}));
-    K.push(H2("1. ANTECEDENTES DEL PROYECTO")); (lines(S.antecedentes).length?lines(S.antecedentes):[null]).forEach(x=>K.push(P(x==null?txt("","descripción del proyecto"):run(x))));
-    K.push(H2("2. ALCANCE DE LOS SERVICIOS"),P(run(TPL.alcance)));
-    K.push(H3("2.1 Incluye"),...bullets(lines(S.incluye),"actividades incluidas"));
-    K.push(H3("2.2 No incluye"),...bullets(lines(S.noIncluye),"exclusiones"));
-    M.ex2.forEach(x=>K.push(H3(x.n+" "+(x.t||"")),...bullets(x.l,"contenido")));
-    K.push(H2("3. DETALLE DE HORAS HOMBRE E ÍTEMS DE ENTREGABLES"),P(run(M.sec3),{keepNext:true}),...cuadroW());
-    K.push(H2("4. RESUMEN ECONÓMICO"));
-    const cl=(v,o)=>M.vuf?run(clp(v*M.vuf),o):txt("","valor UF",o), cab=M.clp?["Concepto","Monto (UF)","Monto (CLP)"]:["Concepto","Monto (UF)"];
-    K.push(tabla(M.clp?[5200,2200,2520]:[7400,2520],[{head:true,cells:cab.map(t=>C(run(t,{bold:true,color:"FFFFFF"}),{fill:BLUE,align:CE}))},
-      ...resumenFilas(M).map(r=>{const o=r.b?{bold:true}:{}; return {cells:[C(run(r.k,o)),C(run(f2(r.v),o),{align:R}),...(M.clp?[C(cl(r.v,o),{align:R})]:[])]};})]));
-    if(M.clp&&M.vuf) K.push(P(run(`Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.`,{size:20}),{before:60}));
-    K.push(H2("5. CONDICIONES GENERALES"),H3("5.1 Forma de pago"));
-    if(M.pagos.length) K.push(tabla([1500,5900,2520],M.pagos.map(p=>({cells:[C(run(f1(num(p.pct))+" %")),C(txt(p.h,"hito")),C(run(f2(M.t.neto*num(p.pct)/100)+(M.bol?" UF":" UF neto")),{align:R})]}))));
-    else K.push(...bullets([],"hitos de pago"));
-    K.push(H3("5.2 Plazo de entrega"),...bullets(M.plazo52,"plazo de ejecución"));
-    K.push(H3("5.3 Vigencia de la oferta"),P([run("Esta cotización tiene una validez de "),S.validez?run(vigencia()):txt("","validez"),run(".")],{bullet:true}));
-    K.push(H3("5.4 Otras condiciones"),...bullets(lines(S.otras),"otras condiciones"));
-    M.ex5.forEach(x=>K.push(H3(x.n+" "+(x.t||"")),...bullets(x.l,"contenido")));
-  }
-  const doc=new Document({creator:"ING Estructural",title:"Cotización "+(S.numero||"")+" "+(S.proyecto||""),
-    styles:{default:{document:{run:{font:FONT,size:24}}}},
-    numbering:{config:[{reference:"vin",levels:[{level:0,format:LevelFormat.BULLET,text:"•",alignment:AlignmentType.LEFT,style:{paragraph:{indent:{left:500,hanging:280}}}}]}]},
-    sections:[{properties:{page:{size:{width:12240,height:15840},margin:{top:2269,bottom:1418,left:902,right:1418,header:227,footer:227}}},headers:{default:enc(r1,r2)},footers:{default:pieW},children:K.flatMap(x=>PRE.has(x)?[PRE.get(x),x]:[x])}]});
-  return Packer.toBlob(doc);
-}
 const nombreArchivo=ext=>{const s=x=>String(x||"").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,50);
   return `Cotizacion_${s(S.numero)||"sin_codigo"}_${s(S.proyecto)||"proyecto"}.${ext}`;};
 function descargar(blob,nombre){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=nombre;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);toast("Descargado: "+nombre);}
@@ -1142,10 +1101,6 @@ function noGuardado(o){ SAVEFAIL=o; $("toast").hidden=true;
 async function saveFailDescargar(){ const o=SAVEFAIL; if(!o) return; $("saveFailDl").disabled=true;
   try{ if(o.ext==="pdf"||o.ext==="docx") toast("Generando…"); const b=await o.blob(); descargar(b,o.nombre); $("saveFail").hidden=true; if(o.alEmitir) o.alEmitir(b); }
   catch(e){ toast("No se pudo generar: "+e.message); } finally{ $("saveFailDl").disabled=false; } }
-async function exportarWord(){ if(DEMO) return toast("Descarga disponible en el sitio instalado");
-  const fh=await pedirArchivo("docx","Documento Word","application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-  if(fh===false) return noGuardado({nombre:nombreArchivo("docx"),ext:"docx",blob:crearDocx,alEmitir:()=>emitida(),reintentar:exportarWord});
-  $("expWord").disabled=true; try{ const blob=await crearDocx(); if(fh){ if(await escribirArchivo(fh,blob,nombreArchivo("docx"))) emitida(); } else { descargar(blob,nombreArchivo("docx")); emitida(); } }catch(e){ toast("No se pudo generar el Word: "+e.message); } finally{ $("expWord").disabled=false; } }
 async function pdfWorker(){
   const h2p=await loadScript("html2pdf.bundle.min.js","html2pdf");
   const el=$("doc").cloneNode(true); el.removeAttribute("id"); el.querySelectorAll(".brk").forEach(x=>x.classList.remove("brk")); el.querySelectorAll(".fhandle").forEach(x=>x.remove()); el.querySelectorAll(".fimg").forEach(x=>{x.style.outline="none";x.removeAttribute("title");}); el.querySelectorAll(".page").forEach(p=>{p.style.boxShadow="none";p.style.margin="0";});
@@ -1178,12 +1133,10 @@ async function mostrarPdf(buf,reg){
   $("toast").hidden=true; }
 
 /* ---------------- eventos ---------------- */
-document.querySelector(".seg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.tipo=b.dataset.t;if(S.tipo==="marco"){ if(!S.cm) S.cm=cmNuevo(cliDeMandante(S.mandante)||"CMPC"); if(S.mandante&&cliDeMandante(S.mandante)!==S.cm.cli){ Object.assign(S,{proyId:"",numero:"",mandante:"",proyecto:"",contacto:""}); fillFields(); } }renderTipo();renderDoc();save();});
+$("tipoSel").addEventListener("change",e=>{S.tipo=e.target.value;if(S.tipo==="marco"){ if(!S.cm) S.cm=cmNuevo(cliDeMandante(S.mandante)||"CMPC"); if(S.mandante&&cliDeMandante(S.mandante)!==S.cm.cli){ Object.assign(S,{proyId:"",numero:"",mandante:"",proyecto:"",contacto:""}); fillFields(); } }renderTipo();renderDoc();save();});
 $("ed").addEventListener("input",e=>{
   const el=e.target, d=el.dataset;
   if(el.id==="buscaProy"){ renderListaProy(); return; }
-  if(el.id==="buscaCot"||el.id==="selCot"){ if(el.id==="buscaCot") renderGuardadas(); return; }
-  if(el.id==="buscaReg"||el.id==="regSolo"||el.id==="selReg"){ if(el.id!=="selReg") renderRegistro(); return; }
   if(el.id&&(el.id.startsWith("lg")||el.id.startsWith("fm"))) return;
   if(d.cm!==undefined){ const v=el.value;
     if(d.cm==="cond"){ S.cm.cond=+v; renderMarco(); } else if(d.cm==="planta"){ S.cm.planta=v; renderMarco(); }
@@ -1215,20 +1168,6 @@ $("ed").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)re
   else if(b.id==="usarPlantilla"){if(!S.antecedentes.trim())S.antecedentes=TPL.antecedentes;if(!S.noIncluye.trim())S.noIncluye=TPL.noIncluye.join("\n");if(!S.otras.trim())S.otras=TPL.otras.join("\n");fillFields();}
   else if(b.id==="ufHoy"){traerUF();return;}
   else if(b.id==="refrescar"){refrescarPower();return;}
-  else if(b.id==="nueva"){nuevaCot(b);return;}
-  else if(b.id==="verRegistro"){verRegistro();return;}
-  else if(b.id==="regAbrir"){pdfRegistro("ver");return;}
-  else if(b.id==="regGuardar"){pdfRegistro("guardar");return;}
-  else if(b.id==="duplicar"){S={...JSON.parse(JSON.stringify(S)),id:uid(),estado:"Borrador",guardado:""};all();save();toast("Copia creada; se guarda sola en POWER");return;}
-  else if(b.id==="abrirCot"&&$("selCot").value.startsWith("arch:")){abrirArchivada($("selCot").value.slice(5));return;}
-  else if(b.id==="abrirCot"){const c=(PW.data.cotizaciones||[]).find(c=>c.id===$("selCot").value); if(!c) return toast("Elija una cotización de la lista");
-    const cat=S.cat; S=Object.assign(nueva(c.tipo),JSON.parse(JSON.stringify(c))); S.cat=cat; (c.items||[]).forEach(it=>agregarAlCatalogo(it.n)); all(); save(); toast("Cotización abierta"); return;}
-  else if(b.id==="borrarCot"){const id=$("selCot").value, c=(PW.data.cotizaciones||[]).find(c=>c.id===id); if(!c) return toast("Elija una cotización de la lista");
-    if(borrarPend!==id){borrarPend=id;b.textContent="Confirmar eliminación";setTimeout(()=>{borrarPend=null;b.textContent="Eliminar";},5000);return;}
-    borrarPend=null;b.textContent="Eliminar";
-    PW.del("cotizaciones",id).then(()=>{ if(S.id===id){S.guardado="";save();} renderGuardadas(); toast("Cotización eliminada"); }).catch(e=>toast("No se pudo eliminar: "+e.message)); return;}
-  else if(b.id==="lgGo"){login();return;}
-  else if(b.id==="lgCancel"){$("loginBox").hidden=true;return;}
   else return;
   updTotals();renderDoc();save();
 });
@@ -1306,12 +1245,10 @@ async function traerUF(){ if(DEMO){$("ufMsg").textContent="Disponible en el siti
     catch(e1){ const r=await fetch("https://ingestructural.github.io/power-ing/uf.json?t="+Date.now(),{cache:"no-store"}); const j=await r.json(); if(!j.valor) throw new Error("sin datos"); v=+j.valor; f=String(j.fecha).slice(0,10); }   // respaldo: UF publicada por POWER
     fija(v,`UF del día ${fdate(f)} (mindicador.cl, la misma fuente de POWER): ${f2(v)}`); }
   catch(e){ if(+par.ufRef>0) fija(+par.ufRef,`UF guardada en POWER${par.ufFecha?" al "+fdate(par.ufFecha):""}: ${f2(+par.ufRef)} (sin conexión a mindicador.cl)`); else $("ufMsg").textContent="No se pudo obtener la UF."; } }
-const abrirPower=()=>{ if(PW.logged) cargarPower(); else { $("loginBox").hidden=false; $("loginBox").scrollIntoView({block:"start",behavior:"smooth"}); $("lgMail").focus(); } };
-$("btnPower").addEventListener("click",abrirPower);
+const abrirPower=()=>{ if(PW.logged) cargarPower(); else pedirLogin(); };
 // la etiqueta de estado (amarilla) también conecta: en el teléfono se toca por error en vez del botón
 $("pwState").addEventListener("click",abrirPower);
 $("pwState").addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); abrirPower(); } });
-$("expWord").addEventListener("click",exportarWord);
 $("expPdf").addEventListener("click",exportarPdf);
 $("saveFailDl").addEventListener("click",saveFailDescargar);
 $("saveFailX").addEventListener("click",()=>{ $("saveFail").hidden=true; SAVEFAIL=null; });
@@ -1440,11 +1377,28 @@ $("mailTo").addEventListener("input",mailChips);
 $("mailChips").addEventListener("click",async e=>{ const x=e.target.dataset.mailx; if(x){ e.stopPropagation(); const k=mailKey(), st=mailStore(); if(st[k]){ st[k].all=(st[k].all||[]).filter(y=>y!==x); await mailGuardar(st); } return mailChips(); }
   const b=e.target.closest("[data-mail]"); if(!b) return; const m=b.dataset.mail, L=mailsDe($("mailTo").value), i=L.findIndex(y=>y.toLowerCase()===m.toLowerCase());
   if(i>=0) L.splice(i,1); else L.push(m); $("mailTo").value=L.join("; "); mailChips(); });
-$("nuevaTop").addEventListener("click",e=>nuevaCot(e.currentTarget));
+$("lgGo").addEventListener("click",login);
+$("lgCancel").addEventListener("click",()=>{ $("loginBox").hidden=true; });
+$("irInicio").addEventListener("click",()=>ir("inicio"));
+$("hHome").addEventListener("click",()=>ir("inicio"));
+$("hHome").addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); ir("inicio"); } });
+$("irClientes").addEventListener("click",()=>ir("clientes"));
+$("seguir").addEventListener("click",()=>ir("editor"));
+$("buscaIni").addEventListener("input",renderInicio);
+$("buscaCli").addEventListener("input",renderClientes);
+$("vInicio").addEventListener("click",e=>{ const t=e.target.closest("[data-nt]"); if(t) return nuevaDe(t.dataset.nt,t.dataset.cli);
+  const c=e.target.closest("[data-cot]"); if(c){ SELCLI=c.dataset.cli; SELCOT=c.dataset.cot; revPend=null; ir("clientes"); } });
+$("vClientes").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; const d=b.dataset;
+  if(d.selcli!==undefined){ SELCLI=d.selcli; SELCOT=null; revPend=null; renderClientes(); }
+  else if(d.cot!==undefined){ SELCOT=d.cot; revPend=null; renderClientes(); }
+  else if(d.fa) accionFicha(d.fa);
+  else if(d.pv) pdfRegistro(d.pv,"ver");
+  else if(d.pg) pdfRegistro(d.pg,"guardar"); });
+$("vClientes").addEventListener("change",e=>{ if(e.target.id==="fEstado") cambiarEstado(e.target.value); });
 $("pdfClose").addEventListener("click",()=>{ $("pdfBox").hidden=true; $("pdfPages").innerHTML=""; VISTA_REG=null; });
 $("pdfDl").addEventListener("click",()=>VISTA_REG?guardarBlobPdf(VISTA_REG.blob,VISTA_REG.nombre):exportarPdf());
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&!$("pdfBox").hidden) $("pdfClose").click(); });
-all();
+all(); if(!PW.logged&&!DEMO) $("loginBox").hidden=false; renderInicio();
 if(!DEMO&&"serviceWorker" in navigator&&location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
 if(PW.logged&&!DEMO) cargarPower();
 else if(!DEMO&&/^#abrir=/.test(location.hash)){ $("loginBox").hidden=false; toast("Inicie sesión para abrir la cotización"); }
