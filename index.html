@@ -122,6 +122,8 @@ body:not([data-view="clientes"]) #vClientes{display:none}
 .ficha .acc{display:flex;gap:8px;flex-wrap:wrap}
 .ficha .acc .btn{font-size:1rem;padding:7px 14px}
 .ficha .pdfs{font-size:.9rem}
+.ficha .pdfs details{margin-top:4px}
+.ficha .pdfs details summary{padding:4px 0}
 .ficha .pdfs div{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:4px 0;border-top:1px solid var(--line)}
 .ficha .revq{background:var(--accent-soft);border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:8px}
 .ficha details summary{cursor:pointer;color:var(--muted);font-size:.9rem}
@@ -417,6 +419,11 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
   <div class="pdfbar"><b id="pdfTit">Vista del PDF</b><span class="sp"></span><button type="button" class="btn pri" id="pdfDl">Guardar PDF</button><button type="button" class="btn" id="pdfClose">Cerrar</button></div>
   <div class="pdfpages" id="pdfPages" aria-label="Hojas del PDF"></div>
 </div>
+<div class="mailbox" id="revBox" hidden><div class="mb" role="dialog" aria-labelledby="revTit" style="width:min(520px,100%)">
+  <b id="revTit" style="font-size:1.15rem">¿Cómo guardar este PDF?</b>
+  <div class="hint" id="revTxt" style="font-size:.95rem"></div>
+  <div class="row"><button type="button" class="btn" id="revMisma"></button><button type="button" class="btn pri" id="revNueva"></button><span style="flex:1"></span><button type="button" class="btn x" id="revX">Cancelar</button></div>
+</div></div>
 <div class="mailbox" id="mailBox" hidden><div class="mb" role="dialog" aria-labelledby="mailTit">
   <b id="mailTit" style="font-size:1.1rem">Enviar cotización por correo</b>
   <div class="hint" id="mailHint"></div>
@@ -990,14 +997,17 @@ async function archivarPdf(ts,blob0){
   try{ const blob=blob0||await (await pdfWorker())[0].outputPdf("blob"); const M=modelo();
     const meta={cot:S.id,numero:S.numero,rev:S.rev,estado:S.estado,tipo:S.tipo,mandante:S.mandante,proyecto:S.proyecto,fecha:S.fecha,guardado:ts,neto:M.t.neto,documento:S.documento,archivo:nombreArchivo("pdf"),kb:Math.round(blob.size/1024)};
     await PW.putPdf(ts.replace(/[^0-9]/g,"").slice(0,17)+"_"+S.id,{meta,b64:await blobB64(blob)});
-    if(REG) REG.unshift({id:ts.replace(/[^0-9]/g,"").slice(0,17)+"_"+S.id,...meta}); toast("Cotización guardada y PDF archivado en el registro"); }
+    const nid=ts.replace(/[^0-9]/g,"").slice(0,17)+"_"+S.id;
+    if(REEMPLAZA&&REG){ const viejos=REG.filter(r=>r.cot===S.id&&(r.rev||"")===(S.rev||"")&&r.id!==nid); for(const r of viejos){ try{ await PW.del("cotizaciones_pdf",r.id); REG=REG.filter(x=>x.id!==r.id); }catch(e){} } }
+    REEMPLAZA=false;
+    if(REG) REG.unshift({id:nid,...meta}); toast("Cotización guardada y PDF archivado en el registro"); }
   catch(e){ toast("Guardada, pero no se pudo archivar el PDF: "+e.message); }
   finally{ renderGuardadas(); }
 }
 const regLabel=r=>[new Date(r.guardado).toLocaleString("es-CL",{dateStyle:"short",timeStyle:"short"}),r.numero||"(sin N°)",r.rev?"Rev. "+r.rev:"",r.mandante,r.proyecto,r.estado,(r.neto!=null?f2(r.neto)+" UF":"")].filter(Boolean).join(" · ");
 const pedirPdf=nombre=>pedirArchivo("pdf","Documento PDF","application/pdf",nombre);
 async function guardarBlobPdf(blob,nombre){ const fh=await pedirPdf(nombre); if(fh===false) return noGuardado({nombre,ext:"pdf",blob:async()=>blob,reintentar:()=>guardarBlobPdf(blob,nombre)}); if(fh) await escribirArchivo(fh,blob,nombre); else descargar(blob,nombre); }
-const regNombre=r=>(r.archivo||"Cotizacion.pdf").replace(/\.pdf$/i,"")+(r.rev?"_Rev"+r.rev:"")+"_"+String(r.guardado||"").slice(0,10)+".pdf";
+const regNombre=r=>{ const b=(r.archivo||"Cotizacion.pdf").replace(/\.pdf$/i,""); return b+(r.rev&&!/-Rev[A-Z]$/.test(b)?"-Rev"+r.rev:"")+"_"+String(r.guardado||"").slice(0,10)+".pdf"; };
 async function pdfRegistro(id,modo){
   const r=(REG||[]).find(x=>x.id===id); if(!r) return toast("PDF no encontrado en el registro");
   const nombre=regNombre(r); let fh=null; if(modo==="guardar"){ fh=await pedirPdf(nombre); if(fh===false) return noGuardado({nombre,ext:"pdf",blob:async()=>b64Blob(await PW.getPdf(id)),reintentar:()=>pdfRegistro(id,"guardar")}); }
@@ -1057,6 +1067,7 @@ function renderClientes(){
 const sigRev=r=>{ const A="ABCDEFGH", i=A.indexOf(r||""); return !r?"A":(i>=0&&i<A.length-1?A[i+1]:""); };
 const pdfsDe=e=>e.k==="a"?[e.r]:(REG||[]).filter(r=>r.cot===e.id);
 const emitidaYa=e=>pdfsDe(e).length>0||["Emitida","Aceptada","Rechazada"].includes(e.estado);
+const pdfFila=(r,ult)=>`<div><span>${ult?"<b>":""}${r.rev?"Rev. "+esc(r.rev):"Sin revisión"}${ult?"</b>":""} · emitido ${esc(r.guardado?new Date(r.guardado).toLocaleString("es-CL",{dateStyle:"short",timeStyle:"short"}):fechaTxt(r.fecha))}${r.neto!=null?" · "+f2(num(r.neto))+" UF":""}</span><span class="row"><button type="button" class="btn x" data-pv="${esc(r.id)}" style="color:var(--accent)">Ver</button><button type="button" class="btn x" data-pg="${esc(r.id)}" style="color:var(--accent)">Guardar…</button></span></div>`;
 function renderFicha(e){
   const F=$("ficha"); if(!e){ F.innerHTML=""; return; }
   const P=pdfsDe(e), sel=["Borrador","Emitida","Aceptada","Rechazada"].map(x=>`<option${x===e.estado?" selected":""}>${x}</option>`).join("");
@@ -1068,7 +1079,7 @@ function renderFicha(e){
    ${e.guardado?`<dt>Guardada</dt><dd>${esc(new Date(e.guardado).toLocaleString("es-CL",{dateStyle:"short",timeStyle:"short"}))}</dd>`:""}</dl>
    <div class="acc"><button type="button" class="btn" data-fa="ver"${P.length?"":" disabled title=\"Aún no se emite un PDF. Use Modificar y luego Ver PDF\""}>Ver PDF</button><button type="button" class="btn pri" data-fa="mod">Modificar</button>${e.k==="c"?'<button type="button" class="btn" data-fa="base">Usar como base</button>':""}</div>
    ${revPend===e.id?`<div class="revq"><b>Esta cotización ya fue emitida.</b><span>El PDF emitido queda archivado en ambos casos.</span><div class="acc"><button type="button" class="btn" data-fa="corr">Corregir ${e.rev?"Rev. "+esc(e.rev):"esta versión"}</button>${sigRev(e.rev)?`<button type="button" class="btn pri" data-fa="nrev">Crear Rev. ${sigRev(e.rev)}</button>`:""}</div></div>`:""}
-   <div class="pdfs"><b>PDF emitidos${REG?"":" (cargando…)"}</b>${P.length?P.map(r=>`<div><span>${esc(r.guardado?new Date(r.guardado).toLocaleString("es-CL",{dateStyle:"short",timeStyle:"short"}):fechaTxt(r.fecha))}${r.rev?" · Rev. "+esc(r.rev):""}${r.neto!=null?" · "+f2(num(r.neto))+" UF":""}</span><span class="row"><button type="button" class="btn x" data-pv="${esc(r.id)}" style="color:var(--accent)">Ver</button><button type="button" class="btn x" data-pg="${esc(r.id)}" style="color:var(--accent)">Guardar…</button></span></div>`).join(""):'<div><span class="hint">Ninguno todavía. Se archiva uno cada vez que usa Guardar PDF.</span></div>'}</div>
+   <div class="pdfs"><b>PDF emitido${REG?"":" (cargando…)"}</b>${P.length?pdfFila(P[0],true)+(P.length>1?`<details><summary>Versiones anteriores (${P.length-1})</summary>${P.slice(1).map(r=>pdfFila(r,false)).join("")}</details>`:""):'<div><span class="hint">Ninguno todavía. Se archiva uno cada vez que usa Guardar PDF.</span></div>'}</div>
    ${e.k==="c"?`<details><summary>Más opciones</summary><div class="row" style="margin-top:8px"><button type="button" class="btn x" data-fa="del" style="color:var(--warn)">${borrarPend===e.id?"Clic otra vez para eliminar":"Eliminar cotización"}</button></div></details>`:""}</div>`;
 }
 function cargarCot(c){ const cat=S.cat; S=Object.assign(nueva(c.tipo),JSON.parse(JSON.stringify(c))); S.cat=cat; (c.items||[]).forEach(it=>agregarAlCatalogo(it.n)); }
@@ -1104,7 +1115,7 @@ function all(){renderGuardadas();fillFields();renderTipo();renderItems();renderC
 function loadScript(src, glob){ if(window[glob]) return Promise.resolve(window[glob]);
   return new Promise((ok,fail)=>{const s=document.createElement("script");s.src=src;s.onload=()=>window[glob]?ok(window[glob]):fail(new Error("librería no disponible"));s.onerror=()=>fail(new Error("no se pudo cargar "+src));document.head.appendChild(s);}); }
 const nombreArchivo=ext=>{const s=x=>String(x||"").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,50);
-  return `Cotizacion_${s(S.numero)||"sin_codigo"}_${s(S.proyecto)||"proyecto"}.${ext}`;};
+  return `Cotizacion_${s(S.numero)||"sin_codigo"}_${s(S.proyecto)||"proyecto"}${S.rev?"-Rev"+S.rev:""}.${ext}`;};   // con la revisión: …-RevA.pdf (pedido del usuario 2026-11-25)
 function descargar(blob,nombre){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=nombre;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);toast("Descargado: "+nombre);}
 // «Guardar como» (Chrome/Edge): se pide antes de generar, mientras dura el clic; null = navegador sin diálogo; false = cancelado
 // id propio por tipo + startIn documentos (2026-11-18): el diálogo ya no parte en la carpeta recordada antigua (una carpeta de Dropbox que ya no existe).
@@ -1145,6 +1156,16 @@ async function pdfWorker(){
   el.querySelectorAll(".page:not(:last-child)").forEach(p=>p.style.pageBreakAfter="always");
   return [h2p().set({margin:0,filename:nombreArchivo("pdf"),image:{type:"jpeg",quality:0.97},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:"in",format:"letter",orientation:"portrait"},pagebreak:{mode:["css","legacy"],avoid:["tr","h2","h3"]}}).from(el)];   // en arreglo: el worker de html2pdf es "thenable" y un await lo consumiría
 }
+/* Guardar PDF (pedido del usuario 2026-11-25): toda emisión lleva revisión (la primera queda Rev. A).
+   Si la cotización ya tiene un PDF emitido, pregunta: misma revisión (reemplaza el archivado de esa revisión) o la siguiente. */
+let REEMPLAZA=false;
+const yaEmitida=()=>REG?REG.some(r=>r.cot===S.id):S.estado!=="Borrador";
+function guardarPdfClick(){ if(DEMO) return toast("Descarga disponible en el sitio instalado");
+  if(!S.rev){ S.rev="A"; $("rev").value="A"; renderDoc(); save(); }
+  if(!yaEmitida()){ REEMPLAZA=false; return exportarPdf(); }
+  const sig=sigRev(S.rev); $("revMisma").textContent=`Mismo nombre: Rev. ${S.rev}`; $("revNueva").textContent=sig?`Nueva revisión: Rev. ${sig}`:"Sin más revisiones disponibles"; $("revNueva").disabled=!sig;
+  $("revTxt").textContent=`Esta cotización ya tiene un PDF emitido. «Mismo nombre» reemplaza el PDF archivado de la Rev. ${S.rev}; «Nueva revisión» lo guarda aparte y conserva la anterior.`;
+  $("revBox").hidden=false; $("revNueva").focus(); }
 async function exportarPdf(){ if(DEMO) return toast("Descarga disponible en el sitio instalado");
   const fh=await pedirArchivo("pdf","Documento PDF","application/pdf");
   if(fh===false) return noGuardado({nombre:nombreArchivo("pdf"),ext:"pdf",blob:async()=>(await pdfWorker())[0].outputPdf("blob"),alEmitir:b=>emitida(b),reintentar:exportarPdf});
@@ -1286,7 +1307,10 @@ const abrirPower=()=>{ if(PW.logged) cargarPower(); else pedirLogin(); };
 // la etiqueta de estado (amarilla) también conecta: en el teléfono se toca por error en vez del botón
 $("pwState").addEventListener("click",abrirPower);
 $("pwState").addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); abrirPower(); } });
-$("expPdf").addEventListener("click",exportarPdf);
+$("expPdf").addEventListener("click",guardarPdfClick);
+$("revMisma").addEventListener("click",()=>{ $("revBox").hidden=true; REEMPLAZA=true; exportarPdf(); });
+$("revNueva").addEventListener("click",()=>{ $("revBox").hidden=true; REEMPLAZA=false; S.rev=sigRev(S.rev); if(S.estado!=="Borrador") S.estado="Borrador"; fillFields(); renderDoc(); save(); toast("Rev. "+S.rev); exportarPdf(); });
+$("revX").addEventListener("click",()=>{ $("revBox").hidden=true; });
 $("saveFailDl").addEventListener("click",saveFailDescargar);
 $("saveFailX").addEventListener("click",()=>{ $("saveFail").hidden=true; SAVEFAIL=null; });
 $("saveFailReint").addEventListener("click",()=>{ const o=SAVEFAIL; $("saveFail").hidden=true; if(o&&o.reintentar) o.reintentar(); });
@@ -1433,7 +1457,7 @@ $("vClientes").addEventListener("click",e=>{ const b=e.target.closest("button");
   else if(d.pg) pdfRegistro(d.pg,"guardar"); });
 $("vClientes").addEventListener("change",e=>{ if(e.target.id==="fEstado") cambiarEstado(e.target.value); });
 $("pdfClose").addEventListener("click",()=>{ $("pdfBox").hidden=true; $("pdfPages").innerHTML=""; VISTA_REG=null; });
-$("pdfDl").addEventListener("click",()=>VISTA_REG?guardarBlobPdf(VISTA_REG.blob,VISTA_REG.nombre):exportarPdf());
+$("pdfDl").addEventListener("click",()=>VISTA_REG?guardarBlobPdf(VISTA_REG.blob,VISTA_REG.nombre):guardarPdfClick());
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&!$("pdfBox").hidden) $("pdfClose").click(); });
 all(); if(!PW.logged&&!DEMO) $("loginBox").hidden=false; renderInicio();
 if(!DEMO&&"serviceWorker" in navigator&&location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
