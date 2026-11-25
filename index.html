@@ -90,6 +90,7 @@ body:not([data-view="clientes"]) #vClientes{display:none}
 .est-Emitida{background:var(--accent-soft);color:var(--accent)}
 .est-Aceptada{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
 .est-Rechazada{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.est-sin{background:transparent;border:1px dashed var(--muted);color:var(--muted)}
 .est-pdf{background:color-mix(in srgb,#7a5cc0 16%,transparent);color:#7a5cc0}
 .av{width:30px;height:30px;border-radius:50%;display:inline-grid;place-items:center;font-size:.75rem;font-weight:700;color:#fff;flex:0 0 auto}
 .li .cl{display:flex;align-items:center;gap:10px;min-width:0}
@@ -1023,7 +1024,7 @@ function pedirLogin(){ ir("inicio"); $("loginBox").hidden=false; $("loginBox").s
 const conDatos=()=>S.items.some(it=>String(it.n||"").trim()||num(it.hi)||num(it.hp))||!!String(S.mandante||"").trim()||!!(S.cm&&Object.values(S.cm.L||{}).some(L=>L.length));
 // Nueva cotización desde Inicio: conserva tarifas y catálogo. Si la abierta no quedó en POWER (sin proyecto ni N°) pide confirmar.
 function nuevaDe(tipo,cli){
-  if(conDatos()&&!S.guardado&&!confirm("La cotización abierta no está guardada en POWER (no tiene proyecto ni N°). ¿Descartarla y empezar una nueva?")) return;
+  if(conDatos()&&!S.guardado&&!confirm("La cotización abierta no está guardada en POWER (no tiene proyecto ni N°). ¿Descartarla y empezar una nueva?")) return false;
   const keep={tIng:S.tIng,tProy:S.tProy,cat:S.cat}; S=Object.assign(nueva(tipo),keep);
   if(tipo==="marco"){ S.cm=cmNuevo(cli); S.documento=TAR[cli].doc; }
   all(); save(); ir("editor"); $("buscaProy").focus(); toast(tipo==="marco"?"Planilla "+TAR[cli].nombre+": elija el proyecto en POWER":"Nueva cotización: elija el proyecto en POWER"); traerUF();
@@ -1037,19 +1038,23 @@ const fechaTxt=f=>/^\d{4}-/.test(f||"")?fdate(f):String(f||"");
 function entradas(){
   const C=(PW.data.cotizaciones||[]).map(c=>({k:"c",id:c.id,c,cli:cliK(c.mandante),cliN:cliNom(cliK(c.mandante),c.mandante),num:c.numero||"(sin N°)",rev:c.rev||"",proy:c.proyecto||"",estado:c.estado||"Borrador",tipo:c.tipo,fecha:c.fecha,guardado:c.guardado||"",neto:c.netoUF}));
   const A=archivadas().map(r=>({k:"a",id:"arch:"+r.id,r,cli:cliK(r.mandante),cliN:cliNom(cliK(r.mandante),r.mandante),num:r.numero||r.codigo||"(sin N°)",rev:r.rev||"",proy:r.proyecto||r.titulo||"",estado:"solo PDF",tipo:r.tipo,fecha:r.fecha,guardado:r.guardado||"",neto:r.neto}));
-  return [...C,...A].sort((a,b)=>String(b.guardado).localeCompare(String(a.guardado)));
+  // proyectos de POWER aún sin cotización (pedido del usuario 2026-11-25): aparecen bajo su cliente con el botón Cotizar
+  const conCot=new Set([...C.map(e=>e.c.proyId).filter(Boolean)]), cods=new Set([...C.map(e=>e.c.numero),...A.map(e=>e.num)].filter(Boolean));
+  const Pr=(PW.data.proyectos||[]).filter(p=>!conCot.has(p.id)&&!(p.codigo&&cods.has(p.codigo))).map(p=>({k:"p",id:"proy:"+p.id,p,cli:cliK(p.mandante),cliN:cliNom(cliK(p.mandante),p.mandante),num:p.codigo||"(sin código)",rev:"",proy:p.proyecto||"",estado:"Sin cotizar",tipo:"",fecha:p.creado,guardado:"",neto:null}));
+  const ord=(a,b)=>String(b.guardado).localeCompare(String(a.guardado))||String(b.fecha||"").localeCompare(String(a.fecha||""));
+  return [...[...C,...A].sort(ord),...Pr.sort(ord)];
 }
 const entLabel=e=>[e.num,e.rev?"Rev. "+e.rev:"",e.cliN,e.proy].filter(Boolean).join(" · ");
 const normQ=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
 let SELCLI=null, SELCOT=null, borrarPend=null, revPend=null;
-const estChip=x=>`<em class="est est-${x==="solo PDF"?"pdf":esc(x)}">${esc(x)}</em>`;
+const estChip=x=>`<em class="est est-${x==="solo PDF"?"pdf":x==="Sin cotizar"?"sin":esc(x)}">${esc(x)}</em>`;
 const AVC=["#1a5fb4","#2f7a4a","#9a5b00","#7a5cc0","#c0392b","#1f3864","#0e7c86"];
 const avatar=(k,n)=>{ let h=0; for(const ch of k) h=(h*31+ch.charCodeAt(0))>>>0; const ini=String(n).replace(/[^A-Za-zÁÉÍÓÚÑ0-9 ]/gi,"").split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase()||"?"; return `<span class="av" style="background:${AVC[h%AVC.length]}">${esc(ini)}</span>`; };
 const liCot=(e,on)=>`<button type="button" class="li${on?" on":""}" data-cot="${esc(e.id)}" data-cli="${esc(e.cli)}"><span class="t">${esc(entLabel(e))}</span>${estChip(e.estado)}</button>`;
 function renderInicio(){
   const sinPw=!PW.logged&&!DEMO; $("loginBox").hidden=!sinPw&&$("loginBox").hidden;
   $("seguirBox").hidden=!conDatos(); $("seguir").innerHTML=`<small>SEGUIR DONDE QUEDÓ</small><span>${esc([TIPO_N[S.tipo],numRev(),S.mandante,S.proyecto].filter(Boolean).join(" · ")||"Borrador sin proyecto")}</span>`;
-  const q=normQ($("buscaIni").value.trim()), E=entradas(), F=q?E.filter(e=>normQ(entLabel(e)+" "+e.estado).includes(q)).slice(0,12):E.slice(0,6);
+  const q=normQ($("buscaIni").value.trim()), E=entradas(), F=q?E.filter(e=>normQ(entLabel(e)+" "+e.estado).includes(q)).slice(0,12):E.filter(e=>e.k!=="p").slice(0,6);
   $("iniLista").innerHTML=F.length?(q?"":'<div class="vacio">Últimas guardadas</div>')+F.map(e=>liCot(e,false)).join(""):`<div class="vacio">${sinPw?"Conecte POWER para ver sus cotizaciones":q?"Sin resultados":"Aún no hay cotizaciones guardadas"}</div>`;
 }
 function renderClientes(){
@@ -1071,6 +1076,13 @@ const pdfFila=(r,ult)=>`<div><span>${ult?"<b>":""}${r.rev?"Rev. "+esc(r.rev):"Si
 function renderFicha(e){
   const F=$("ficha"); if(!e){ F.innerHTML=""; return; }
   const P=pdfsDe(e), sel=["Borrador","Emitida","Aceptada","Rechazada"].map(x=>`<option${x===e.estado?" selected":""}>${x}</option>`).join("");
+  if(e.k==="p"){ const p=e.p, cm=cliDeMandante(p.mandante);
+    F.innerHTML=`<div class="ficha"><h3>${esc(e.num)} · sin cotización</h3>
+     <dl><dt>Cliente</dt><dd>${esc(p.mandante||"—")}</dd><dt>Proyecto</dt><dd>${esc(p.proyecto||"—")}</dd>
+     <dt>Estado en POWER</dt><dd>${esc(p.estado||"—")}</dd><dt>Contacto</dt><dd>${esc(p.contacto||"—")}</dd>
+     <dt>Ingreso</dt><dd>${esc(fechaTxt(p.creado))||"—"}</dd>${p.planta?`<dt>Planta</dt><dd>${esc(p.planta)}</dd>`:""}</dl>
+     <b>Cotizar este proyecto como</b>
+     <div class="acc">${cm?`<button type="button" class="btn pri" data-cz="marco" data-cli="${cm}">Contrato marco ${cm==="AASA"?"Arauco":"CMPC"}</button>`:""}<button type="button" class="btn${cm?"":" pri"}" data-cz="rapida">Express</button><button type="button" class="btn" data-cz="formal">Formal</button><button type="button" class="btn" data-cz="flexible">Flexible</button></div></div>`; return; }
   F.innerHTML=`<div class="ficha"><h3>${esc(e.num)}${e.rev?" · Rev. "+esc(e.rev):""}</h3>
    <dl><dt>Cliente</dt><dd>${esc(e.k==="c"?(e.c.mandante||e.cliN):(e.r.mandante||e.cliN))}</dd><dt>Proyecto</dt><dd>${esc(e.proy)||"—"}</dd>
    <dt>Tipo</dt><dd>${esc(TIPO_N[e.tipo]||"—")}${e.k==="c"&&e.tipo==="marco"&&e.c.cm?" "+esc(e.c.cm.cli==="AASA"?"Arauco":e.c.cm.cli):""}</dd>
@@ -1453,6 +1465,7 @@ $("vClientes").addEventListener("click",e=>{ const b=e.target.closest("button");
   if(d.selcli!==undefined){ SELCLI=d.selcli; SELCOT=null; revPend=null; renderClientes(); }
   else if(d.cot!==undefined){ SELCOT=d.cot; revPend=null; renderClientes(); }
   else if(d.fa) accionFicha(d.fa);
+  else if(d.cz){ const e=entradas().find(x=>x.id===SELCOT); if(e&&e.k==="p"){ const p=e.p; if(nuevaDe(d.cz,d.cli)!==false){ aplicarProyecto(p); toast("Cotización ligada a "+(p.codigo||"")+" · "+(p.proyecto||"")+"; se guarda sola en POWER"); } } }
   else if(d.pv) pdfRegistro(d.pv,"ver");
   else if(d.pg) pdfRegistro(d.pg,"guardar"); });
 $("vClientes").addEventListener("change",e=>{ if(e.target.id==="fEstado") cambiarEstado(e.target.value); });
