@@ -57,32 +57,67 @@ body:not([data-view="clientes"]) #vClientes{display:none}
 .edtit select{width:auto;font:inherit;font-weight:700;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--fg)}
 .edtit b{font-family:var(--f-display);font-size:1.35rem}
 #guardMsg{font-size:.85rem;color:var(--ok);max-width:340px}
-.view{padding-block:22px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));font-size:17px}
+.view{padding-block:0 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));font-size:17px}
 .view h2{font-family:var(--f-display);font-size:1.9rem;margin:0 0 12px;line-height:1.05}
 .view h3{font-family:var(--f-display);font-size:1.4rem;margin:0 0 8px}
-.vin{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:28px;align-items:start}
+.vin{max-width:1180px;margin:26px auto 0;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:28px;align-items:start}
 .vin .login{grid-column:1/-1}
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.tile{font:inherit;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;color:var(--fg);cursor:pointer;display:flex;flex-direction:column;gap:6px}
-.tile:hover{border-color:var(--accent)}
+.tile{font:inherit;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;color:var(--fg);cursor:pointer;display:flex;gap:16px;align-items:flex-start;transition:transform .15s,box-shadow .15s,border-color .15s}
+.tile:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 18px rgba(26,95,180,.14)}
+.tile>div{display:flex;flex-direction:column;gap:6px;min-width:0}
+.tile .doc{width:58px;height:72px;flex:0 0 auto;padding:6px;border-radius:8px;background:var(--accent-soft);box-sizing:content-box;transition:transform .2s}
+.tile:hover .doc{transform:rotate(-4deg) scale(1.04)}
+.tile.cm:hover{transform:none}
+.cmb{margin-top:4px}
+@media (prefers-reduced-motion:reduce){.tile,.tile .doc{transition:none}.tile:hover,.tile:hover .doc{transform:none}}
+.hero{position:relative;overflow:hidden;background:linear-gradient(115deg,#13294b 0%,#1f3864 45%,#1a5fb4 100%);color:#fff;margin-inline:calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:30px max(16px,env(safe-area-inset-left,0px)) 26px}
+.hero{background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(115deg,#13294b 0%,#1f3864 45%,#1a5fb4 100%);background-size:24px 24px,24px 24px,auto}
+.hero .blue{position:absolute;right:max(16px,4vw);bottom:8px;top:14px;width:min(46%,600px);height:auto}
+@media (max-width:760px){.hero .blue{opacity:.45;width:70%}}
+.hin{position:relative;max-width:1180px;margin:0 auto}
+.saludo{margin:0;font-size:1.05rem;opacity:.85}
+.hero h2{font-size:clamp(2.2rem,4.5vw,3.2rem);margin:2px 0 18px;color:#fff}
+.kpis{display:flex;gap:12px;flex-wrap:wrap}
+.kpi{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:10px 16px;min-width:120px;backdrop-filter:blur(2px)}
+.kpi b{display:block;font-family:var(--f-display);font-size:2rem;line-height:1}
+.kpi span{font-size:.85rem;opacity:.85}
+.ttl{font-family:var(--f-display);font-size:1.6rem;margin:0 0 12px}
+.sbox{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:0 12px;color:var(--muted)}
+.sbox:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.sbox svg{width:20px;height:20px;flex:0 0 auto}
+.view .sbox input[type=search]{border:0;background:transparent;padding:12px 0;outline:none}
+.seguir{font:inherit;width:100%;text-align:left;border:1px dashed var(--accent);background:var(--accent-soft);color:var(--fg);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.seguir small{color:var(--accent);font-weight:700;font-size:.8rem}
+.seguir:hover{border-style:solid}
+.exist .lst{border-radius:10px}
+.est{display:inline-block;font-size:.78rem;font-weight:700;padding:2px 9px;border-radius:99px;white-space:nowrap;font-style:normal}
+.est-Borrador{background:color-mix(in srgb,var(--muted) 18%,transparent);color:var(--muted)}
+.est-Emitida{background:var(--accent-soft);color:var(--accent)}
+.est-Aceptada{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.est-Rechazada{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.est-pdf{background:color-mix(in srgb,#7a5cc0 16%,transparent);color:#7a5cc0}
+.av{width:30px;height:30px;border-radius:50%;display:inline-grid;place-items:center;font-size:.75rem;font-weight:700;color:#fff;flex:0 0 auto}
+.li .cl{display:flex;align-items:center;gap:10px;min-width:0}
 .tile b{font-family:var(--f-display);font-size:1.5rem;line-height:1}
 .tile span{font-size:.92rem;color:var(--muted)}
 .tile.cm{cursor:default;border-color:var(--accent)}
 .tile .row .btn{font-size:1rem;padding:6px 16px}
-.view input[type=search]{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--input);color:var(--fg)}
-.lst{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:6px;background:var(--panel);overflow:hidden;margin-top:8px}
-.li{font:inherit;font-size:.95rem;text-align:left;border:0;border-top:1px solid var(--line);background:transparent;color:var(--fg);padding:8px 10px;cursor:pointer;display:flex;justify-content:space-between;gap:10px}
+.view input[type=search]{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--fg)}
+.lst{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden;margin-top:8px}
+.li{font:inherit;font-size:.95rem;text-align:left;border:0;border-top:1px solid var(--line);background:transparent;color:var(--fg);padding:10px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px}
 .li:first-child{border-top:0}
 .li:hover{background:var(--accent-soft)}
 .li.on{background:var(--accent-soft);font-weight:700;box-shadow:inset 3px 0 0 var(--accent)}
 .li em{font-style:normal;color:var(--muted);white-space:nowrap;font-weight:400}
 .li .t{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .lst .vacio{padding:10px;color:var(--muted);font-size:.92rem}
-#irClientes{margin-top:12px;font-size:1.05rem;padding:9px 16px}
+#irClientes{margin-top:14px;font-size:1.05rem;padding:10px 18px;border-radius:8px}
+#vClientes .cli3{margin-top:24px}
 #seguirBox{margin-bottom:12px}
 .cli3{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr) minmax(0,1.3fr);gap:18px;align-items:start}
 .cli3 .lst{max-height:68vh;overflow-y:auto}
-.ficha{background:var(--panel);border:1px solid var(--accent);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.ficha{background:var(--panel);border:1px solid var(--accent);border-radius:12px;box-shadow:0 6px 18px rgba(26,95,180,.10);padding:16px;display:flex;flex-direction:column;gap:10px}
 .ficha dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;margin:0;font-size:.95rem}
 .ficha dt{color:var(--muted)}
 .ficha dd{margin:0}
@@ -123,6 +158,8 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .it td.t{text-align:right;font-family:var(--f-mono);font-size:.8rem;white-space:nowrap;padding-right:6px}
 .btn{font:inherit;font-size:.85rem;font-weight:600;padding:6px 12px;border:1px solid var(--accent);color:var(--accent);background:transparent;border-radius:4px;cursor:pointer;align-self:flex-start}
 .btn.pri{background:var(--accent);color:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.pri{color:#0d1a2b}}
+:root[data-theme="dark"] .btn.pri{color:#0d1a2b}
 .btn.x{border:0;padding:4px 6px;color:var(--muted)}
 .btn:disabled{opacity:.5;cursor:default}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -232,6 +269,14 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 </div>
 
 <div class="view" id="vInicio">
+ <header class="hero">
+  <svg class="blue" viewBox="395 30 515 225" preserveAspectRatio="xMaxYMax meet" aria-hidden="true"><defs><pattern id="gr" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="rgba(255,255,255,.07)"/></pattern></defs><g fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.6"><path d="M430 230 V120 L665 50 L900 120 V230"/><path d="M430 120 H900"/><path d="M477 120 L477 106 M524 120 L524 92 M571 120 L571 78 M618 120 L618 64 M665 120 L665 50 M712 120 L712 64 M759 120 L759 78 M806 120 L806 92 M853 120 L853 106"/><path d="M430 120 L524 92 M477 120 L571 78 M524 120 L618 64 M571 120 L665 50 M665 50 L759 120 M712 64 L806 120 M759 78 L853 120 M806 92 L900 120"/><path d="M400 230 H900" stroke-dasharray="6 6"/></g><g fill="rgba(255,255,255,.35)"><path d="M424 230 l6 -10 l6 10z M894 230 l6 -10 l6 10z"/></g><g fill="rgba(255,255,255,.4)" font-family="JetBrains Mono,Consolas,monospace" font-size="11"><text x="640" y="40">EJE B</text><text x="440" y="248">A</text><text x="884" y="248">C</text></g></svg>
+  <div class="hin">
+   <p class="saludo" id="saludo">Hola</p>
+   <h2>¿Qué cotizamos hoy?</h2>
+   <div class="kpis" id="kpis"></div>
+  </div>
+ </header>
  <div class="vin">
   <fieldset class="login" id="loginBox" hidden>
     <legend>Iniciar sesión en POWER</legend>
@@ -242,21 +287,21 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
     <div class="hint">Use la misma cuenta de POWER. Ahí quedan guardadas sus cotizaciones y los PDF emitidos.</div>
   </fieldset>
   <section>
-    <h2>Nueva cotización</h2>
+    <h3 class="ttl">Nueva cotización</h3>
     <div class="tiles">
-      <button type="button" class="tile" data-nt="rapida"><b>Express</b><span>Formato propio con cuadro de ítems HH</span></button>
-      <button type="button" class="tile" data-nt="formal"><b>Formal</b><span>Portada, alcances, exclusiones, montos y condiciones</span></button>
-      <button type="button" class="tile" data-nt="flexible"><b>Flexible</b><span>Estructura de la formal con texto libre</span></button>
-      <div class="tile cm"><b>Contrato marco</b><span>Formato de licitación con tarifas del contrato</span>
-        <div class="row"><button type="button" class="btn pri" data-nt="marco" data-cli="CMPC">CMPC</button><button type="button" class="btn pri" data-nt="marco" data-cli="AASA">Arauco</button></div></div>
+      <button type="button" class="tile" data-nt="rapida"><svg class="doc" viewBox="0 0 64 80" aria-hidden="true"><rect x="4" y="2" width="56" height="74" rx="3" fill="#fff" stroke="#c9d3df"/><rect x="10" y="9" width="14" height="9" fill="#1a5fb4"/><rect x="28" y="12" width="26" height="3" fill="#c9d3df"/><rect x="10" y="25" width="44" height="6" fill="#4472c4"/><rect x="10" y="33" width="44" height="4.5" fill="#eef0f3"/><rect x="10" y="39" width="44" height="4.5" fill="#dfe6ee"/><rect x="10" y="45" width="44" height="4.5" fill="#eef0f3"/><rect x="10" y="51" width="44" height="4.5" fill="#dfe6ee"/><rect x="10" y="57" width="44" height="4.5" fill="#eef0f3"/><rect x="10" y="64" width="44" height="5" fill="#9dc3e6"/></svg><div><b>Express</b><span>Formato propio con cuadro de ítems HH. Una hoja.</span></div></button>
+      <button type="button" class="tile" data-nt="formal"><svg class="doc" viewBox="0 0 64 80" aria-hidden="true"><rect x="4" y="2" width="56" height="74" rx="3" fill="#fff" stroke="#c9d3df"/><rect x="10" y="9" width="14" height="9" fill="#1a5fb4"/><rect x="10" y="26" width="44" height="5" fill="#1f3864"/><rect x="16" y="34" width="32" height="3" fill="#4472c4"/><rect x="10" y="44" width="44" height="22" fill="none" stroke="#4472c4"/><rect x="13" y="48" width="38" height="2.5" fill="#c9d3df"/><rect x="13" y="53" width="32" height="2.5" fill="#c9d3df"/><rect x="13" y="58" width="26" height="2.5" fill="#c9d3df"/></svg><div><b>Formal</b><span>Portada, alcances, exclusiones, montos y forma de pago.</span></div></button>
+      <button type="button" class="tile" data-nt="flexible"><svg class="doc" viewBox="0 0 64 80" aria-hidden="true"><rect x="4" y="2" width="56" height="74" rx="3" fill="#fff" stroke="#c9d3df"/><rect x="10" y="9" width="14" height="9" fill="#1a5fb4"/><rect x="10" y="26" width="40" height="3" fill="#c9d3df"/><rect x="10" y="33" width="34" height="3" fill="#c9d3df"/><rect x="10" y="40" width="42" height="3" fill="#c9d3df"/><rect x="10" y="47" width="28" height="3" fill="#c9d3df"/><rect x="10" y="54" width="38" height="3" fill="#c9d3df"/><rect x="10" y="61" width="22" height="3" fill="#c9d3df"/><g transform="rotate(40 46 54)"><rect x="42" y="30" width="8" height="34" rx="1.5" fill="#e3a54a"/><path d="M42 64 L46 72 L50 64Z" fill="#1b2430"/></g></svg><div><b>Flexible</b><span>Estructura de la formal, redactada a mano.</span></div></button>
+      <div class="tile cm"><svg class="doc" viewBox="0 0 64 80" aria-hidden="true"><rect x="4" y="2" width="56" height="74" rx="3" fill="#fff" stroke="#c9d3df"/><rect x="10" y="9" width="44" height="6" fill="#1f3864"/><rect x="10" y="20" width="28" height="4" fill="#dfe6ee"/><rect x="40" y="20" width="14" height="4" fill="#9dc3e6"/><rect x="10" y="26" width="28" height="4" fill="#dfe6ee"/><rect x="40" y="26" width="14" height="4" fill="#9dc3e6"/><rect x="10" y="32" width="28" height="4" fill="#dfe6ee"/><rect x="40" y="32" width="14" height="4" fill="#9dc3e6"/><rect x="10" y="38" width="28" height="4" fill="#dfe6ee"/><rect x="40" y="38" width="14" height="4" fill="#9dc3e6"/><rect x="10" y="44" width="28" height="4" fill="#dfe6ee"/><rect x="40" y="44" width="14" height="4" fill="#9dc3e6"/><circle cx="44" cy="62" r="8" fill="none" stroke="#1a5fb4" stroke-width="2"/><path d="M40 62 l3 3 l5 -6" fill="none" stroke="#1a5fb4" stroke-width="2"/></svg><div><b>Contrato marco</b><span>Formato de licitación con tarifas del contrato.</span>
+        <div class="row cmb"><button type="button" class="btn pri" data-nt="marco" data-cli="CMPC">CMPC</button><button type="button" class="btn pri" data-nt="marco" data-cli="AASA">Arauco</button></div></div></div>
     </div>
   </section>
-  <section>
-    <h2>Trabajar una existente</h2>
-    <div id="seguirBox" hidden><button type="button" class="btn" id="seguir"></button></div>
-    <input id="buscaIni" type="search" placeholder="Buscar por N°, cliente o proyecto…" aria-label="Buscar cotización">
+  <section class="exist">
+    <h3 class="ttl">Trabajar una existente</h3>
+    <div id="seguirBox" hidden><button type="button" class="seguir" id="seguir"></button></div>
+    <div class="sbox"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 L21 21" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><input id="buscaIni" type="search" placeholder="Buscar por N°, cliente o proyecto…" aria-label="Buscar cotización"></div>
     <div class="lst" id="iniLista"></div>
-    <button type="button" class="btn pri" id="irClientes">Ver cotizaciones por cliente</button>
+    <button type="button" class="btn pri" id="irClientes">Ver cotizaciones por cliente →</button>
   </section>
  </div>
 </div>
@@ -998,11 +1043,17 @@ function entradas(){
 const entLabel=e=>[e.num,e.rev?"Rev. "+e.rev:"",e.cliN,e.proy].filter(Boolean).join(" · ");
 const normQ=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
 let SELCLI=null, SELCOT=null, borrarPend=null, revPend=null;
-const liCot=(e,on)=>`<button type="button" class="li${on?" on":""}" data-cot="${esc(e.id)}" data-cli="${esc(e.cli)}"><span class="t">${esc(entLabel(e))}</span><em>${esc(e.estado)}</em></button>`;
+const estChip=x=>`<em class="est est-${x==="solo PDF"?"pdf":esc(x)}">${esc(x)}</em>`;
+const AVC=["#1a5fb4","#2f7a4a","#9a5b00","#7a5cc0","#c0392b","#1f3864","#0e7c86"];
+const avatar=(k,n)=>{ let h=0; for(const ch of k) h=(h*31+ch.charCodeAt(0))>>>0; const ini=String(n).replace(/[^A-Za-zÁÉÍÓÚÑ0-9 ]/gi,"").split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase()||"?"; return `<span class="av" style="background:${AVC[h%AVC.length]}">${esc(ini)}</span>`; };
+const liCot=(e,on)=>`<button type="button" class="li${on?" on":""}" data-cot="${esc(e.id)}" data-cli="${esc(e.cli)}"><span class="t">${esc(entLabel(e))}</span>${estChip(e.estado)}</button>`;
+function renderHero(E){ const h=new Date().getHours(); $("saludo").textContent=(h<12?"Buenos días":h<20?"Buenas tardes":"Buenas noches")+", Germán · "+new Date().toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"});
+  const y=String(new Date().getFullYear()), A=E.filter(e=>e.k==="c"&&String(e.fecha||e.guardado).startsWith(y)), n=x=>A.filter(e=>e.estado===x).length;
+  $("kpis").innerHTML=PW.logged||A.length?[[A.length,"cotizaciones "+y],[n("Emitida"),"emitidas"],[n("Aceptada"),"aceptadas"],[n("Borrador"),"en borrador"]].map(([v,t])=>`<div class="kpi"><b>${v}</b><span>${t}</span></div>`).join(""):'<div class="kpi"><span>Conecte POWER para ver su resumen</span></div>'; }
 function renderInicio(){
   const sinPw=!PW.logged&&!DEMO; $("loginBox").hidden=!sinPw&&$("loginBox").hidden;
-  $("seguirBox").hidden=!conDatos(); $("seguir").textContent="Seguir con la cotización abierta: "+([TIPO_N[S.tipo],numRev(),S.proyecto].filter(Boolean).join(" · ")||"borrador");
-  const q=normQ($("buscaIni").value.trim()), E=entradas(), F=q?E.filter(e=>normQ(entLabel(e)+" "+e.estado).includes(q)).slice(0,12):E.slice(0,6);
+  $("seguirBox").hidden=!conDatos(); $("seguir").innerHTML=`<small>SEGUIR DONDE QUEDÓ</small><span>${esc([TIPO_N[S.tipo],numRev(),S.mandante,S.proyecto].filter(Boolean).join(" · ")||"Borrador sin proyecto")}</span>`;
+  const q=normQ($("buscaIni").value.trim()), E=entradas(); renderHero(E); const F=q?E.filter(e=>normQ(entLabel(e)+" "+e.estado).includes(q)).slice(0,12):E.slice(0,6);
   $("iniLista").innerHTML=F.length?(q?"":'<div class="vacio">Últimas guardadas</div>')+F.map(e=>liCot(e,false)).join(""):`<div class="vacio">${sinPw?"Conecte POWER para ver sus cotizaciones":q?"Sin resultados":"Aún no hay cotizaciones guardadas"}</div>`;
 }
 function renderClientes(){
@@ -1010,11 +1061,11 @@ function renderClientes(){
   E.forEach(e=>{ if(!G.has(e.cli)) G.set(e.cli,{k:e.cli,n:e.cliN,L:[]}); G.get(e.cli).L.push(e); });
   const q=normQ($("buscaCli").value.trim()), Gs=[...G.values()].filter(g=>!q||normQ(g.n).includes(q)).sort((a,b)=>a.n.localeCompare(b.n,"es"));
   if(!SELCLI||!G.has(SELCLI)) SELCLI=Gs[0]?Gs[0].k:null;
-  $("lstCli").innerHTML=Gs.length?Gs.map(g=>`<button type="button" class="li${g.k===SELCLI?" on":""}" data-selcli="${esc(g.k)}"><span class="t">${esc(g.n)}</span><em>${g.L.length}</em></button>`).join(""):`<div class="vacio">${PW.logged?"Sin clientes":"Conecte POWER para ver sus cotizaciones"}</div>`;
+  $("lstCli").innerHTML=Gs.length?Gs.map(g=>`<button type="button" class="li${g.k===SELCLI?" on":""}" data-selcli="${esc(g.k)}"><span class="cl">${avatar(g.k,g.n)}<span class="t">${esc(g.n)}</span></span><em>${g.L.length}</em></button>`).join(""):`<div class="vacio">${PW.logged?"Sin clientes":"Conecte POWER para ver sus cotizaciones"}</div>`;
   const g=G.get(SELCLI), L=g?g.L:[];
   $("titCots").textContent=g?"Cotizaciones de "+g.n:"Cotizaciones";
   if(!L.some(e=>e.id===SELCOT)) SELCOT=L[0]?L[0].id:null;
-  $("lstCot").innerHTML=L.length?L.map(e=>`<button type="button" class="li${e.id===SELCOT?" on":""}" data-cot="${esc(e.id)}" data-cli="${esc(e.cli)}"><span class="t">${esc([e.num,e.rev?"Rev. "+e.rev:"",e.proy].filter(Boolean).join(" · "))}</span><em>${esc(e.estado)}</em></button>`).join(""):'<div class="vacio">Elija un cliente</div>';
+  $("lstCot").innerHTML=L.length?L.map(e=>`<button type="button" class="li${e.id===SELCOT?" on":""}" data-cot="${esc(e.id)}" data-cli="${esc(e.cli)}"><span class="t">${esc([e.num,e.rev?"Rev. "+e.rev:"",e.proy].filter(Boolean).join(" · "))}</span>${estChip(e.estado)}</button>`).join(""):'<div class="vacio">Elija un cliente</div>';
   renderFicha(L.find(e=>e.id===SELCOT));
 }
 const sigRev=r=>{ const A="ABCDEFGH", i=A.indexOf(r||""); return !r?"A":(i>=0&&i<A.length-1?A[i+1]:""); };
