@@ -34,7 +34,7 @@
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45}
 img{max-width:100%}
 .top{padding-block:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;border-bottom:1px solid var(--line);background:var(--panel)}
-.top h1{font-family:var(--f-display);font-size:1.6rem;margin:0;font-weight:700;display:flex;align-items:center;gap:10px}
+.top h1{font-family:var(--f-display);font-size:clamp(1.7rem,2.6vw,2.2rem);margin:0;font-weight:700;display:flex;align-items:center;gap:10px}
 .top h1 img{width:40px;height:40px;display:block;flex:none}
 .top .sub{color:var(--muted);font-size:.85rem}
 .top .sp{flex:1}
@@ -256,7 +256,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 <body data-view="inicio">
 
 <div class="top">
-  <div><h1 id="hHome" role="button" tabindex="0" title="Ir a Inicio"><img src="cot-192.png?v=2" alt="" width="40" height="40">Cotizador ING Estructural</h1><div class="sub v-ed" id="tdesc"></div></div>
+  <div><h1 id="hHome" role="button" tabindex="0" title="Ir a Inicio"><img src="cot-192.png?v=2" alt="" width="48" height="48">Cotizador ING Estructural</h1><div class="sub v-ed" id="tdesc"></div></div>
   <button type="button" class="btn v-nohome" id="irInicio">← Inicio</button>
   <div class="edtit v-ed"><select id="tipoSel" aria-label="Tipo de cotización" title="Cambiar el tipo de esta cotización"><option value="rapida">Express</option><option value="formal">Formal</option><option value="flexible">Flexible</option><option value="marco">Contrato marco</option></select><b id="edNum"></b></div>
   <div class="seg v-ed" id="cmSeg" data-only="marco" role="group" aria-label="Contrato marco"><button type="button" data-cmcli="CMPC">CMPC</button><button type="button" data-cmcli="AASA">Arauco</button></div>
