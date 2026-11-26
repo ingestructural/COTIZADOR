@@ -238,7 +238,9 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 .page .cover-t1{font-size:22pt}
 .page .cover-t2{font-size:20pt}
 .page .cover td{font-size:14pt;padding:6px 8px}
-.page .firma{margin-top:3.2cm;text-align:left;font-weight:700;line-height:1.35}
+/* firma ING: línea superior, nombre centrado bajo la línea; «Ingeniero Civil» y logo + «ING Estructural» alineados a la izquierda del nombre */
+.page .firma{position:relative;margin-top:3.2cm;text-align:center;font-weight:700;line-height:1.35;border-top:1px solid #555;padding:3px .6cm 0;min-width:6.5cm;width:max-content}
+.page .firma .fb{display:inline-block;text-align:left}
 .page .firma span{font-weight:400}
 .page .firma img.iso{display:inline;height:1.1em;width:auto;vertical-align:-0.22em;margin-right:4pt}
 .catpop{position:fixed;z-index:25;background:#fff;color:#1d2533;border:1px solid #c5cfdc;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.18);max-height:280px;overflow:auto;min-width:240px}
@@ -467,7 +469,7 @@ const TPL = {
  otras:["Los honorarios no incluyen gastos notariales, permisos, derechos municipales ni ensayos de laboratorio, salvo indicación expresa.","Cualquier modificación al alcance definido en la sección 2 será cotizada como trabajo adicional.","Movilización, alojamiento y viáticos para visitas a terreno fuera del radio urbano de la oficina se cotizan por separado, salvo que se indique lo contrario."]
 };
 let FIRMA_IMG=null;   // firma escaneada: se lee de POWER / navegador más abajo
-const FIRMA = ["J. Germán Aguilera Hafner","Ingeniero Civil","ING Estructural"];   // la primera línea va en negrita
+const FIRMA = ["J. GERMÁN AGUILERA HAFNER","Ingeniero Civil","ING Estructural"];   // la primera línea va en negrita
 const today = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10); };
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 function nueva(tipo){return {
@@ -795,7 +797,7 @@ function bloquesMarco(M){
   const adic=lines(cm.notas);
   if(adic.length) B.push({html:`<div class="band">${det.length?"D":"C"}. NOTAS ADICIONALES</div><ul>${adic.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`});
   const notas=[`Condición ${(cm.cond|0)+1}: ${t.cond[cm.cond|0]}.`, "Entregables en formato DWG y PDF.", ...(cl?[`Valor UF utilizado: ${clp(M.vuf)}${S.fecha?" al "+fdate(S.fecha):""}.`]:[])];
-  B.push({html:`<div style="display:flex;gap:24px;align-items:flex-start;margin-top:4px"><div class="leg" style="text-align:left;flex:0 0 46%;margin-top:0;line-height:1.2;font-size:7pt;padding:3px 5px">${notas.map(esc).join("<br>")}</div><div class="firma" style="position:relative;margin:${firmaOn()?"2.6cm":"0.9cm"} 0 0 auto;flex:0 0 auto;line-height:1.25;border-top:1px solid #555;padding-top:3px;min-width:6.5cm">${firmaImgHtml(firmaGeo().top,firmaGeo().left)}${FIRMA[0]}<br><span>${FIRMA[1]}<br>${ISO_HTML}${FIRMA[2]}</span></div></div>`});
+  B.push({html:`<div style="display:flex;gap:24px;align-items:flex-start;margin-top:4px"><div class="leg" style="text-align:left;flex:0 0 46%;margin-top:0;line-height:1.2;font-size:7pt;padding:3px 5px">${notas.map(esc).join("<br>")}</div><div class="firma" style="position:relative;margin:${firmaOn()?"2.6cm":"0.9cm"} 0 0 auto;flex:0 0 auto;line-height:1.25;border-top:1px solid #555;padding:3px .6cm 0;min-width:6.5cm;text-align:center"><div class="fb">${firmaImgHtml(firmaGeo().top,firmaGeo().left)}${FIRMA[0]}<br><span>${FIRMA[1]}<br>${ISO_HTML}${FIRMA[2]}</span></div></div></div>`});
   return B;
 }
 
@@ -822,7 +824,7 @@ const firmaCm=()=>{ const k=firmaPos().k, r=FIRMA_IMG.w/FIRMA_IMG.h; let h=firma
 const firmaImgHtml=(top,left)=>{ if(!firmaOn()) return ""; const q=firmaPos(), z=firmaCm(), T=top+q.dy, Lf=left+q.dx;
   return `<img class="fimg" src="${FIRMA_IMG.png}" alt="" data-t="${top}" data-l="${left}" title="Arrastre para mover · esquina azul para cambiar el tamaño · doble clic para volver a la posición inicial" style="position:absolute;top:${T}cm;left:${Lf}cm;width:${z.w}cm;height:${z.h}cm;cursor:move;z-index:3">`+
     `<span class="fhandle" title="Arrastre para cambiar el tamaño" style="left:${Lf+z.w}cm;top:${T+z.h}cm"></span>`; };
-const firma=()=>`<div class="firma" style="position:relative">${firmaImgHtml(firmaGeo().top,firmaGeo().left)}${FIRMA[0]}<br><span>${FIRMA[1]}<br>${ISO_HTML}${FIRMA[2]}</span></div>`;
+const firma=()=>`<div class="firma"><div class="fb">${firmaImgHtml(firmaGeo().top,firmaGeo().left)}${FIRMA[0]}<br><span>${FIRMA[1]}<br>${ISO_HTML}${FIRMA[2]}</span></div></div>`;
 function tablaDatos(){
   return `<table><tbody>
   <tr><td class="k">MANDANTE</td><td class="v" colspan="2">${val(S.mandante,"mandante")}</td></tr>
