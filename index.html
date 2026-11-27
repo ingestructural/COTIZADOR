@@ -303,7 +303,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
 <div class="view" id="vClientes">
  <div class="cli3">
   <div><h3>Clientes</h3><input id="buscaCli" type="search" placeholder="Filtrar clientes…" aria-label="Filtrar clientes"><div class="lst" id="lstCli"></div></div>
-  <div><h3 id="titCots">Cotizaciones</h3><div class="lst" id="lstCot"></div></div>
+  <div><h3 id="titCots">Cotizaciones</h3><div class="lst" id="lstCot"></div><p class="hint" style="margin:6px 2px 0">Clic para ver la ficha; doble clic para abrirla y editarla.</p></div>
   <div id="ficha"></div>
  </div>
 </div>
@@ -1049,6 +1049,9 @@ function entradas(){
 const entLabel=e=>[e.num,e.rev?"Rev. "+e.rev:"",e.cliN,e.proy].filter(Boolean).join(" · ");
 const normQ=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
 let SELCLI=null, SELCOT=null, borrarPend=null, revPend=null;
+// la ficha (con Modificar) queda bajo las listas: al elegir una cotización se lleva a la vista (2026-11-27, no se veía en pantallas bajas)
+// espera el tiempo de un doble clic para no mover la lista bajo el cursor entre los dos clics
+let verFichaT=null; const verFicha=sel=>{ clearTimeout(verFichaT); verFichaT=setTimeout(()=>{ const el=$("ficha").querySelector(sel||".ficha"); if(el) el.scrollIntoView({block:sel?"center":"nearest",behavior:"smooth"}); },sel?0:450); };
 const estChip=x=>`<em class="est est-${x==="solo PDF"?"pdf":x==="Sin cotizar"?"sin":esc(x)}">${esc(x)}</em>`;
 const AVC=["#1a5fb4","#2f7a4a","#9a5b00","#7a5cc0","#c0392b","#1f3864","#0e7c86"];
 const avatar=(k,n)=>{ let h=0; for(const ch of k) h=(h*31+ch.charCodeAt(0))>>>0; const ini=String(n).replace(/[^A-Za-zÁÉÍÓÚÑ0-9 ]/gi,"").split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase()||"?"; return `<span class="av" style="background:${AVC[h%AVC.length]}">${esc(ini)}</span>`; };
@@ -1092,6 +1095,7 @@ function renderFicha(e){
    <dt>Fecha</dt><dd>${esc(fechaTxt(e.fecha))||"—"}</dd>${e.neto!=null&&e.neto!==""?`<dt>Neto</dt><dd>${f2(num(e.neto))} UF</dd>`:""}
    ${e.guardado?`<dt>Guardada</dt><dd>${esc(new Date(e.guardado).toLocaleString("es-CL",{dateStyle:"short",timeStyle:"short"}))}</dd>`:""}</dl>
    <div class="acc"><button type="button" class="btn" data-fa="ver"${P.length?"":" disabled title=\"Aún no se emite un PDF. Use Modificar y luego Ver PDF\""}>Ver PDF</button><button type="button" class="btn pri" data-fa="mod">Modificar</button>${e.k==="c"?'<button type="button" class="btn" data-fa="base">Usar como base</button>':""}</div>
+   ${e.k==="a"?'<span class="hint">Solo existe el PDF en Archivo ING: Modificar la ingresa al Cotizador con N°, cliente, proyecto y fecha; los ítems hay que volver a escribirlos (no se leen del PDF).</span>':""}
    ${revPend===e.id?`<div class="revq"><b>Esta cotización ya fue emitida.</b><span>El PDF emitido queda archivado en ambos casos.</span><div class="acc"><button type="button" class="btn" data-fa="corr">Corregir ${e.rev?"Rev. "+esc(e.rev):"esta versión"}</button>${sigRev(e.rev)?`<button type="button" class="btn pri" data-fa="nrev">Crear Rev. ${sigRev(e.rev)}</button>`:""}</div></div>`:""}
    <div class="pdfs"><b>PDF emitido${REG?"":" (cargando…)"}</b>${P.length?pdfFila(P[0],true)+(P.length>1?`<details><summary>Versiones anteriores (${P.length-1})</summary>${P.slice(1).map(r=>pdfFila(r,false)).join("")}</details>`:""):'<div><span class="hint">Ninguno todavía. Se archiva uno cada vez que usa Guardar PDF.</span></div>'}</div>
    ${e.k==="c"?`<details><summary>Más opciones</summary><div class="row" style="margin-top:8px"><button type="button" class="btn x" data-fa="del" style="color:var(--warn)">${borrarPend===e.id?"Clic otra vez para eliminar":"Eliminar cotización"}</button></div></details>`:""}</div>`;
@@ -1102,7 +1106,7 @@ function accionFicha(a){
   if(a==="ver"){ const r=pdfsDe(e)[0]; if(r) pdfRegistro(r.id,"ver"); return; }
   if(e.k==="a"&&a==="mod"){ abrirArchivada(e.r.id); return; }
   const c=e.c;
-  if(a==="mod"){ if(emitidaYa(e)){ revPend=e.id; return renderFicha(e); } a="corr"; }
+  if(a==="mod"){ if(emitidaYa(e)){ revPend=e.id; renderFicha(e); verFicha(".revq"); return; } a="corr"; }
   if(a==="corr"||a==="nrev"){ revPend=null; cargarCot(c);
     if(a==="nrev"){ S.rev=sigRev(c.rev); S.estado="Borrador"; }
     all(); if(a==="nrev") save(); else LS.set(KEY,S); ir("editor"); toast(a==="nrev"?`Rev. ${S.rev} creada; se guarda sola en POWER`:"Cotización abierta"); return; }
@@ -1462,10 +1466,12 @@ $("seguir").addEventListener("click",()=>ir("editor"));
 $("buscaIni").addEventListener("input",renderInicio);
 $("buscaCli").addEventListener("input",renderClientes);
 $("vInicio").addEventListener("click",e=>{ const t=e.target.closest("[data-nt]"); if(t) return nuevaDe(t.dataset.nt,t.dataset.cli);
-  const c=e.target.closest("[data-cot]"); if(c){ SELCLI=c.dataset.cli; SELCOT=c.dataset.cot; revPend=null; ir("clientes"); } });
+  const c=e.target.closest("[data-cot]"); if(c){ SELCLI=c.dataset.cli; SELCOT=c.dataset.cot; revPend=null; ir("clientes"); verFicha(); } });
 $("vClientes").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; const d=b.dataset;
   if(d.selcli!==undefined){ SELCLI=d.selcli; SELCOT=null; revPend=null; renderClientes(); }
-  else if(d.cot!==undefined){ SELCOT=d.cot; revPend=null; renderClientes(); }
+  else if(d.cot!==undefined){ if(e.detail>=2&&d.cot===SELCOT){ clearTimeout(verFichaT); accionFicha("mod"); return; }   // doble clic = Modificar (la lista se redibuja con el 1er clic, por eso no sirve dblclick)
+    const F=$("ficha"); F.style.minHeight=F.offsetHeight+"px"; setTimeout(()=>{ F.style.minHeight=""; },600);   // que la página no se acorte entre los dos clics
+    SELCOT=d.cot; revPend=null; renderClientes(); verFicha(); }
   else if(d.fa) accionFicha(d.fa);
   else if(d.cz){ const e=entradas().find(x=>x.id===SELCOT); if(e&&e.k==="p"){ const p=e.p; if(nuevaDe(d.cz,d.cli)!==false){ aplicarProyecto(p); toast("Cotización ligada a "+(p.codigo||"")+" · "+(p.proyecto||"")+"; se guarda sola en POWER"); } } }
   else if(d.pv) pdfRegistro(d.pv,"ver");
