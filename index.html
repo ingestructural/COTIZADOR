@@ -1086,6 +1086,7 @@ function renderFicha(e){
      <dl><dt>Cliente</dt><dd>${esc(p.mandante||"—")}</dd><dt>Proyecto</dt><dd>${esc(p.proyecto||"—")}</dd>
      <dt>Estado en POWER</dt><dd>${esc(p.estado||"—")}</dd><dt>Contacto</dt><dd>${esc(p.contacto||"—")}</dd>
      <dt>Ingreso</dt><dd>${esc(fechaTxt(p.creado))||"—"}</dd>${p.planta?`<dt>Planta</dt><dd>${esc(p.planta)}</dd>`:""}</dl>
+     <span class="hint">Este proyecto de POWER aún no tiene cotización guardada en el Cotizador (ni PDF en Archivo ING con su código), por eso no hay nada que modificar. Elija el formato para crearla:</span>
      <b>Cotizar este proyecto como</b>
      <div class="acc">${cm?`<button type="button" class="btn pri" data-cz="marco" data-cli="${cm}">Contrato marco ${cm==="AASA"?"Arauco":"CMPC"}</button>`:""}<button type="button" class="btn${cm?"":" pri"}" data-cz="rapida">Express</button><button type="button" class="btn" data-cz="formal">Formal</button><button type="button" class="btn" data-cz="flexible">Flexible</button></div></div>`; return; }
   F.innerHTML=`<div class="ficha"><h3>${esc(e.num)}${e.rev?" · Rev. "+esc(e.rev):""}</h3>
@@ -1104,6 +1105,7 @@ function cargarCot(c){ const cat=S.cat; S=Object.assign(nueva(c.tipo),JSON.parse
 function accionFicha(a){
   const e=entradas().find(x=>x.id===SELCOT); if(!e) return;
   if(a==="ver"){ const r=pdfsDe(e)[0]; if(r) pdfRegistro(r.id,"ver"); return; }
+  if(e.k==="p"){ if(a==="mod") verFicha(".acc"); return; }   // proyecto sin cotización: no hay nada que abrir, se elige el formato con los botones Cotizar
   if(e.k==="a"&&a==="mod"){ abrirArchivada(e.r.id); return; }
   const c=e.c;
   if(a==="mod"){ if(emitidaYa(e)){ revPend=e.id; renderFicha(e); verFicha(".revq"); return; } a="corr"; }
