@@ -296,6 +296,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
     <div class="sbox"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 L21 21" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><input id="buscaIni" type="search" placeholder="Buscar por N°, cliente o proyecto…" aria-label="Buscar cotización"></div>
     <div class="lst" id="iniLista"></div>
     <button type="button" class="btn pri" id="irClientes">Ver cotizaciones por cliente →</button>
+    <div class="row" style="margin-top:10px;align-items:center;gap:10px;flex-wrap:wrap"><button type="button" class="btn" id="impCot">📥 Importar cotización…</button><span class="hint">Archivo .json con una cotización hecha fuera del Cotizador (p. ej. en Word); queda guardada en POWER.</span><input type="file" id="impFile" accept=".json,application/json" hidden></div>
   </section>
  </div>
 </div>
@@ -326,7 +327,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
       <label for="fecha">Fecha<input id="fecha" type="date"></label>
       <label for="numero">N° de cotización (código POWER)<input id="numero"></label>
       <div class="row" style="gap:6px;align-items:flex-end"><label for="plazo" style="flex:1">Plazo de ejecución<input id="plazo" type="number" min="0" step="1"></label>
-        <label for="plazoU" style="width:110px">Unidad<select id="plazoU"><option>días</option><option>semanas</option></select></label></div>
+        <label for="plazoU" style="width:110px">Unidad<select id="plazoU"><option>días</option><option>días hábiles</option><option>semanas</option></select></label></div>
       <label for="estado">Estado<select id="estado"><option>Borrador</option><option>Emitida</option><option>Aceptada</option><option>Rechazada</option></select></label>
       <label for="rev">Revisión<select id="rev"><option value="">—</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option></select></label>
     </div>
@@ -340,6 +341,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
       <tbody></tbody>
       <tfoot><tr class="sumrow"><td id="sumLbl">Total neto</td><td class="n" id="sumHi"></td><td class="n" id="sumHp"></td><td class="t" id="sumUF"></td><td></td></tr></tfoot>
     </table>
+    <p class="hint" style="margin:4px 0 0">Para un subtítulo de sección en el cuadro, escriba el ítem con «#» al inicio (p. ej. «# NAVE PROCESOS») y sin HH.</p>
     <datalist id="dlCat"></datalist>
     <div class="row"><button type="button" class="btn" id="addItem">Agregar ítem</button><button type="button" class="btn" id="editItem">Editar ítem</button><button type="button" class="btn" id="delItem" style="color:var(--warn)">Eliminar ítem</button></div>
     <div class="hint" style="font-weight:600;margin:10px 0 4px">Entregables (cantidad)</div>
@@ -367,7 +369,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.9rem}
   <fieldset data-only="formal flexible marco">
     <legend>Valores y vigencia</legend>
     <div class="row" style="gap:6px;align-items:flex-end"><label for="validez" style="flex:1">Validez de la oferta<input id="validez" type="number" min="0" step="1"></label>
-      <label for="validezU" style="width:110px">Unidad<select id="validezU"><option>días</option><option>semanas</option></select></label></div>
+      <label for="validezU" style="width:110px">Unidad<select id="validezU"><option>días</option><option>días corridos</option><option>semanas</option></select></label></div>
     <div class="grid2">
       <label for="valorUF">Valor UF (UF del día de POWER)<input id="valorUF" type="number" step="0.01" min="0" readonly title="Se toma de POWER; use «Actualizar UF» para recargarla"></label>
       <label for="iva">IVA (%)<input id="iva" type="number" step="0.1" min="0"></label>
@@ -570,7 +572,7 @@ function guardarCatalogo(){
 function aplicarCatalogo(c){ if(!c) return; S.cat=JSON.parse(JSON.stringify(c.cat)); if(c.tIng!=null) S.tIng=c.tIng; if(c.tProy!=null) S.tProy=c.tProy; }
 // ítem escrito en el cuadro que no está en el catálogo → se agrega al catálogo
 function agregarAlCatalogo(nombre){
-  const n=String(nombre||"").trim(); if(!n||S.cat.some(c=>String(c.n).trim().toLowerCase()===n.toLowerCase())) return;
+  const n=String(nombre||"").trim(); if(!n||/^#/.test(n)||S.cat.some(c=>String(c.n).trim().toLowerCase()===n.toLowerCase())) return;
   S.cat.push({n,p:0,m:0,e:0}); renderCat(); $("dlCat").innerHTML=S.cat.map(c=>`<option value="${esc(c.n)}">`).join(""); guardarCatalogo(); save();
   toast(`«${n}» quedó en el catálogo para próximas cotizaciones`);
 }
@@ -600,7 +602,9 @@ function aplicarProyecto(p){
 function renderIngreso(){ const r=$("fechaIngRow"); r.hidden=!S.fechaIngreso||S.fechaIngreso===S.fecha; $("usarIngreso").textContent=`Usar fecha de ingreso en POWER (${fdate(S.fechaIngreso)})`; }
 
 /* ---------------- cálculo ---------------- */
-function itemUF(it){return String(it.n||"").trim()?num(it.hi)*num(S.tIng)+num(it.hp)*num(S.tProy):0}
+// ítem que empieza con «#» = subtítulo de sección en el cuadro (sin HH ni monto), p. ej. «# NAVE PROCESOS» (2026-11-27)
+const esSec=it=>/^#/.test(String(it&&it.n||"").trim()), secTxt=it=>String(it.n).trim().replace(/^#+\s*/,"");
+function itemUF(it){return String(it.n||"").trim()&&!esSec(it)?num(it.hi)*num(S.tIng)+num(it.hp)*num(S.tProy):0}
 function totales(){
   const neto=S.tipo==="marco"?marcoCalc().neto:S.items.reduce((s,it)=>s+itemUF(it),0), ent={p:0,m:0,e:0};
   S.items.forEach(it=>{const n=String(it.n||"").trim().toLowerCase(); const c=n&&S.cat.find(c=>String(c.n).trim().toLowerCase()===n); if(c){ent.p+=num(c.p);ent.m+=num(c.m);ent.e+=num(c.e)}});
@@ -841,7 +845,7 @@ function tablaDatos(){
 const COLS_CUADRO=`<colgroup><col style="width:50%"><col style="width:15%"><col style="width:15%"><col style="width:20%"></colgroup>`;
 function cuadroBloques(M){
   const pad=Math.max(0,5-M.rows.length);
-  const rows=[...M.rows.map(it=>`<tr><td class="v">${esc(it.n)}</td><td class="num v">${num(it.hi)||""}</td><td class="num v">${num(it.hp)||""}</td><td class="tot">${f2(itemUF(it))}</td></tr>`),
+  const rows=[...M.rows.map(it=>esSec(it)?`<tr class="sec"><td colspan="4"><b>${esc(secTxt(it))}</b></td></tr>`:`<tr><td class="v">${esc(it.n)}</td><td class="num v">${num(it.hi)||""}</td><td class="num v">${num(it.hp)||""}</td><td class="tot">${f2(itemUF(it))}</td></tr>`),
     ...Array.from({length:pad},()=>`<tr><td class="v">&nbsp;</td><td class="v"></td><td class="v"></td><td class="tot">0,00</td></tr>`),
     `<tr class="sum"><td>${M.bol?"TOTAL HONORARIOS (BRUTO)":"TOTAL NETO"}</td><td></td><td></td><td class="tot">${f2(M.t.neto)}</td></tr>`];
   return [
@@ -1102,6 +1106,23 @@ function renderFicha(e){
    ${e.k==="c"?`<details><summary>Más opciones</summary><div class="row" style="margin-top:8px"><button type="button" class="btn x" data-fa="del" style="color:var(--warn)">${borrarPend===e.id?"Clic otra vez para eliminar":"Eliminar cotización"}</button></div></details>`:""}</div>`;
 }
 function cargarCot(c){ const cat=S.cat; S=Object.assign(nueva(c.tipo),JSON.parse(JSON.stringify(c))); S.cat=cat; (c.items||[]).forEach(it=>agregarAlCatalogo(it.n)); }
+/* Importar cotización (2026-11-27): archivo {formato:"cotizador-ing", cotizacion:{...}} con los mismos campos que guarda el Cotizador.
+   Se liga al proyecto de POWER por código o por mandante + proyecto; si no se encuentra, conserva N°/mandante/proyecto del archivo
+   y se puede ligar después eligiendo el proyecto. No agrega ítems al catálogo. */
+async function importarCot(file){
+  let j; try{ j=JSON.parse(await file.text()); }catch(e){ return toast("El archivo no es una cotización válida (JSON)"); }
+  const c=j&&j.formato==="cotizador-ing"&&j.cotizacion; if(!c||!Array.isArray(c.items)) return toast("El archivo no es una cotización del Cotizador ING");
+  if(conDatos()&&!S.guardado&&!confirm("La cotización abierta no está guardada en POWER (no tiene proyecto ni N°). ¿Descartarla e importar?")) return;
+  const tipo=["rapida","formal","flexible"].includes(c.tipo)?c.tipo:"formal", cat=S.cat;
+  S=Object.assign(nueva(tipo),{cat});
+  const L=PW.data.proyectos||[], N=nzc, p=(c.numero&&L.find(x=>x.codigo&&N(x.codigo)===N(c.numero)))||L.find(x=>N(x.mandante)===N(c.mandante)&&N(x.proyecto)===N(c.proyecto));
+  const {id,guardado,proyId,cat:_c,lay,cm,netoUF,...datos}=JSON.parse(JSON.stringify(c));
+  if(p){ aplicarProyecto(p); ["numero","mandante","proyecto"].forEach(k=>delete datos[k]); if(String(p.contacto||"").trim()) delete datos.contacto; }
+  Object.assign(S,datos,{tipo});
+  all(); LS.set(KEY,S); ir("editor");
+  const ok=PW.logged&&!DEMO&&(S.proyId||String(S.numero||"").trim())?await guardarAuto(true):false;
+  toast((p?"Importada y ligada a "+(p.codigo||p.proyecto):"Importada; elija el proyecto en POWER si quiere ligarla")+(ok?" · guardada en POWER":""));
+}
 function accionFicha(a){
   const e=entradas().find(x=>x.id===SELCOT); if(!e) return;
   if(a==="ver"){ const r=pdfsDe(e)[0]; if(r) pdfRegistro(r.id,"ver"); return; }
@@ -1464,6 +1485,8 @@ $("irInicio").addEventListener("click",()=>ir("inicio"));
 $("hHome").addEventListener("click",()=>ir("inicio"));
 $("hHome").addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); ir("inicio"); } });
 $("irClientes").addEventListener("click",()=>ir("clientes"));
+$("impCot").addEventListener("click",()=>$("impFile").click());
+$("impFile").addEventListener("change",e=>{ const f=e.target.files[0]; e.target.value=""; if(f) importarCot(f); });
 $("seguir").addEventListener("click",()=>ir("editor"));
 $("buscaIni").addEventListener("input",renderInicio);
 $("buscaCli").addEventListener("input",renderClientes);
